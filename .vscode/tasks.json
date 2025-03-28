@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Lint",
+      "type": "shell",
+      "command": "flake8 .",
+      "group": "build"
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "pytest",
+      "group": "test"
+    }
+  ]
+} 

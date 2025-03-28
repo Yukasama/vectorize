@@ -16,7 +16,6 @@ pip-wheel-metadata/
 # poetry.lock
 
 # === VSCode ===
-.vscode/
 .code-workspace
 
 # === PyCharm / JetBrains ===
