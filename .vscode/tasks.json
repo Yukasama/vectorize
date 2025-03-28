@@ -4,7 +4,19 @@
     {
       "label": "Run Lint",
       "type": "shell",
-      "command": "flake8 .",
+      "command": "ruff check .",
+      "group": "build"
+    },
+    {
+      "label": "Run Lint Fix",
+      "type": "shell",
+      "command": "ruff check . --fix",
+      "group": "build"
+    },
+    {
+      "label": "Run Format",
+      "type": "shell",
+      "command": "ruff format .",
       "group": "build"
     },
     {
@@ -14,4 +26,4 @@
       "group": "test"
     }
   ]
-} 
+}

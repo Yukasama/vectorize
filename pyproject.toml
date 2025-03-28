@@ -1,10 +1,12 @@
 [tool.poetry]
 name = "txt2vec-service"
-packages = [{ include = "txt2vecservice", from = "src" }]
+packages = [{ include = "txt2vec_service", from = "src" }]
 version = "0.1.0"
 description = "AWP Projekt für Text Embedding Service"
-authors = ["ManuelDausmann", "Yannjc", "Dosto1ewski", "Yukasama <yukasamaa@gmail.com>"]
+authors = ["ManuelDausmann", "Yannjc", "Dosto1ewski", "BtnCbn", "Yukasama <yukasamaa@gmail.com>"]
 readme = "README.md"
+license = "MIT"
+repository = "https://github.com/username/txt2vec-service"
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -13,18 +15,20 @@ pydantic = "^2.10.6"
 pandas = "^2.2.3"
 numpy = "^2.2.4"
 uvicorn = {extras = ["standard"], version = "^0.34.0"}
-pytest = "^8.3.5"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
-flake8 = "^7.1.2"
-isort = "^6.0.1"
+ruff = "^0.11.2"
+mkdocs = "^1.6.1"
+pytest = "^8.3.5"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-target-version = ["py312"]
-include = '\.pyi?$'
+target-version = "py312"
+
+[tool.ruff.format]
+docstring-code-format = true
+quote-style = "preserve"
