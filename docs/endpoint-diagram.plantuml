@@ -1,0 +1,79 @@
+@startuml endpoint-diagram
+actor User
+
+rectangle "Backend (FastAPI)" {
+  ' --- MODEL ENDPOINTS ---
+  package "Model Endpoints (/api/models/...)" {
+    [GET /models/embeddings]
+    [GET /models]
+
+    [POST /models/upload]
+    [POST /models/batch-upload]
+    [POST /models/train]
+    [GET /models/train-status/{id}]
+    
+    [POST /models/evaluate]
+    [GET /models/evaluate/status/{id}]
+  }
+
+  ' --- DATASET ENDPOINTS ---
+  package "Dataset Endpoints (/api/datasets/...)" {
+    [GET /datasets]
+    [POST /datasets/upload]
+    [POST /datasets/generate]
+  }
+  
+  ' --- INTERNAL PROCESSES ---
+  package "Internal Processes" {
+    [GitHub Pull / HuggingFace Pull]
+    [Save model to file system (~txt2vec/models)]
+    [Create database entry for model]
+    
+    [Start asynchronous training]
+    [Start asynchronous evaluation]
+    [Generate synthetic data using script]
+    [Convert dataset if necessary and save to database]
+    
+    [Run scripts (Training/Evaluation)]
+    [Update status in database]
+    [Increase model request count]
+  }
+}
+
+' Upload processes (models)
+[POST /models/upload] --> [GitHub Pull / HuggingFace Pull]
+[POST /models/batch-upload] --> [GitHub Pull / HuggingFace Pull]
+[GitHub Pull / HuggingFace Pull] --> [Save model to file system (~txt2vec/models)]
+[GitHub Pull / HuggingFace Pull] --> [Create database entry for model]
+
+' Dataset processes
+[POST /datasets/generate] --> [Generate synthetic data using script]
+[Generate synthetic data using script] --> [Convert dataset if necessary and save to database]
+[POST /datasets/upload] --> [Convert dataset if necessary and save to database]
+
+' Training processes
+[POST /models/train] --> [Start asynchronous training]
+[Start asynchronous training] --> [Run scripts (Training/Evaluation)]
+[Start asynchronous training] --> [Update status in database]
+
+' Evaluation processes
+[POST /models/evaluate] --> [Start asynchronous evaluation]
+[Start asynchronous evaluation] --> [Run scripts (Training/Evaluation)]
+[Start asynchronous evaluation] --> [Update status in database]
+
+' Model usage tracking
+[GET /models/embeddings] --> [Increase model request count]
+
+' User API flows
+User --> [GET /models/embeddings]
+User --> [GET /models]
+User --> [POST /models/upload]
+User --> [POST /models/batch-upload]
+User --> [POST /models/train]
+User --> [GET /models/train-status/{id}]
+User --> [POST /models/evaluate]
+User --> [GET /models/evaluate/status/{id}]
+User --> [GET /datasets]
+User --> [POST /datasets/upload]
+User --> [POST /datasets/generate]
+@enduml
