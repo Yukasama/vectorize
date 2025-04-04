@@ -7,38 +7,49 @@
 #### Installation
 
 ```bash
-# Install dependencies
-poetry install
+# Install uv for command line (MacOS/Linux)
+curl -LsSf https://astral.sh/uv/install.sh
 
-# Generate or fix lock file
-poetry lock
+# Install uv for command line (Windows)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
-# Check for dependency conflicts
-poetry check
+```bash
+# Install dependencies and generate lock file
+uv sync --all-groups
 ```
 
 #### Modification
 
 ```bash
 # Add dependencies
-poetry add <package>
+uv add <package>
 
 # Update dependencies
-poetry update
+uv update
 
 # Remove dependencies
-poetry remove <package>
+uv remove <package>
 ```
 
-#### Build
+#### Fix lock file
 
-```bash
-# Build project
-poetry build
-```
+Error: Failed to parse `uv.lock`
+
+1. Delete `uv.lock` file
+2. Run `uv sync --all-groups` or `uv lock`
+
+Note: Do not edit the `uv.lock`-File yourself.
 
 ### Start server
 
 ```bash
-poetry run uvicorn src.txt2vec_service.main:app --reload --reload-dir src
+uv run txt2vec_service
+```
+
+### Build
+
+```bash
+# Build project
+uv build
 ```

@@ -1,29 +1,41 @@
-[tool.poetry]
+[project]
 name = "txt2vec-service"
-packages = [{ include = "txt2vec_service", from = "src" }]
 version = "0.1.0"
 description = "AWP Projekt für Text Embedding Service"
-authors = ["ManuelDausmann", "Yannjc", "Dosto1ewski", "BtnCbn", "Yukasama <yukasamaa@gmail.com>"]
+authors = [
+    {name = "ManuelDausmann"},
+    {name = "Yannjc"},
+    {name = "Dosto1ewski"},
+    {name = "BtnCbn"},
+    {name = "Yukasama", email = "yukasamaa@gmail.com"},
+]
 readme = "README.md"
-license = "MIT"
-repository = "https://github.com/username/txt2vec-service"
+license = {text = "MIT"}
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.12",
+    "pydantic>=2.10.6",
+    "pandas>=2.2.3",
+    "numpy>=2.2.4",
+    "uvicorn[standard]>=0.34.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-fastapi = "^0.115.12"
-pydantic = "^2.10.6"
-pandas = "^2.2.3"
-numpy = "^2.2.4"
-uvicorn = {extras = ["standard"], version = "^0.34.0"}
+[project.scripts]
+txt2vec_service = "txt2vec_service.cli:main"
 
-[tool.poetry.group.dev.dependencies]
-ruff = "^0.11.2"
-mkdocs = "^1.6.1"
-pytest = "^8.3.5"
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.11.2",
+    "mkdocs>=1.6.1",
+    "pytest>=8.3.5",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/txt2vec_service"]
 
 [tool.ruff]
 line-length = 88

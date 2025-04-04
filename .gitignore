@@ -12,9 +12,6 @@ build/
 pip-wheel-metadata/
 *.log
 
-# === Poetry ===
-# poetry.lock
-
 # === VSCode ===
 .code-workspace
 
@@ -55,6 +52,7 @@ coverage.xml
 .dmypy.json
 .pyre/
 .pytype/
+.ruff_cache/
 
 # === Notebooks ===
 *.ipynb_checkpoints
