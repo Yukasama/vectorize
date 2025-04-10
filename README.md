@@ -17,6 +17,9 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 ```bash
 # Install dependencies and generate lock file
 uv sync --all-groups
+
+## Update dependencies
+uv sync --all-groups --upgrade
 ```
 
 #### Modification
