@@ -18,10 +18,11 @@ dependencies = [
     "pandas>=2.2.3",
     "numpy>=2.2.4",
     "uvicorn[standard]>=0.34.0",
+    "python-multipart>=0.0.20",
 ]
 
 [project.scripts]
-txt2vec_service = "txt2vec_service.cli:main"
+app = "txt2vec_service.cli:main" 
 
 [project.optional-dependencies]
 dev = [

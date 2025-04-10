@@ -47,7 +47,7 @@ Note: Do not edit the `uv.lock`-File yourself.
 ### Start server
 
 ```bash
-uv run txt2vec_service
+uv run app
 ```
 
 ### Build
