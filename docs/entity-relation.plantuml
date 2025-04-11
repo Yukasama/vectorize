@@ -1,4 +1,4 @@
-@startuml
+@startuml ER-Diagram für die SQLite Datenbank
 
 enum Status {
   completed

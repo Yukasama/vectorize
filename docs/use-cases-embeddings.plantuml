@@ -1,0 +1,14 @@
+@startuml Use Cases für das Abfragen von Embeddings
+left to right direction
+actor Nutzer
+
+package "Embeddings von Modellen abfragen" {
+    usecase "Liste verfügbarer Modelle abrufen" as ListeModelleAbrufen
+    usecase "Schnelles aufrufen viel verwendeter Modelle" as CachingModelle
+    usecase "Häufig verwendete Modelle im Cache speichern" as ModellAusCacheLaden
+}
+
+Nutzer --> ListeModelleAbrufen
+Nutzer --> CachingModelle
+CachingModelle ..> ModellAusCacheLaden : <<includes>>
+@enduml

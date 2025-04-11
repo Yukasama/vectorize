@@ -1,0 +1,28 @@
+@startuml Use Cases für Prozesse von Modellen
+left to right direction
+actor Nutzer
+
+package "Training verwalten" {
+    usecase "Training erfolgreich starten" as TrainingStarten
+    usecase "Trainingsfortschritt abrufen" as Trainingsfortschritt
+    usecase "Training abbrechen" as TrainingAbbrechen
+    usecase "Trainingsergebnisse speichern" as TrainingErgebnisseSpeichern
+}
+
+package "Evaluation verwalten" {
+    usecase "Evaluation starten" as EvaluationStarten
+    usecase "Evaluationsergebnisse speichern" as EvaluationErgebnisseSpeichern
+    usecase "Evaluation abbrechen" as EvaluationAbbrechen
+    usecase "Evaluationsergebnisse anzeigen" as EvaluationErgebnisseAnzeigen
+}
+
+Nutzer --> TrainingStarten
+Nutzer --> Trainingsfortschritt
+Nutzer --> TrainingAbbrechen
+Nutzer --> TrainingErgebnisseSpeichern
+
+Nutzer --> EvaluationStarten
+Nutzer --> EvaluationErgebnisseSpeichern
+Nutzer --> EvaluationAbbrechen
+Nutzer --> EvaluationErgebnisseAnzeigen
+@enduml

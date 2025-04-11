@@ -1,0 +1,14 @@
+@startuml Use Cases für die Generierung von synthetischen Daten
+left to right direction
+actor Nutzer
+
+package "Daten generieren" {
+    usecase "Synthetische Daten generieren" as SynthetischeDaten
+    usecase "Satz-Duple/Tripel aus verschiedenen Formaten generieren" as SatzGenerieren
+    usecase "Bilder oder PDFs verwenden" as BilderoderPdfsVerwenden
+}
+
+Nutzer --> SynthetischeDaten
+Nutzer --> SatzGenerieren
+Nutzer --> BilderoderPdfsVerwenden
+@enduml

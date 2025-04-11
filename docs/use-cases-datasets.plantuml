@@ -1,0 +1,21 @@
+@startuml Use Cases für das Hochladen und Verwalten von Datensätzen
+left to right direction
+actor Nutzer
+
+package "Datensätze hochladen" {
+    usecase "Datensatz im .json, .csv oder .xml-Format hochladen" as EinzelDateiHochladen
+    usecase "Mehrere Datensätze gleichzeitig hochladen" as MehrereDateienHochladen
+}
+
+package "Datensätze verwalten" {
+    usecase "Datensatz umbenennen" as DatensatzUmbenennen
+    usecase "Datensatz löschen" as DatensatzLöschen
+    usecase "Einzelnen Datensatz abrufen" as EinzelnenDatensatzAbrufen
+}
+
+Nutzer --> EinzelDateiHochladen
+Nutzer --> MehrereDateienHochladen
+Nutzer --> DatensatzUmbenennen
+Nutzer --> DatensatzLöschen
+Nutzer --> EinzelnenDatensatzAbrufen
+@enduml

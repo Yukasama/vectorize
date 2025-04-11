@@ -1,0 +1,21 @@
+@startuml Use Cases für das Hochladen und Verwalten von Modellen
+left to right direction
+actor Nutzer
+
+package "Modelle hochladen" {
+    usecase "Hugging Face Modell anhand Tag laden" as HFModellLaden
+    usecase "Lokale Dateien hochladen" as LokaleDateien
+    usecase "GitHub Repo anhand URL laden" as GitHubRepoLaden
+}
+
+package "Modelle verwalten" {
+    usecase "Modell umbenennen" as ModellUmbenennen
+    usecase "Modell löschen" as ModellLöschen
+}
+
+Nutzer --> HFModellLaden
+Nutzer --> LokaleDateien
+Nutzer --> GitHubRepoLaden
+Nutzer --> ModellUmbenennen
+Nutzer --> ModellLöschen
+@enduml
