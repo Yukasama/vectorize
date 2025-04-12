@@ -1,4 +1,4 @@
-"""Konfiguration für Logging."""
+"""Logger configuration module."""
 
 from pathlib import Path
 from typing import Final

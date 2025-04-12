@@ -1,4 +1,4 @@
-"""Security headers for minimizing risk of attacks."""
+"""Security headers module."""
 
 from fastapi import Response
 

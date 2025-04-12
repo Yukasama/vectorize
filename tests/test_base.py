@@ -6,6 +6,5 @@ func: test_function
 
 
 def test_base():
-    """Test that always passes by asserting True is true.
-    """
+    """Test that always passes by asserting True is true."""
     assert True
