@@ -1,27 +1,20 @@
 import os
+import shutil
 import tempfile
-from enum import Enum
-from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
-import pandas as pd
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, UploadFile, status
 from loguru import logger
 from pydantic import BaseModel
 
+from txt2vec.handle_exceptions import handle_exceptions
 from txt2vec.services.dataset_service import DatasetService, FileFormat
+from txt2vec.services.exceptions import (
+    InvalidFileException,
+    UnsupportedFormatException,
+)
 
-UPLOAD_DIR = Path("data/uploads")
-
-
-class ErrorCode(str, Enum):
-    """Error codes for standardized error handling"""
-
-    INVALID_FILE = "INVALID_FILE"
-    UNSUPPORTED_FORMAT = "UNSUPPORTED_FORMAT"
-    PROCESSING_ERROR = "PROCESSING_ERROR"
-    NOT_FOUND = "NOT_FOUND"
-    SERVER_ERROR = "SERVER_ERROR"
+router = APIRouter(prefix="/dataset", tags=["dataset"])
 
 
 class DatasetResponse(BaseModel):
@@ -30,146 +23,90 @@ class DatasetResponse(BaseModel):
     filename: str
     rows: int
     columns: list[str]
-    preview: list[dict[str, Any]]
+    dataset_type: str
 
 
-# Dependency for error handling
-def get_dataset_service():
+def get_dataset_service() -> DatasetService:
     """Dependency injection for DatasetService"""
     return DatasetService()
 
 
-# Router setup
-router = APIRouter(prefix="/dataset", tags=["dataset"])
-
-
-# Exception handler using decorator pattern
-def handle_dataset_exceptions(func):
-    """Decorator for standardized exception handling"""
-
-    async def wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-        except HTTPException:
-            # Re-raise FastAPI HTTP exceptions
-            raise
-        except FileNotFoundError:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={"code": ErrorCode.NOT_FOUND, "message": "Dataset not found"},
-            )
-        except ValueError as e:
-            if "Unsupported file format" in str(e):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail={"code": ErrorCode.UNSUPPORTED_FORMAT, "message": str(e)},
-                )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": ErrorCode.INVALID_FILE, "message": str(e)},
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail={
-                    "code": ErrorCode.SERVER_ERROR,
-                    "message": f"An unexpected error occurred: {e!s}",
-                },
-            )
-
-    return wrapper
-
-
 @router.post("/", response_model=DatasetResponse, status_code=status.HTTP_201_CREATED)
-@handle_dataset_exceptions
+@handle_exceptions
 async def upload_dataset(
     file: UploadFile = File(...),
-    sheet_name: int | None = 0,
+    sheet_name: int = 0,
     service: DatasetService = Depends(get_dataset_service),
-):
-    """Upload a dataset file and convert it to CSV format.
+) -> Dict[str, Any]:
+    """
+    Upload a dataset file and convert it to CSV format.
 
-    The delimiter for CSV files is automatically detected.
+    The system will automatically:
+    - Detect the file format (.csv, .json, .xml, .xlsx, .xls)
+    - Detect CSV delimiters if applicable
+    - Classify the dataset type based on its structure
+    - Save the dataset as CSV for further processing
 
-    Parameters
-    ----------
+    Parameters:
     - file: The file to upload (CSV, JSON, XML, or Excel)
     - sheet_name: Sheet index for Excel files (default: 0)
 
-    Returns
-    -------
-    - Information about the processed dataset
-
+    Returns:
+    - Dataset information including filename, size, preview and classification
     """
-    logger.debug("file: {}", file)
-    # Validate file
-    if not file.filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": ErrorCode.INVALID_FILE, "message": "No filename provided"},
-        )
+    logger.info(f"Processing upload: {file.filename}")
 
-    # Get file extension and validate format
-    file_extension = file.filename.split(".")[-1].lower()
+    if not file.filename:
+        raise InvalidFileException
+
+    file_extension = os.path.splitext(file.filename)[1].lower().lstrip('.')
     try:
         file_format = FileFormat(file_extension)
+        logger.info(f"Detected file format: {file_format}")
     except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": ErrorCode.UNSUPPORTED_FORMAT,
-                "message": f"Unsupported file format: {file_extension}. Supported formats: {', '.join([f.value for f in FileFormat])}",
-            },
+        supported_formats = ", ".join([f.value for f in FileFormat])
+        raise UnsupportedFormatException(
+            f"Unsupported file format: {file_extension}. Supported formats: {supported_formats}"
         )
 
-    # Create temporary file
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        temp_path = temp_file.name
-        content = await file.read()
-        temp_file.write(content)
+    # Use a more reliable way to save uploaded file
+    temp_dir = tempfile.mkdtemp()
+    temp_path = os.path.join(temp_dir, file.filename)
 
     try:
+        # Save uploaded file to temp location
+        with open(temp_path, "wb") as buffer:
+            # Read in chunks to avoid memory issues with large files
+            chunk_size = 1024 * 1024  # 1MB chunks
+            while True:
+                chunk = await file.read(chunk_size)
+                if not chunk:
+                    break
+                buffer.write(chunk)
+
+        # Reset file position for potential reuse
+        await file.seek(0)
+
+        logger.info(f"Saved upload to temporary file: {temp_path}")
+
         # Process the file using service layer
-        df = service.load_dataframe(temp_path, file_format, sheet_name)
-        csv_filename = service.generate_unique_filename(file.filename)
-        service.save_dataframe(df, csv_filename)
-        return service.create_response(df, csv_filename)
+        result = service.process_upload(
+            temp_path, file_format, file.filename, sheet_name
+        )
+
+        logger.info(f"File processed successfully: {result['filename']}")
+        return result
+
+    except Exception as e:
+        logger.error(f"Error during file upload: {str(e)}")
+        # Re-raise to let the exception handler catch it
+        raise
+
     finally:
-        # Clean up temporary file
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
-
-
-@router.get("/", response_model=list[str])
-@handle_dataset_exceptions
-async def list_datasets():
-    """List all available datasets"""
-    files = [f.name for f in UPLOAD_DIR.glob("*.csv")]
-    return files
-
-
-@router.get("/{filename}", response_model=DatasetResponse)
-@handle_dataset_exceptions
-async def get_dataset(
-    filename: str, service: DatasetService = Depends(get_dataset_service),
-):
-    """Get information about a specific dataset"""
-    file_path = UPLOAD_DIR / filename
-
-    if not file_path.exists() or not filename.endswith(".csv"):
-        raise FileNotFoundError(f"Dataset {filename} not found")
-
-    df = pd.read_csv(file_path)
-    return service.create_response(df, filename)
-
-
-@router.delete("/{filename}", status_code=status.HTTP_204_NO_CONTENT)
-@handle_dataset_exceptions
-async def delete_dataset(filename: str):
-    """Delete a dataset"""
-    file_path = UPLOAD_DIR / filename
-
-    if not file_path.exists() or not filename.endswith(".csv"):
-        raise FileNotFoundError(f"Dataset {filename} not found")
-
-    os.remove(file_path)
+        # Clean up temporary directory and its contents
+        try:
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+                logger.debug(f"Removed temporary directory: {temp_dir}")
+        except Exception as e:
+            logger.warning(f"Failed to clean up temporary files: {str(e)}")

@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "anchor": "Wie kann ich mein Passwort zurücksetzen?",
+    "positive": "Wie setze ich mein Passwort auf die Standardeinstellung zurück?",
+    "negative": "Wie kann ich meine Bestellung stornieren?"
+  },
+  {
+    "id": 2,
+    "anchor": "Das Produkt funktioniert einwandfrei.",
+    "positive": "Die Ware ist in einem sehr guten Zustand.",
+    "negative": "Das Gerät ist defekt angekommen."
+  },
+  {
+    "id": 3,
+    "anchor": "Wann werden die Waren geliefert?",
+    "positive": "An welchem Tag kommt meine Bestellung an?",
+    "negative": "Wie kann ich die Zahlungsmethode ändern?"
+  },
+  {
+    "id": 4,
+    "anchor": "Ich bin mit dem Service sehr zufrieden.",
+    "positive": "Der Kundendienst hat meine Erwartungen übertroffen.",
+    "negative": "Ich warte seit Wochen auf eine Antwort vom Support."
+  },
+  {
+    "id": 5,
+    "anchor": "Gibt es Rabatte für Stammkunden?",
+    "positive": "Haben Sie Sonderangebote für regelmäßige Käufer?",
+    "negative": "Wie kann ich einen defekten Artikel umtauschen?"
+  }
+]
