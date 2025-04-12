@@ -16,20 +16,13 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 ```bash
 # Install dependencies and generate lock file
-uv sync --all-groups
+uv sync
 
 ## Update dependencies
-uv sync --all-groups --upgrade
-```
+uv sync --upgrade
 
-#### Modification
-
-```bash
 # Add dependencies
 uv add <package>
-
-# Update dependencies
-uv update
 
 # Remove dependencies
 uv remove <package>
@@ -40,9 +33,9 @@ uv remove <package>
 Error: Failed to parse `uv.lock`
 
 1. Delete `uv.lock` file
-2. Run `uv sync --all-groups` or `uv lock`
+2. Run `uv sync` or `uv lock`
 
-Note: Do not edit the `uv.lock`-File yourself.
+Note: Do **not** edit the `uv.lock`-File yourself.
 
 ### Start server
 

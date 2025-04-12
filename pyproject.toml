@@ -1,47 +1,113 @@
 [project]
-name = "txt2vec-service"
-version = "0.1.0"
+name = "txt2vec"
+version = "2025.4.1"
 description = "AWP Projekt für Text Embedding Service"
 authors = [
-    {name = "ManuelDausmann"},
-    {name = "Yannjc"},
-    {name = "Dosto1ewski"},
-    {name = "BtnCbn"},
-    {name = "Yukasama", email = "yukasamaa@gmail.com"},
+    { name = "ManuelDausmann" },
+    { name = "Yannjc" },
+    { name = "Dosto1ewski" },
+    { name = "BtnCbn" },
+    { name = "Yukasama", email = "yukasamaa@gmail.com" },
+]
+maintainers = [
+    { name = "ManuelDausmann" },
+    { name = "Yannjc" },
+    { name = "Dosto1ewski" },
+    { name = "BtnCbn" },
+    { name = "Yukasama", email = "yukasamaa@gmail.com" },
 ]
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 requires-python = ">=3.13"
+keywords = [
+    "AI",
+    "AI Training",
+    "AI Inference",
+    "Synthetic Data Generation",
+    "AI Model Hosting",
+    "AI Evaluation",
+]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Framework :: Pytest",
+    "Framework :: MkDocs",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
-    "fastapi>=0.115.12",
+    "fastapi[standard]>=0.115.12",
     "pydantic>=2.10.6",
     "pandas>=2.2.3",
     "numpy>=2.2.4",
-    "uvicorn[standard]>=0.34.0",
+    "uvicorn>=0.34.0",
     "python-multipart>=0.0.20",
+    "loguru>=0.7.3",
+    "sqlalchemy>=2.0.40",
+    "hypercorn>=0.17.3",
 ]
 
 [project.scripts]
-app = "txt2vec_service.cli:main" 
-
-[project.optional-dependencies]
-dev = [
-    "ruff>=0.11.2",
-    "mkdocs>=1.6.1",
-    "pytest>=8.3.5",
-]
+app = "txt2vec:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[dependency-groups]
+build = ["hatch>=1.14.0", "hatchling>=1.27.0"]
+dev = [
+    "ruff>=0.11.2",
+    "mkdocs>=1.6.1",
+    "pytest>=8.3.5",
+    "locust>=2.34.1",
+    "markdown>=3.7",
+    "safety>=3.2.9",
+    "mkdocs-build-plantuml-plugin>=1.11.0",
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/txt2vec"]
 [tool.hatch.build.targets.wheel]
-packages = ["src/txt2vec_service"]
+packages = ["src/txt2vec"]
+
+[tool.pytest.ini_options]
+minversion = "8.3.5"
+testpaths = ["tests"]
+addopts = "--html report.html"
 
 [tool.ruff]
-line-length = 88
-target-version = "py312"
+preview = true
 
-[tool.ruff.format]
-docstring-code-format = true
-quote-style = "preserve"
+[tool.ruff.lint]
+select = [
+    "B",
+    "S",
+    "F",
+    "E",
+    "W",
+    "I",
+    "N",
+    "D",
+    "PERF",
+    "SIM",
+    "RUF",
+    "UP",
+    "PL",
+    "A",
+    "COM",
+    "C4",
+    "FAST",
+]
+
+[tool.ruff.lint.isort]
+case-sensitive = true
+
+[tool.uv]
+default-groups = "all"
