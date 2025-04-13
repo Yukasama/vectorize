@@ -62,6 +62,8 @@ tests/__pycache__/
 *.log
 debug.log
 logs/
+assets
+report.html
 
 # === embeddings, models, etc. ===
 data/

@@ -51,6 +51,7 @@ dependencies = [
     "loguru>=0.7.3",
     "sqlalchemy>=2.0.40",
     "hypercorn>=0.17.3",
+    "aiofiles>=24.1.0",
 ]
 
 [project.scripts]
@@ -70,6 +71,7 @@ dev = [
     "markdown>=3.7",
     "safety>=3.2.9",
     "mkdocs-build-plantuml-plugin>=1.11.0",
+    "pytest-html>=4.1.1",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -87,23 +89,35 @@ preview = true
 
 [tool.ruff.lint]
 select = [
-    "B",
-    "S",
-    "F",
-    "E",
-    "W",
-    "I",
-    "N",
-    "D",
-    "PERF",
-    "SIM",
-    "RUF",
-    "UP",
-    "PL",
-    "A",
-    "COM",
-    "C4",
-    "FAST",
+    "FAST",   # FastAPI
+    "B",      # flake8-bugbear https://github.com/PyCQA/flake8-bugbear
+    "ASYNC",  # flake8-async https://github.com/python-trio/flake8-async
+    "S",      # flake8-bandit https://github.com/tylerwince/flake8-bandit Bandit>=1.7.1
+    "A",      # flake8-builtins https://github.com/gforcada/flake8-builtins
+    "COM",    # flake8-commas https://github.com/PyCQA/flake8-commas
+    "C4",     # flake8-comprehensions https://github.com/adamchainz/flake8-comprehensions
+    "ISC001", # flake8-implicit-str-concat https://github.com/flake8-implicit-str-concat/flake8-implicit-str-concat
+    "PIE",    # flake8-pie https://github.com/sbdchd/flake8-pie
+    "RET",    # flake8-return https://github.com/afonasev/flake8-return
+    "SIM",    # flake8-simplify https://github.com/MartinThoma/flake8-simplify
+    "I",      # isort https://github.com/PyCQA/isort
+    "N",      # pep8-naming https://github.com/PyCQA/pep8-naming
+    "PERF",   # Perflint https://github.com/tonybaloney/perflint
+    "E",      # pycodestyle https://github.com/pycqa/pycodestyle
+    "W",      # pycodestyle (warning)
+    "D",      # pydoclint https://github.com/jsh9/pydoclint
+    "F",      # Pyflakes https://github.com/PyCQA/pyflakes
+    "PL",     # Pylint https://pypi.org/project/pylint
+    "UP",     # pyupgrade https://github.com/asottile/pyupgrade
+    "FURB",   # refurb https://github.com/dosisod/refurb
+    "RUF",    # Ruff-specific rules https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf
+]
+ignore = [
+    "D203",   # https://docs.astral.sh/ruff/rules/incorrect-blank-line-before-class
+    "D213",   # https://docs.astral.sh/ruff/rules/multi-line-summary-second-line
+    "RET503", # https://docs.astral.sh/ruff/rules/implicit-return
+    "RUF012",
+    "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma
 ]
 
 [tool.ruff.lint.isort]

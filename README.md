@@ -49,3 +49,13 @@ uv run app
 # Build project
 uv build
 ```
+
+### Run tests
+
+`Note: The server must be running.`
+
+```bash
+# Run all tests
+pytest
+
+```
