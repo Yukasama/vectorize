@@ -5,18 +5,15 @@ from typing import Annotated, Final
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
 from loguru import logger
 
-from txt2vec.datasets.schemas import DatasetUploadResponse
 from txt2vec.datasets.service import DatasetService
 from txt2vec.handle_exceptions import handle_exceptions
 
 __all__ = ["router"]
 
-router = APIRouter(prefix="/datasets", tags=["Dataset"])
+router = APIRouter(tags=["Dataset"])
 
 
-@router.post(
-    "/", response_model=DatasetUploadResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("")
 @handle_exceptions
 async def upload_dataset(
     file: Annotated[UploadFile, File()],

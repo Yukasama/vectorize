@@ -24,7 +24,6 @@ app: Final = FastAPI(
     title="Text2Vec Service",
     description="Service for text embedding and vector operations",
     version="2025.4.1",
-    root_path="/v1",
     lifespan=lifespan,
 )
 
@@ -42,7 +41,7 @@ def read_root() -> dict[str, str]:
 # --------------------------------------------------------
 # R O U T E R S
 # --------------------------------------------------------
-app.include_router(router)
+app.include_router(router, prefix="/v1/datasets")
 
 
 # --------------------------------------------------------
