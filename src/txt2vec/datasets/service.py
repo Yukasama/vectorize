@@ -52,7 +52,7 @@ class DatasetService:
         file_extension = os.path.splitext(file.filename)[1].lower().lstrip(".")
         try:
             file_format: Final = FileFormat(file_extension)
-            logger.debug("Detected file format: {}", file_format)
+            logger.trace("Detected file format: {}", file_format)
         except ValueError as e:
             raise UnsupportedFormatError from e
 
@@ -67,12 +67,11 @@ class DatasetService:
             return self._process_upload(
                 temp_path, file_format, file.filename, sheet_name
             )
-
         finally:
             try:
                 if os.path.exists(temp_dir):
                     shutil.rmtree(temp_dir)
-                    logger.debug("Removed temporary directory: {}", temp_dir)
+                    logger.trace("Removed temporary directory: {}", temp_dir)
             except Exception as e:
                 logger.warning("Failed to clean up temporary files: {}", str(e))
 
@@ -278,5 +277,5 @@ class DatasetService:
         """
         file_path: Final = UPLOAD_DIR / filename
         df.to_csv(file_path, index=False)
-        logger.info("Saved dataset to {}", file_path)
+        logger.trace("Saved dataset to {}", file_path)
         return file_path
