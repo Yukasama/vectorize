@@ -1,20 +1,38 @@
 """Security headers module."""
 
+import os
+
 from fastapi import Response
 
 __all__ = ["set_security_headers"]
 
+ENVIRONMENT = os.getenv("APP_ENV", "development").lower()
+
 
 def set_security_headers(response: Response) -> None:
-    """Set strict security headers to harden the API."""
+    """Set security headers to harden the API.
+
+    :param response: The HTTP response to modify
+    """
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'none'; frame-ancestors 'none'"
-    )
+
+    if ENVIRONMENT == "production":
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "frame-ancestors 'none'"
+        )
+    else:
+        response.headers["Content-Security-Policy"] = (
+            "default-src * 'unsafe-inline' 'unsafe-eval'; img-src * data:"
+        )
 
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
 
+    # Uncomment for HTTPS - leave commented for local development
     # response.headers["Strict-Transport-Security"] = (
     #     "max-age=63072000; includeSubDomains; preload"
     # )
