@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data>
+  <record>
+    <id>1</id>
+    <anchor>Wie kann ich mein Passwort zurücksetzen?</anchor>
+    <positive>Wie setze ich mein Passwort auf die Standardeinstellung zurück?</positive>
+    <negative>Wie kann ich meine Bestellung stornieren?</negative>
+  </record>
+  <record>
+    <id>2</id>
+    <anchor>Das Produkt funktioniert einwandfrei.</anchor>
+    <positive>Die Ware ist in einem sehr guten Zustand.</positive>
+    <negative>Das Gerät ist defekt angekommen.</negative>
+  </record>
+  <record>
+    <id>3</id>
+    <anchor>Wann werden die Waren geliefert?</anchor>
+    <positive>An welchem Tag kommt meine Bestellung an?</positive>
+    <negative>Wie kann ich die Zahlungsmethode ändern?</negative>
+  </record>
+  <record>
+    <id>4</id>
+    <anchor>Ich bin mit dem Service sehr zufrieden.</anchor>
+    <positive>Der Kundendienst hat meine Erwartungen übertroffen.</positive>
+    <negative>Ich warte seit Wochen auf eine Antwort vom Support.</negative>
+  </record>
+  <record>
+    <id>5</id>
+    <anchor>Gibt es Rabatte für Stammkunden?</anchor>
+    <positive>Haben Sie Sonderangebote für regelmäßige Käufer?</positive>
+    <negative>Wie kann ich einen defekten Artikel umtauschen?</negative>
+  </record>
+</data>

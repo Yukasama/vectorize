@@ -7,6 +7,7 @@ from loguru import logger
 
 __all__ = ["config_logger"]
 
+
 LOG_DIR: Final = Path("log")
 LOG_FILE: Final = LOG_DIR / "app.log"
 

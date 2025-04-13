@@ -6,6 +6,6 @@ from txt2vec.server import run
 __all__ = ["app", "main"]
 
 
-def main():
+def main() -> None:
     """Run the application server using uv."""
     run()

@@ -1,6 +1,8 @@
-"""Dataset models for classification and file format handling."""
+"""For classifying datasets and file format handling."""
 
 from enum import StrEnum
+
+__all__ = ["DatasetType", "FileFormat"]
 
 
 class DatasetType(StrEnum):
