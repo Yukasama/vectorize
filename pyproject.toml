@@ -17,7 +17,7 @@ maintainers = [
     { name = "Yukasama", email = "yukasamaa@gmail.com" },
 ]
 readme = "README.md"
-license = { text = "MIT" }
+license = { text = "Apache 2.0" }
 requires-python = ">=3.13"
 keywords = [
     "AI",
@@ -35,7 +35,7 @@ classifiers = [
     "Framework :: MkDocs",
     "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.13",
