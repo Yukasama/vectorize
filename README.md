@@ -57,5 +57,4 @@ uv build
 ```bash
 # Run all tests
 pytest
-
 ```

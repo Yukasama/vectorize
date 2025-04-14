@@ -25,12 +25,8 @@ XML_TEST_FILE = "trainingdata.xml"
         (XML_TEST_FILE, "application/xml"),
     ],
 )
-def test_upload_multiple_formats(file_name: str, mime_type: str) -> None:
-    """Parametrized test for uploading multiple file formats.
-
-    This test handles multiple file formats in a single test using
-    pytest's parametrize feature for more concise testing.
-    """
+def test_dataset_upload_multiple_formats(file_name: str, mime_type: str) -> None:
+    """Parametrized test for uploading multiple file formats."""
     base_dir = Path(__file__).parent.parent / TRAINING_FOLDER
     test_file_path = base_dir / file_name
 

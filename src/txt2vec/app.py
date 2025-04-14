@@ -9,7 +9,8 @@ from fastapi import FastAPI, Request, Response
 from loguru import logger
 
 from txt2vec.config import UPLOAD_DIR, set_security_headers
-from txt2vec.datasets.router import router
+from txt2vec.datasets.router import router as dataset_router
+from txt2vec.upload.router import router as upload_router
 
 
 @asynccontextmanager
@@ -41,7 +42,8 @@ def read_root() -> dict[str, str]:
 # --------------------------------------------------------
 # R O U T E R S
 # --------------------------------------------------------
-app.include_router(router, prefix="/v1/datasets")
+app.include_router(dataset_router, prefix="/v1/datasets")
+app.include_router(upload_router, prefix="/v1/uploads")
 
 
 # --------------------------------------------------------

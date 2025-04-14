@@ -1,4 +1,4 @@
-"""Dataset router handling file uploads."""
+"""Dataset router."""
 
 from typing import Annotated, Final
 
