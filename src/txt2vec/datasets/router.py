@@ -2,10 +2,10 @@
 
 from typing import Annotated, Final
 
-from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
+from fastapi import APIRouter, File, Request, Response, UploadFile, status
 from loguru import logger
 
-from txt2vec.datasets.service import DatasetService
+from txt2vec.datasets.service import upload_file
 from txt2vec.handle_exceptions import handle_exceptions
 
 __all__ = ["router"]
@@ -17,7 +17,6 @@ router = APIRouter(tags=["Dataset"])
 @handle_exceptions
 async def upload_dataset(
     file: Annotated[UploadFile, File()],
-    service: Annotated[DatasetService, Depends()],
     request: Request,
     sheet_name: int = 0,
 ) -> Response:
@@ -31,7 +30,7 @@ async def upload_dataset(
     :return: Dataset information including filename, size, preview and classification
     """
     logger.debug("file={}", file.filename)
-    result: Final = await service.upload_file(file, sheet_name)
+    result: Final = await upload_file(file, sheet_name)
     logger.debug("(done): file={}", result["filename"])
 
     return Response(
