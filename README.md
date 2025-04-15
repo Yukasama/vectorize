@@ -28,6 +28,13 @@ uv add <package>
 uv remove <package>
 ```
 
+##### Create .env
+
+```bash
+# .env
+DATABASE_URL=sqlite+aiosqlite:///./app.db
+```
+
 #### Fix lock file
 
 Error: Failed to parse `uv.lock`

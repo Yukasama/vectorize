@@ -1,4 +1,4 @@
-"""Exceptions for datasets."""
+"""Dataset exceptions."""
 
 from fastapi import status
 

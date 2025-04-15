@@ -8,7 +8,7 @@ from aiofiles.os import makedirs
 from fastapi import FastAPI, Request, Response
 from loguru import logger
 
-from txt2vec.config import UPLOAD_DIR, set_security_headers
+from txt2vec.config import UPLOAD_DIR, close_db, init_db, set_security_headers
 from txt2vec.datasets.router import router as dataset_router
 from txt2vec.upload.router import router as upload_router
 
@@ -16,9 +16,11 @@ from txt2vec.upload.router import router as upload_router
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     """Initialize resources on startup."""
+    await init_db()
     await makedirs(UPLOAD_DIR, exist_ok=True)
     yield
     logger.info("Server being shutdown...")
+    await close_db()
 
 
 app: Final = FastAPI(
@@ -27,16 +29,6 @@ app: Final = FastAPI(
     version="2025.4.1",
     lifespan=lifespan,
 )
-
-
-@app.get("/")
-def read_root() -> dict[str, str]:
-    """Root endpoint for the FastAPI application.
-
-    :return: A simple greeting message
-    :rtype: dict[str, str]
-    """
-    return {"message": "Welcome to the Text2Vec API!"}
 
 
 # --------------------------------------------------------

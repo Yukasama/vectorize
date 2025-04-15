@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-router = APIRouter(tags=["Upload"])
+router = APIRouter(tags=["Model Upload"])
 
 
 @router.get("/")

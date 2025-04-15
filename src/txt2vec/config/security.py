@@ -1,4 +1,4 @@
-"""Security headers module."""
+"""Security headers."""
 
 import os
 

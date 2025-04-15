@@ -49,10 +49,11 @@ dependencies = [
     "uvicorn>=0.34.0",
     "python-multipart>=0.0.20",
     "loguru>=0.7.3",
-    "sqlalchemy>=2.0.40",
     "hypercorn>=0.17.3",
     "aiofiles>=24.1.0",
     "lxml>=5.3.2",
+    "sqlmodel>=0.0.24",
+    "aiosqlite>=0.21.0",
 ]
 
 [project.scripts]
@@ -88,6 +89,7 @@ addopts = "--html report.html"
 [tool.ruff]
 preview = true
 
+# Credits: Prof. Dr. Jürgen Zimmermann (HKA)
 [tool.ruff.lint]
 select = [
     "FAST",   # FastAPI
