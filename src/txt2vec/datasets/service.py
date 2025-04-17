@@ -12,7 +12,7 @@ import pandas as pd
 from fastapi import UploadFile
 from loguru import logger
 
-from txt2vec.config import UPLOAD_DIR
+from txt2vec.config.config import app_config
 from txt2vec.datasets.classification import Classification
 from txt2vec.datasets.exceptions import (
     EmptyCSVError,
@@ -23,6 +23,8 @@ from txt2vec.datasets.exceptions import (
 from txt2vec.datasets.file_format import FileFormat
 
 __all__ = ["upload_file"]
+
+dataset_config = app_config.get("dataset", {})
 
 MINIMUM_COLUMNS: Final = 2
 MAXIMUM_COLUMNS: Final = 3
@@ -159,7 +161,7 @@ def _detect_delimiter(file_path: str) -> Literal[",", ";", "\t", "|"]:
                         return delimiter
                 return DEFAULT_DELIMITER
     except Exception:
-        return DEFAULT_DELIMITER
+        raise
 
 
 def _load_dataframe(
@@ -255,7 +257,7 @@ def _generate_unique_filename(original_filename: str) -> str:
     :return: A unique filename string with timestamp and .csv extension
     """
     base_name: Final = os.path.splitext(original_filename)[0]
-    timestamp: Final = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+    timestamp: Final = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S%f")[:-3]
     return f"{base_name}_{timestamp}.csv"
 
 
@@ -266,7 +268,7 @@ def _save_dataframe(df: pd.DataFrame, filename: str) -> Path:
     :param filename: The filename to use for the saved CSV file
     :return: The Path object pointing to the saved file
     """
-    file_path: Final = UPLOAD_DIR / filename
+    file_path: Final = Path(dataset_config.get("upload_dir")) / filename
     df.to_csv(file_path, index=False)
     logger.trace("Saved dataset to {}", file_path)
     return file_path

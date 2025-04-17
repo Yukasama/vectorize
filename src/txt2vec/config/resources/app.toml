@@ -1,0 +1,22 @@
+[app.server]
+# host-binding = "0.0.0.0"
+# port = 8000
+prefix = "v1"
+reload = true
+server_header = false
+
+[app.db]
+logging = true
+
+[app.dataset]
+upload_dir = "data/uploads"
+max_upload_size = 52428800  # 50 MB
+
+[app.models]
+upload_dir = "data/models"
+max_upload_size = 524288000 # 500 MB
+
+[app.logging]
+rotation = "1 MB"
+log_dir = "log"
+log_file = "app.log"
