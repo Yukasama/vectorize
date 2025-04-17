@@ -5,14 +5,17 @@ from typing import Final
 
 from loguru import logger
 
+from txt2vec.config.config import app_config
+
 __all__ = ["config_logger"]
 
+log_config = app_config.get("logging", {})
+rotation = log_config.get("rotation", "1 MB")
 
-LOG_DIR: Final = Path("log")
-LOG_FILE: Final = LOG_DIR / "app.log"
+LOG_DIR: Final = Path(log_config.get("log_dir"))
+LOG_FILE: Final = LOG_DIR / log_config.get("log_file")
 
 
 def config_logger() -> None:
     """Logger configuration."""
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    logger.add(LOG_FILE, rotation="1 MB")
+    logger.add(LOG_FILE, rotation=rotation)
