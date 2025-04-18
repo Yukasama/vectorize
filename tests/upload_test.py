@@ -1,7 +1,7 @@
 import pytest
 
 from unittest.mock import patch, MagicMock
-from txt2vec_service.model_service import load_model_with_tag, get_classifier
+from txt2vec.upload.model_service import load_model_with_tag, get_classifier
 
 @pytest.fixture
 def mock_snapshot_download():
@@ -49,13 +49,13 @@ def test_load_model_with_tag(
 
 def test_get_classifier_without_loading():
     # Arrange
-    from txt2vec_service.model_service import reset_classifier
+    from txt2vec.upload.model_service import reset_classifier
     reset_classifier()  # Setze CLASSIFIER explizit auf None
 
     # Act & Assert
     with pytest.raises(ValueError, match="Kein Modell geladen."):
         get_classifier()
-        
+
 def test_get_classifier_after_loading(
     mock_snapshot_download, mock_auto_tokenizer, mock_auto_model, mock_pipeline
 ):

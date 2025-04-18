@@ -8,9 +8,9 @@ from loguru import logger
 
 from fastapi import APIRouter, HTTPException, Response, status, Request
 from pydantic import BaseModel
-from txt2vec_service.model_service import load_model_with_tag
+from txt2vec.upload.model_service import load_model_with_tag
 
-model_router = APIRouter(tags=["Model Upload"])
+router = APIRouter(tags=["Model Upload"])
 
 
 class LoadModelRequest(BaseModel):
@@ -26,7 +26,7 @@ class LoadModelRequest(BaseModel):
     tag: str
 
 
-@model_router.post("/load")
+@router.post("/load")
 def load_model(request: LoadModelRequest, http_request: Request):
     """
     Load a model from Hugging Face using a specified model ID and tag.
