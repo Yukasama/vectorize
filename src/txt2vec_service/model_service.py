@@ -13,7 +13,7 @@ def load_model_with_tag(model_id: str, tag: str):
 
     # Lade lokalen Snapshot vom HF-Model mit Tag
     snapshot_path = snapshot_download(
-        repo_id=model_id, revision=tag, cache_dir = "./hf_cache"
+        repo_id=model_id, revision=tag, cache_dir="./hf_cache"
     )
     logger.debug("Model snapshot path: {}", snapshot_path)
 
@@ -26,6 +26,21 @@ def load_model_with_tag(model_id: str, tag: str):
 
 
 def get_classifier():
+    """
+    Gibt die geladene Pipeline zurück.
+
+    :raises ValueError: Wenn kein Modell geladen wurde.
+    :return: Die geladene Pipeline.
+    """
+    global CLASSIFIER
     if CLASSIFIER is None:
         raise ValueError("Kein Modell geladen.")
     return CLASSIFIER
+
+
+def reset_classifier():
+    """
+    Setzt die globale Pipeline zurück (nur für Tests oder Debugging).
+    """
+    global CLASSIFIER
+    CLASSIFIER = None
