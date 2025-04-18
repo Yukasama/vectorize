@@ -1,25 +1,24 @@
-"""
-Router module for handling model upload requests.
+"""Router module for handling model upload requests.
 
 This module provides an endpoint to load Hugging Face models using a specified model ID and tag.
 """
 
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from loguru import logger
-
-from fastapi import APIRouter, HTTPException, Response, status, Request
 from pydantic import BaseModel
+
 from txt2vec.upload.model_service import load_model_with_tag
 
 router = APIRouter(tags=["Model Upload"])
 
 
 class LoadModelRequest(BaseModel):
-    """
-    Request model for loading a Hugging Face model.
+    """Request model for loading a Hugging Face model.
 
     Attributes:
         model_id (str): The ID of the model to load.
         tag (str): The specific tag or version of the model to load.
+
     """
 
     model_id: str
@@ -28,8 +27,7 @@ class LoadModelRequest(BaseModel):
 
 @router.post("/load")
 def load_model(request: LoadModelRequest, http_request: Request):
-    """
-    Load a model from Hugging Face using a specified model ID and tag.
+    """Load a model from Hugging Face using a specified model ID and tag.
 
     :param request: The request body containing the model ID and tag.
     :param http_request: The HTTP request object.

@@ -1,7 +1,6 @@
-from loguru import logger
-
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 from huggingface_hub import snapshot_download
+from loguru import logger
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
 # Globale Pipeline (wird beim Laden gesetzt)
 CLASSIFIER = None
@@ -26,8 +25,7 @@ def load_model_with_tag(model_id: str, tag: str):
 
 
 def get_classifier():
-    """
-    Gibt die geladene Pipeline zurück.
+    """Gibt die geladene Pipeline zurück.
 
     :raises ValueError: Wenn kein Modell geladen wurde.
     :return: Die geladene Pipeline.
@@ -39,8 +37,7 @@ def get_classifier():
 
 
 def reset_classifier():
-    """
-    Setzt die globale Pipeline zurück (nur für Tests oder Debugging).
+    """Setzt die globale Pipeline zurück (nur für Tests oder Debugging).
     """
     global CLASSIFIER
     CLASSIFIER = None
