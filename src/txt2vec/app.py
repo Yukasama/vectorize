@@ -42,12 +42,11 @@ app: Final = FastAPI(
 # --------------------------------------------------------
 # R O U T E R S
 # --------------------------------------------------------
-v1_router = APIRouter(prefix=f"/{server_config.get('prefix', 'v1')}")
+base_router = APIRouter(prefix=server_config.get("prefix"))
+base_router.include_router(dataset_router, prefix="/datasets")
+base_router.include_router(upload_router, prefix="/uploads")
 
-v1_router.include_router(dataset_router, prefix="/datasets")
-v1_router.include_router(upload_router, prefix="/uploads")
-
-app.include_router(v1_router)
+app.include_router(base_router)
 
 
 # --------------------------------------------------------

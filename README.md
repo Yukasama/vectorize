@@ -65,3 +65,9 @@ uv build
 # Run all tests
 uv run pytest
 ```
+
+### Build Docker Image
+```bash
+# Run all tests
+docker build -t txt2vec:prod .
+```

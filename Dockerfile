@@ -1,25 +1,52 @@
-FROM python:3.12-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV POETRY_VERSION=1.8.2
+# ----------------------------------------------
+# Stage 1: Installation
+# ----------------------------------------------
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    curl \
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+# Install uv (for local builds, not needed in final image)
+RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml poetry.lock* /app/
+# Copy only dependency files first for better caching
+COPY pyproject.toml uv.lock* README.md /app/
 
-RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
+# Install dependencies to a temporary directory
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --prefix=/install .
 
+    
+# ----------------------------------------------
+# Stage 2: Run
+# ----------------------------------------------
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Create a non-root user and group
+RUN addgroup --system appuser && adduser --system --ingroup appuser appuser
+
+# Copy installed dependencies from builder
+COPY --from=builder /install /usr/local
+
+# Copy application code
 COPY . /app
+
+# Set permissions
+RUN chown -R appuser:appuser /app
+
+USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.txt2vec.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use uvicorn to run the FastAPI app
+CMD ["uvicorn", "src.txt2vec.app:app", "--host", "0.0.0.0", "--port", "8000"]

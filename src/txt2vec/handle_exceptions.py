@@ -100,7 +100,13 @@ def handle_exceptions(func: Callable) -> Callable:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error("{}", str(e))
+            func_name = func.__name__
+            module_name = func.__module__
+
+            logger.opt(exception=True).error(
+                "Error in {}.{}: {}", module_name, func_name, str(e)
+            )
+
             http_exception = handle_exception(e)
             raise http_exception from e
 
