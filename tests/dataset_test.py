@@ -7,16 +7,16 @@ from pathlib import Path
 
 import pytest
 from fastapi import status
-from httpx import post
+from fastapi.testclient import TestClient
 
+from txt2vec.app import app
 from txt2vec.config.config import app_config
 
+client = TestClient(app)
+
 server_config = app_config.get("server", {})
-port = server_config.get("port", 8000)
-prefix = server_config.get("prefix", "v1")
+prefix = server_config.get("prefix")
 
-
-BASE_URL = f"http://localhost:{port}/{prefix}"
 TRAINING_FOLDER = "testing_data"
 TEST_FILE_NAME = "trainingdata"
 
@@ -29,16 +29,14 @@ TEST_FILE_NAME = "trainingdata"
         (f"{TEST_FILE_NAME}.xml", "application/xml"),
     ],
 )
-def test_dataset_upload_multiple_formats(file_name: str, mime_type: str) -> None:
+def test_dataset_formats_upload(file_name: str, mime_type: str) -> None:
     """Parametrized test for uploading multiple file formats."""
     base_dir = Path(__file__).parent.parent / TRAINING_FOLDER
     test_file_path = base_dir / file_name
 
-    print(port, prefix, BASE_URL)
-
     file_content = Path(test_file_path).read_bytes()
     files = {"file": (os.path.basename(test_file_path), file_content, mime_type)}
 
-    response = post(f"{BASE_URL}/datasets", files=files)
+    response = client.post(f"{prefix}/datasets", files=files)
 
     assert response.status_code == status.HTTP_201_CREATED

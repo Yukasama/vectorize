@@ -1,0 +1,78 @@
+name: Txt2Vec CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: sqlite+aiosqlite:///./app.db
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set UV link mode
+        run: echo "UV_LINK_MODE=copy" >> $GITHUB_ENV
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-${{ runner.os }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
+
+      - name: Install dependencies
+        run: uv sync
+
+      # Run Linter
+      - name: Run Ruff with annotations
+        uses: chartboost/ruff-action@v1
+        with:
+          args: check .
+        continue-on-error: true
+
+      # Check for outdated packages
+      - name: Check for outdated packages
+        run: uv pip list --outdated > outdated-packages.txt
+
+      # Run Tests
+      - name: Create upload directory
+        run: mkdir -p data/uploads
+
+      - name: Run tests with pytest
+        run: |
+          uv run pytest --html=pytest-report.html --self-contained-html
+
+      - name: Upload reports if tests failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            outdated-packages.txt
+            pytest-report.html
+          retention-days: 14
+
+      # Build Docker image
+      - name: Set Docker tag with timestamp
+        id: docker_tag
+        run: echo "tag=ci-$(date +'%Y%m%d%H%M%S')-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build -t txt2vec:ci -t txt2vec:${{ steps.docker_tag.outputs.tag }} .
