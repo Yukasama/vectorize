@@ -54,6 +54,12 @@ dependencies = [
     "lxml>=5.3.2",
     "sqlmodel>=0.0.24",
     "aiosqlite>=0.21.0",
+    "hf-xet>=1.0.3",
+    "huggingface-hub>=0.30.2",
+    "transformers>=4.51.3",
+    "torch>=2.6.0",
+    "torchvision>=0.21.0",
+    "torchaudio>=2.6.0",
 ]
 
 [project.scripts]
