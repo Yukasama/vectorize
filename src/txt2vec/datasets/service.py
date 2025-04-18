@@ -88,23 +88,20 @@ def _process_upload(
     :raises EmptyCSVError: If the dataset is empty
     :raises InvalidCSVFormatError: If the file has invalid format
     """
-    try:
-        df: Final = _load_dataframe(file_path, file_format, sheet_name)
+    df: Final = _load_dataframe(file_path, file_format, sheet_name)
 
-        _validate_dataframe(df)
-        dataset_type: Final = _classify_dataset(df)
+    _validate_dataframe(df)
+    dataset_type: Final = _classify_dataset(df)
 
-        csv_filename: Final = _generate_unique_filename(original_filename)
-        _save_dataframe(df, csv_filename)
+    csv_filename: Final = _generate_unique_filename(original_filename)
+    _save_dataframe(df, csv_filename)
 
-        return {
-            "filename": csv_filename,
-            "rows": len(df),
-            "columns": df.columns.tolist(),
-            "dataset_type": dataset_type,
-        }
-    except Exception:
-        raise
+    return {
+        "filename": csv_filename,
+        "rows": len(df),
+        "columns": df.columns.tolist(),
+        "dataset_type": dataset_type,
+    }
 
 
 def _validate_dataframe(df: pd.DataFrame) -> None:
@@ -160,8 +157,8 @@ def _detect_delimiter(file_path: str) -> Literal[",", ";", "\t", "|"]:
                     if delimiter in sample:
                         return delimiter
                 return DEFAULT_DELIMITER
-    except Exception:
-        raise
+    except Exception as e:
+        raise InvalidCSVFormatError from e
 
 
 def _load_dataframe(

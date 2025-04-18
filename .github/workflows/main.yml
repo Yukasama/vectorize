@@ -5,10 +5,20 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "latest"]
 
     env:
       DATABASE_URL: sqlite+aiosqlite:///./app.db
@@ -17,11 +27,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
 
+      # Install and cache dependencies
       - name: Install uv
         run: |
           echo "UV_LINK_MODE=copy" >> $GITHUB_ENV
@@ -39,9 +50,7 @@ jobs:
 
       # Run Linter
       - name: Run lint with ruff
-        uses: chartboost/ruff-action@v1
-        with:
-          args: check .
+        uses: astral-sh/ruff-action@v3
         continue-on-error: true
 
       # Check for outdated packages
@@ -61,7 +70,7 @@ jobs:
       - name: Run tests with pytest
         run: |
           mkdir -p data/uploads
-          uv run pytest --html=pytest-report.html --self-contained-html
+          uv run pytest --github-actions
 
       # Upload reports
       - name: Upload test reports
@@ -70,11 +79,3 @@ jobs:
           name: test-report
           path: pytest-report.html
           retention-days: 14
-
-      # Build Docker image
-      - name: Set Docker tag with timestamp
-        id: docker_tag
-        run: echo "tag=ci-$(date +'%Y%m%d%H%M%S')-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-
-      - name: Build Docker image
-        run: docker build -t txt2vec:ci -t txt2vec:${{ steps.docker_tag.outputs.tag }} .
