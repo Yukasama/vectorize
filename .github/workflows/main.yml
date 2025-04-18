@@ -22,11 +22,9 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Set UV link mode
-        run: echo "UV_LINK_MODE=copy" >> $GITHUB_ENV
-
       - name: Install uv
         run: |
+          echo "UV_LINK_MODE=copy" >> $GITHUB_ENV
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
@@ -40,7 +38,7 @@ jobs:
         run: uv sync
 
       # Run Linter
-      - name: Run Ruff with annotations
+      - name: Run lint with ruff
         uses: chartboost/ruff-action@v1
         with:
           args: check .
@@ -49,23 +47,28 @@ jobs:
       # Check for outdated packages
       - name: Check for outdated packages
         run: uv pip list --outdated > outdated-packages.txt
+        continue-on-error: true
 
-      # Run Tests
-      - name: Create upload directory
-        run: mkdir -p data/uploads
-
-      - name: Run tests with pytest
-        run: |
-          uv run pytest --html=pytest-report.html --self-contained-html
-
-      - name: Upload reports if tests failed
+      - name: Upload outdated packages reports
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: reports
-          path: |
-            outdated-packages.txt
-            pytest-report.html
+          name: outdated-report
+          path: outdated-packages.txt
+          retention-days: 14
+
+      # Run tests
+      - name: Run tests with pytest
+        run: |
+          mkdir -p data/uploads
+          uv run pytest --html=pytest-report.html --self-contained-html
+
+      # Upload reports
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: pytest-report.html
           retention-days: 14
 
       # Build Docker image
@@ -74,5 +77,4 @@ jobs:
         run: echo "tag=ci-$(date +'%Y%m%d%H%M%S')-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
-        run: |
-          docker build -t txt2vec:ci -t txt2vec:${{ steps.docker_tag.outputs.tag }} .
+        run: docker build -t txt2vec:ci -t txt2vec:${{ steps.docker_tag.outputs.tag }} .

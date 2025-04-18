@@ -67,7 +67,20 @@ uv run pytest
 ```
 
 ### Build Docker Image
+
 ```bash
-# Run all tests
+# Build Docker image
 docker build -t txt2vec:prod .
+```
+
+## Workflow
+
+### Run CI locally
+
+```bash
+# Install act Docker container
+brew install act
+
+# Run CI locally
+act
 ```
