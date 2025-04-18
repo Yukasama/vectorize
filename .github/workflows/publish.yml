@@ -1,4 +1,4 @@
-name: Txt2Vec Publish CI
+name: Publish Image
 
 on:
   push:

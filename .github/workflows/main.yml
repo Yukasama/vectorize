@@ -1,4 +1,4 @@
-name: Txt2Vec CI
+name: Main CI
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "latest"]
+        python-version: ["3.11", "3.12", "3.x"]
 
     env:
       DATABASE_URL: sqlite+aiosqlite:///./app.db
