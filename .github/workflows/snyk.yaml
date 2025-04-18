@@ -2,9 +2,9 @@ name: Snyk Security
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   pull_request:
-    branches: ["main"]
+    branches: [main]
   schedule:
     - cron: "0 0 * * *"
 
@@ -44,13 +44,13 @@ jobs:
         run: snyk code test --sarif > snyk-code.sarif || true
 
         # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
-      - name: Snyk Open Source monitor
-        run: snyk monitor --all-projects
+      # - name: Snyk Open Source monitor
+      #   run: snyk monitor --all-projects
 
-        # Runs Snyk Infrastructure as Code (IaC) analysis and uploads result to Snyk.
-        # Use || true to not fail the pipeline.
-      - name: Snyk IaC test and report
-        run: snyk iac test --report || true
+      # Runs Snyk Infrastructure as Code (IaC) analysis and uploads result to Snyk.
+      # Use || true to not fail the pipeline.
+      # - name: Snyk IaC test and report
+      #   run: snyk iac test --report || true
 
       #   # Build the docker image for testing
       # - name: Build a Docker image

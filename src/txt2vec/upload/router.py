@@ -42,7 +42,6 @@ def load_model(request: LoadModelRequest, http_request: Request):
         return Response(
             status_code=status.HTTP_201_CREATED,
             headers={"Location": f"{http_request.url}/{request.model_id}"},
-            content=f"Model '{request.model_id}' with tag '{request.tag}' loaded successfully.",
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
