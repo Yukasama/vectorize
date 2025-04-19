@@ -1,52 +1,53 @@
-# ----------------------------------------------
-# Stage 1: Installation
-# ----------------------------------------------
-FROM python:3.13-slim AS builder
+# syntax=docker/dockerfile:1
 
+ARG PYTHON_LATEST_VERSION=3.13
+ARG PYTHON_VERSION=${PYTHON_LATEST_VERSION}.3
+
+# ----------------------------------------------
+# Stage 1: Builder
+# ----------------------------------------------
+FROM ghcr.io/astral-sh/uv:python${PYTHON_LATEST_VERSION}-bookworm-slim AS builder
 WORKDIR /app
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0
 
-# Install uv (for local builds, not needed in final image)
-RUN pip install --no-cache-dir uv
+WORKDIR /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
 
-# Copy only dependency files first for better caching
-COPY pyproject.toml uv.lock* README.md /app/
+ADD . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-editable
 
-# Install dependencies to a temporary directory
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --prefix=/install .
-
-    
 # ----------------------------------------------
-# Stage 2: Run
+# Stage 2: Runtime
 # ----------------------------------------------
-FROM python:3.13-slim
+FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
+WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1
+# For real time logs
 ENV PYTHONUNBUFFERED=1
 
-WORKDIR /app
+# Create user with no home dir and no login
+RUN groupadd --system appuser && useradd  --system \
+            --gid appuser \
+            --no-create-home \
+            --shell /usr/sbin/nologin \
+            appuser
 
-# Create a non-root user and group
-RUN addgroup --system appuser && adduser --system --ingroup appuser appuser
+COPY --from=builder /app/.venv /app/.venv
+COPY --from=builder --chown=appuser:appuser app/src/ app/src
 
-# Copy installed dependencies from builder
-COPY --from=builder /install /usr/local
-
-# Copy application code
-COPY . /app
-
-# Set permissions
-RUN chown -R appuser:appuser /app
-
+# Drop privileges
 USER appuser
 
-EXPOSE 8000
+ENV PATH="/app/.venv/bin:$PATH"
 
-# Use uvicorn to run the FastAPI app
-CMD ["uvicorn", "src.txt2vec.app:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8000
+STOPSIGNAL SIGINT
+
+CMD ["uvicorn", "txt2vec.app:app", "--host", "0.0.0.0", "--port", "8000"]

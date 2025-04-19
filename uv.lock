@@ -1951,11 +1951,9 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-build = [
+dev = [
     { name = "hatch" },
     { name = "hatchling" },
-]
-dev = [
     { name = "locust" },
     { name = "markdown" },
     { name = "mkdocs" },
@@ -1990,11 +1988,9 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-build = [
+dev = [
     { name = "hatch", specifier = ">=1.14.0" },
     { name = "hatchling", specifier = ">=1.27.0" },
-]
-dev = [
     { name = "locust", specifier = ">=2.34.1" },
     { name = "markdown", specifier = ">=3.7" },
     { name = "mkdocs", specifier = ">=1.6.1" },

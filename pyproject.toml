@@ -57,9 +57,9 @@ dependencies = [
     "hf-xet>=1.0.3",
     "huggingface-hub>=0.30.2",
     "transformers>=4.51.3",
-    "torch>=2.6.0",
     "torchvision>=0.21.0",
     "torchaudio>=2.6.0",
+    "torch>=2.6.0",
 ]
 
 [project.scripts]
@@ -70,8 +70,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-build = ["hatch>=1.14.0", "hatchling>=1.27.0"]
 dev = [
+    "hatch>=1.14.0",
+    "hatchling>=1.27.0",
     "ruff>=0.11.2",
     "mkdocs>=1.6.1",
     "pytest>=8.3.5",
