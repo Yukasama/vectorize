@@ -16,37 +16,23 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12", "3.x"]
-
-    env:
-      DATABASE_URL: sqlite+aiosqlite:///./app.db
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version-file: ".python-version"
 
       # Install and cache dependencies
       - name: Install uv
-        run: |
-          echo "UV_LINK_MODE=copy" >> $GITHUB_ENV
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
+        uses: astral-sh/setup-uv@v5
         with:
-          path: ~/.cache/uv
-          key: uv-${{ runner.os }}-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
+          enable-cache: true
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --all-extras --dev
 
       # Run Linter
       - name: Run lint with ruff
@@ -69,8 +55,9 @@ jobs:
       # Run tests
       - name: Run tests with pytest
         run: |
+          uv add pytest-html
           mkdir -p data/uploads
-          uv run pytest --github-actions || true
+          uv run pytest --html=pytest-report.html --self-contained-html || true
         continue-on-error: true
 
       # Upload reports

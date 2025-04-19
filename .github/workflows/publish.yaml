@@ -1,5 +1,9 @@
 name: Publish Image
 
+concurrency:
+  group: publish-image-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
@@ -13,12 +17,11 @@ permissions:
   packages: write
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Generate metadata
         id: meta
@@ -31,7 +34,6 @@ jobs:
             type=sha,format=short
             type=ref,event=branch
             type=raw,value=latest,enable={{is_default_branch}}
-            type=schedule,pattern=nightly
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -54,5 +56,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=txt2vec-build
+          cache-to: type=gha,mode=max,scope=txt2vec-build

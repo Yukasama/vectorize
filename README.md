@@ -77,10 +77,29 @@ docker build -t txt2vec:prod .
 
 ### Run CI locally
 
+#### Install act
+
 ```bash
-# Install act Docker container
+# Install uv for command line (MacOS/Linux)
 brew install act
 
-# Run CI locally
+# Install uv for command line (Windows)
+scoop install act
+```
+
+#### Run act
+
+```bash
+# Run all CI workflows locally
 act
+
+# Or run one specified CI
+act -W '.github/workflows/main.yml'
+```
+
+Note: If a CI relies on `GITHUB_TOKEN`, you need to run:
+
+```bash
+act -s GITHUB_TOKEN="$(gh auth token)"
+# Plus other arguments
 ```
