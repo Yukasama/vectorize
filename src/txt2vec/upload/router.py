@@ -3,6 +3,8 @@
 This module provides an endpoint to load Hugging Face models using a specified model ID and tag.
 """
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from loguru import logger
 from pydantic import BaseModel
@@ -39,9 +41,11 @@ def load_model(request: LoadModelRequest, http_request: Request):
             "Loading model: model_id={}, tag={}", request.model_id, request.tag
         )
         load_model_with_tag(request.model_id, request.tag)
+
+        safe_model_id = quote(request.model_id, safe="")
         return Response(
             status_code=status.HTTP_201_CREATED,
-            headers={"Location": f"{http_request.url}/{request.model_id}"},
+            headers={"Location": f"{http_request.url}/{safe_model_id}"},
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

@@ -2,7 +2,7 @@
 
 import uvicorn
 
-from txt2vec.config.config import app_config
+from txt2vec.config import app_config
 
 __all__ = ["run"]
 

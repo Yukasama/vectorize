@@ -8,6 +8,8 @@ from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 from txt2vec.datasets.classification import Classification
 from txt2vec.synthesis.models import Synthesis
 
+__all__ = ["Dataset"]
+
 
 class Dataset(SQLModel, table=True):
     """Dataset model."""

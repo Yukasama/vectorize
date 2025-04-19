@@ -8,10 +8,13 @@ from aiofiles.os import makedirs
 from fastapi import APIRouter, FastAPI
 from loguru import logger
 
-from txt2vec.config import close_db, init_db
-from txt2vec.config.config import app_config
-from txt2vec.config.logger import config_logger
-from txt2vec.config.security import add_security_headers
+from txt2vec.config import (
+    add_security_headers,
+    app_config,
+    close_db,
+    config_logger,
+    init_db,
+)
 from txt2vec.datasets.router import router as dataset_router
 from txt2vec.upload.router import router as upload_router
 
