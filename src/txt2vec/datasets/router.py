@@ -23,17 +23,17 @@ async def upload_dataset(
     """Upload a dataset file and convert it to CSV format.
 
     :param file: The file to upload (CSV, JSON, XML, or Excel)
-    :param service: Service for dataset operations
     :param request: The HTTP request object
     :param sheet_name: Sheet index for Excel files, by default 0
 
-    :return: Dataset information including filename, size, preview and classification
+    :return: OK response with the dataset ID in the Location header
     """
     logger.debug("file={}", file.filename)
     result: Final = await upload_file(file, sheet_name)
-    logger.debug("(done): file={}", result["filename"])
+    dataset_id: Final = 1
+    logger.debug("(done): file={} dataset_id={}", result["filename"], dataset_id)
 
     return Response(
         status_code=status.HTTP_201_CREATED,
-        headers={"Location": f"{request.url}/{1}"},
+        headers={"Location": f"{request.url}/{dataset_id}"},
     )

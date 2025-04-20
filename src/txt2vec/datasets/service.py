@@ -1,13 +1,13 @@
 """Dataset service."""
 
-import json
 import os
-import shutil
+import string
 import tempfile
-from csv import Sniffer
+import uuid
 from pathlib import Path
-from typing import Any, Final, Literal
+from typing import Any, Final
 
+import aiofiles
 import pandas as pd
 from fastapi import UploadFile
 from loguru import logger
@@ -21,258 +21,149 @@ from txt2vec.datasets.exceptions import (
     UnsupportedFormatError,
 )
 from txt2vec.datasets.file_format import FileFormat
+from txt2vec.datasets.file_loaders import FILE_LOADERS
 
-__all__ = ["upload_file"]
+# -----------------------------------------------------------------------------
+# Config ----------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-dataset_config = app_config.get("dataset", {})
+dataset_config = app_config["dataset"]
+upload_dir = Path(dataset_config.get("upload_dir"))
+max_filename_length = dataset_config.get("max_filename_length")
+allowed_extensions = frozenset(dataset_config.get("allowed_extensions"))
+max_upload_size = dataset_config.get("max_upload_size")
 
-MINIMUM_COLUMNS: Final = 2
-MAXIMUM_COLUMNS: Final = 3
-DEFAULT_DELIMITER: Final = ";"
+_ALLOWED_CHARS: Final[set[str]] = set(string.ascii_letters + string.digits + "_-")
+CHUNK_SIZE = 1_048_576
+MINIMUM_COLS = 2
+MAXIMUM_COLS = 3
 
 
-async def upload_file(file: UploadFile, sheet_name: int = 0) -> dict[str, Any]:
-    """Process file upload from FastAPI endpoint.
+async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
+    """Stream upload, parse to DataFrame, save as CSV, and return metadata.
 
-    This method handles temporary file storage, format detection,
-    dataframe loading, and cleanup in one operation.
-
-    :param file: The uploaded file object from FastAPI
-    :param sheet_name: Index of the sheet to use for Excel files, defaults to 0
-    :return: Dictionary containing processed dataset information including
-            filename, row count, columns, and dataset type
-    :raises InvalidFileError: If the file has no filename or is invalid
-    :raises UnsupportedFormatError: If the file format is not supported
+    :param file: FastAPI ``UploadFile`` instance provided by the client.
+    :param sheet_name: Sheet index to read when the file is an Excel workbook.
+    :returns: Dictionary with ``filename``, ``rows``, ``columns``, and ``dataset_type``.
+    :raises InvalidFileError: If filename is missing or the upload exceeds size limits.
+    :raises UnsupportedFormatError: When the file extension is not supported.
+    :raises EmptyCSVError: If the parsed DataFrame contains no rows.
+    :raises InvalidCSVFormatError: If the DataFrame lacks required columns.
     """
     if not file.filename:
-        raise InvalidFileError
+        raise InvalidFileError("Missing filename.")
 
-    file_extension = os.path.splitext(file.filename)[1].lower().lstrip(".")
-    try:
-        file_format: Final = FileFormat(file_extension)
-        logger.trace("Detected file format: {}", file_format)
-    except ValueError as e:
-        raise UnsupportedFormatError from e
-
-    temp_dir: Final = tempfile.mkdtemp()
-    temp_path: Final = os.path.join(temp_dir, file.filename)
+    safe_name = _sanitize_filename(file.filename)
+    ext = Path(safe_name).suffix.lstrip(".")
 
     try:
-        content = await file.read()
-        Path(temp_path).write_bytes(content)
+        file_format = FileFormat(ext)
+    except ValueError as exc:
+        raise UnsupportedFormatError(ext) from exc
+
+    async with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir) / uuid.uuid4().hex
+        size = 0
+        async with aiofiles.open(tmp_path, "wb") as tmp_file:
+            while chunk := await file.read(CHUNK_SIZE):
+                size += len(chunk)
+                if size > max_upload_size:
+                    raise InvalidFileError("file too large")
+                await tmp_file.write(chunk)
         await file.seek(0)
 
-        return _process_upload(temp_path, file_format, file.filename, sheet_name)
-    finally:
-        try:
-            if os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir)
-                logger.trace("Removed temporary directory: {}", temp_dir)
-        except Exception as e:
-            logger.warning("Failed to clean up temporary files: {}", str(e))
+        df = FILE_LOADERS[file_format](tmp_path, sheet_name)
 
+    if df.empty:
+        raise EmptyCSVError
 
-def _process_upload(
-    file_path: str,
-    file_format: FileFormat,
-    original_filename: str,
-    sheet_name: int = 0,
-) -> dict[str, Any]:
-    """Process uploaded file and save as CSV.
+    _escape_csv_formulas(df)
+    dataset_type = _classify_dataset(df)
 
-    :param file_path: Path to the temporary file
-    :param file_format: Format of the uploaded file
-    :param original_filename: Original filename from the upload
-    :param sheet_name: Sheet index for Excel files, defaults to 0
-    :return: Dictionary with dataset information
-    :raises EmptyCSVError: If the dataset is empty
-    :raises InvalidCSVFormatError: If the file has invalid format
-    """
-    df: Final = _load_dataframe(file_path, file_format, sheet_name)
+    unique_name = f"{Path(safe_name).stem}_{pd.Timestamp.utcnow():%Y%m%d_%H%M%S%f}.csv"
+    out_path = _save_dataframe(df, unique_name)
 
-    _validate_dataframe(df)
-    dataset_type: Final = _classify_dataset(df)
-
-    csv_filename: Final = _generate_unique_filename(original_filename)
-    _save_dataframe(df, csv_filename)
+    logger.debug(
+        "Dataset saved -> {} ({} rows, {} cols)", out_path, len(df), len(df.columns)
+    )
 
     return {
-        "filename": csv_filename,
+        "filename": unique_name,
         "rows": len(df),
         "columns": df.columns.tolist(),
         "dataset_type": dataset_type,
     }
 
 
-def _validate_dataframe(df: pd.DataFrame) -> None:
-    """Validate dataframe structure and content.
+# -----------------------------------------------------------------------------
+# Utility ---------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-    :param df: The pandas DataFrame to validate
-    :raises EmptyCSVError: If the dataframe is empty
-    :raises InvalidCSVFormatError: If the dataframe has less than the minimum
-    required columns
+
+def _sanitize_filename(filename: str) -> str:
+    """Return a filesystem safe filename trimmed to allowed chars and length.
+
+    :param filename: Raw filename supplied by the client request.
+    :returns: Sanitised filename that can safely be written to disk.
     """
-    if df.empty:
-        raise EmptyCSVError
+    base = os.path.basename(filename)
+    stem, ext = os.path.splitext(base)
+    ext = ext.lower().lstrip(".")
 
-    if len(df.columns) < MINIMUM_COLUMNS:
-        raise InvalidCSVFormatError
+    if ext not in allowed_extensions:
+        ext = ""
+
+    stem_sanitized = "".join(c if c in _ALLOWED_CHARS else "_" for c in stem)
+    if not stem_sanitized:
+        stem_sanitized = "_"
+
+    if len(stem_sanitized) > max_filename_length:
+        stem_sanitized = stem_sanitized[:max_filename_length]
+
+    return f"{stem_sanitized}.{ext}" if ext else stem_sanitized
+
+
+def _escape_csv_formulas(df: pd.DataFrame) -> None:
+    """Prefix dangerous strings with `'` so spreadsheets don't evaluate formulas.
+
+    :param df: DataFrame to mutate in place for CSV export.
+    """
+
+    def needs_escape(val: str) -> bool:
+        return val.startswith(("=", "-", "+", "@"))
+
+    for col in df.columns:
+        if pd.api.types.is_string_dtype(df[col]):
+            df[col] = df[col].map(
+                lambda x: f"'{x}" if isinstance(x, str) and needs_escape(x) else x
+            )
 
 
 def _classify_dataset(df: pd.DataFrame) -> Classification:
-    """Classify dataset based on column structure.
+    """Return ``Classification`` enum value inferred from DataFrame columns.
 
-    :param df: The pandas DataFrame to classify
-    :return: String constant representing the dataset type from DatasetType enum
+    :param df: Loaded dataset as a DataFrame.
+    :returns: ``Classification`` indicating duples or triples.
+    :raises InvalidCSVFormatError: When the column layout is unsupported.
     """
-    columns: Final = {col.lower() for col in df.columns}
-    if {"id", "anchor", "positive", "negative"}.issubset(columns):
+    cols = {c.lower() for c in df.columns}
+    if {"id", "anchor", "positive", "negative"}.issubset(cols):
         return Classification.SENTENCE_TRIPLES
-
-    col_count: Final = len(df.columns)
-    if col_count == MINIMUM_COLUMNS:
+    if len(df.columns) == MINIMUM_COLS:
         return Classification.SENTENCE_DUPLES
-    if col_count == MAXIMUM_COLUMNS:
+    if len(df.columns) == MAXIMUM_COLS:
         return Classification.SENTENCE_TRIPLES
     raise InvalidCSVFormatError
 
 
-def _detect_delimiter(file_path: str) -> Literal[",", ";", "\t", "|"]:
-    """Auto-detect CSV delimiter from file.
-
-    :param file_path: Path to the CSV file
-    :return: Detected delimiter character or default delimiter if detection fails
-    """
-    abs_path = os.path.abspath(file_path)
-    if not abs_path.startswith(tempfile.gettempdir()):
-        logger.warning(
-            "Attempted to access file outside temporary directory: {}", abs_path
-        )
-        return DEFAULT_DELIMITER
-
-    try:
-        with open(abs_path, newline="", encoding="utf-8") as csvfile:
-            sample: Final = csvfile.read(4096)
-            if not sample:
-                return DEFAULT_DELIMITER
-
-            try:
-                dialect = Sniffer().sniff(sample)
-                return dialect.delimiter
-            except Exception:
-                for delimiter in [",", ";", "\t", "|"]:
-                    if delimiter in sample:
-                        return delimiter
-                return DEFAULT_DELIMITER
-    except Exception as e:
-        raise InvalidCSVFormatError from e
-
-
-def _load_dataframe(
-    file_path: str,
-    file_format: FileFormat,
-    sheet_name: int = 0,
-) -> pd.DataFrame:
-    """Load file into pandas DataFrame based on format.
-
-    :param file_path: Path to the file to load
-    :param file_format: Format of the file (CSV, JSON, XML, Excel, etc.)
-    :param sheet_name: Index of the sheet to use for Excel files, defaults to 0
-    :return: Pandas DataFrame containing the loaded data
-    :raises EmptyCSVError: If the file contains no data
-    :raises InvalidFileError: If the file cannot be parsed correctly
-    :raises UnsupportedFormatError: If the file format is not supported
-    """
-    try:
-        match file_format:
-            case FileFormat.CSV:
-                return _load_csv(file_path)
-            case FileFormat.JSON:
-                return _load_json(file_path)
-            case FileFormat.XML:
-                return pd.read_xml(file_path)
-            case FileFormat.EXCEL | FileFormat.EXCEL_LEGACY:
-                return pd.read_excel(file_path, sheet_name=sheet_name)
-            case _:
-                raise UnsupportedFormatError("Unsupported file format: {}", file_format)
-
-    except pd.errors.EmptyDataError as e:
-        raise EmptyCSVError from e
-    except pd.errors.ParserError as e:
-        raise InvalidFileError from e
-
-
-def _load_csv(file_path: str) -> pd.DataFrame:
-    """Load CSV file with multiple encoding attempts.
-
-    :param file_path: Path to the CSV file to load
-    :return: Pandas DataFrame containing the parsed CSV data
-    :raises UnicodeDecodeError: If all encoding attempts fail
-    :raises Exception: For other parsing errors
-    """
-    delimiter: Final = _detect_delimiter(file_path)
-
-    for encoding in ["utf-8", "latin1", "cp1252"]:
-        try:
-            return pd.read_csv(
-                file_path,
-                delimiter=delimiter,
-                encoding=encoding,
-            )
-        except UnicodeDecodeError:
-            logger.debug("CSV encoding {} failed, trying next encoding", encoding)
-            continue
-        except Exception as e:
-            logger.debug("CSV parsing with {} encoding failed: {}", encoding, str(e))
-            continue
-
-    return pd.read_csv(
-        file_path,
-        delimiter=delimiter,
-        encoding="latin1",
-        on_bad_lines="skip",
-        engine="python",
-    )
-
-
-def _load_json(file_path: str) -> pd.DataFrame:
-    """Load JSON file into DataFrame.
-
-    :param file_path: Path to the JSON file
-    :return: Pandas DataFrame containing the parsed JSON data
-    :raises Exception: If the JSON cannot be parsed in any supported format
-    """
-    try:
-        return pd.read_json(file_path)
-    except Exception:
-        with open(file_path, encoding="utf-8") as f:
-            data: Final = json.load(f)
-            if isinstance(data, list):
-                return pd.DataFrame(data)
-            if isinstance(data, dict) and "data" in data:
-                return pd.DataFrame(data["data"])
-            return pd.json_normalize(data)
-
-
-def _generate_unique_filename(original_filename: str) -> str:
-    """Generate unique filename with timestamp.
-
-    :param original_filename: The original filename to base the new name on
-    :return: A unique filename string with timestamp and .csv extension
-    """
-    base_name: Final = os.path.splitext(original_filename)[0]
-    timestamp: Final = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S%f")[:-3]
-    return f"{base_name}_{timestamp}.csv"
-
-
 def _save_dataframe(df: pd.DataFrame, filename: str) -> Path:
-    """Save DataFrame as CSV in the upload directory.
+    """Persist DataFrame as CSV in ``upload_dir`` and return its path.
 
-    :param df: The pandas DataFrame to save
-    :param filename: The filename to use for the saved CSV file
-    :return: The Path object pointing to the saved file
+    :param df: DataFrame to write.
+    :param filename: Target filename (already sanitised).
+    :returns: Path pointing to the saved CSV file.
     """
-    file_path: Final = Path(dataset_config.get("upload_dir")) / filename
-    df.to_csv(file_path, index=False)
-    logger.trace("Saved dataset to {}", file_path)
-    return file_path
+    out_path = upload_dir / filename
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_path, index=False)
+    return out_path
