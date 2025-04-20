@@ -39,8 +39,8 @@ RUN groupadd --system appuser && useradd  --system \
             --shell /usr/sbin/nologin \
             appuser
 
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder --chown=appuser:appuser app/src/ app/src
+# Copy source code into workdir
+COPY --from=builder --chown=appuser:appuser /app ./
 
 # Drop privileges
 USER appuser

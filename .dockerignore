@@ -1,33 +1,55 @@
+# GitHub
 .git
 .github/
 .gitignore
+
+# Secrets
 .env
 .env.*
+
+# Editor Settings and other files
 .vscode/
 .editorconfig
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+
+# Caches
 __pycache__/
 .ruff_cache/
 *.py[cod]
 *.egg-info/
+
+# Dependencies
 .venv/
 build/
 dist/
 *.egg
+
+# Tests
 tests/
 testing_data/
 .pytest_cache/
 report.html
+
+# Code Analysis
+.scannerwork
+*.coverage
+
+# Documentation
 docs/
 mkdocs.yml
-report.html
 openapi.json
-.scannerwork
+
+# Data
 data/
 log/
 app.db
 Dockerfile
 
-# 8. Everything else you don’t explicitly include
+# Everything else you don’t explicitly include
 *
 !src/
 !uv.lock
