@@ -143,8 +143,15 @@ def _detect_delimiter(file_path: str) -> Literal[",", ";", "\t", "|"]:
     :param file_path: Path to the CSV file
     :return: Detected delimiter character or default delimiter if detection fails
     """
+    abs_path = os.path.abspath(file_path)
+    if not abs_path.startswith(tempfile.gettempdir()):
+        logger.warning(
+            "Attempted to access file outside temporary directory: {}", abs_path
+        )
+        return DEFAULT_DELIMITER
+
     try:
-        with open(file_path, newline="", encoding="utf-8") as csvfile:
+        with open(abs_path, newline="", encoding="utf-8") as csvfile:
             sample: Final = csvfile.read(4096)
             if not sample:
                 return DEFAULT_DELIMITER
