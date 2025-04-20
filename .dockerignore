@@ -13,17 +13,21 @@
 .DS_Store
 Thumbs.db
 *.swp
+*.swo
 *~
 .idea/
 
 # Caches
 __pycache__/
+**/__pycache__/
+*$py.class
 .ruff_cache/
 *.py[cod]
 *.egg-info/
 
 # Dependencies
 .venv/
+venv/
 build/
 dist/
 *.egg
@@ -33,10 +37,10 @@ tests/
 testing_data/
 .pytest_cache/
 report.html
+.coverage
 
 # Code Analysis
 .scannerwork
-*.coverage
 
 # Documentation
 docs/
@@ -46,8 +50,14 @@ openapi.json
 # Data
 data/
 log/
-app.db
+*.log
+*.db
+*.sqlite3
 Dockerfile
+
+# Temporary files
+tmp/
+temp/
 
 # Everything else you don’t explicitly include
 *
