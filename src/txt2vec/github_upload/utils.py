@@ -36,3 +36,22 @@ class GitHubUtils:
             True if `url` matches the GitHub repo pattern, False otherwise.
         """
         return re.match(GitHubUtils.GITHUB_URL_REGEX, url) is not None
+
+    @staticmethod
+    def parse_github_url(url: str) -> tuple[str, str]:
+        """
+        Extract the owner and repository name from a valid GitHub URL.
+
+        Args:
+            url: The GitHub URL string.
+
+        Returns:
+            A tuple (owner, repository) if the URL is valid.
+
+        Raises:
+            ValueError: If the URL is not a valid GitHub repository URL.
+        """
+        match = re.match(GitHubUtils.GITHUB_URL_REGEX, url)
+        if match:
+            return match.group("owner"), match.group("repo")
+        raise ValueError("Invalid GitHub repository URL.")
