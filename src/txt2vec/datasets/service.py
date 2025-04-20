@@ -61,7 +61,7 @@ async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
     except ValueError as exc:
         raise UnsupportedFormatError(ext) from exc
 
-    async with tempfile.TemporaryDirectory() as tmp_dir:
+    with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir) / uuid.uuid4().hex
         size = 0
         async with aiofiles.open(tmp_path, "wb") as tmp_file:

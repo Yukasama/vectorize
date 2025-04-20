@@ -18,12 +18,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --no-dev
 
-COPY pyproject.toml uv.lock /app/
+COPY pyproject.toml uv.lock README.md /app/
 COPY src/ /app/src/
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable
-
 
 # ----------------------------------------------
 # Stage 2: Runtime
@@ -43,9 +42,6 @@ RUN groupadd --system appuser && useradd  --system \
 
 # Copy source code into workdir
 COPY --from=builder --chown=appuser:appuser /app ./
-RUN find /app -type d -exec chmod 550 {} \; && \
-    find /app -type f -exec chmod 440 {} \; && \
-    chmod -R 770 /app/data /app/logs 2>/dev/null || true
 
 # Drop privileges
 USER appuser

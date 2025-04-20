@@ -23,13 +23,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: snyk/actions/setup@v3
+      - uses: snyk/actions/setup@master
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version-file: ".python-version"
 
       - name: Snyk Code test
         run: snyk code test --sarif-file-output=snyk.sarif || true
+
+      - name: Snyk IaC test and report
+        run: snyk iac test --report || true
 
       - name: Upload result to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@v3

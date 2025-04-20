@@ -10,7 +10,7 @@ logging = true
 
 [app.dataset]
 upload_dir = "data/uploads"
-allowed_extensions = ["csv", "json", "txt", "xlsx", "xls"]
+allowed_extensions = ["csv", "json", "xml", "xlsx", "xls"]
 max_upload_size = 52428800                                 # 50 MB
 max_filename_length = 255
 default_delimiter = ";"
