@@ -40,8 +40,8 @@ RUN groupadd --system appuser && useradd  --system \
             --shell /usr/sbin/nologin \
             appuser
 
-# Copy source code into workdir
-COPY --from=builder --chown=appuser:appuser /app ./
+# Copy non-writable! source code into workdir
+COPY --from=builder --chown=appuser:appuser --chmod=go-w /app ./
 
 # Drop privileges
 USER appuser
