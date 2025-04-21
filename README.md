@@ -50,16 +50,7 @@ Note: Do **not** edit the `uv.lock`-File yourself.
 uv run app
 ```
 
-### Build
-
-```bash
-# Build project
-uv build
-```
-
 ### Run tests
-
-`Note: The server must be running.`
 
 ```bash
 # Run all tests
@@ -111,4 +102,9 @@ Note 2: If a CI uploads or downloads artifacts, you need this flag:
 # This will create the artifacts on your file system
 act --artifact-server-path $PWD/.artifacts.
 # Plus other arguments
+```
+
+```bash
+# This is an example showing how to run the Main CI
+act -s GITHUB_TOKEN="$(gh auth token)" --artifact-server-path $PWD/.artifacts. -W '.github/workflows/main.yaml'
 ```

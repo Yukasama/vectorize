@@ -18,6 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-venv-
+
       - uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"
@@ -30,44 +38,37 @@ jobs:
       - name: Install project dependencies
         run: uv sync --all-extras --dev --link-mode=copy
 
-      - name: Pack virtual environment
-        run: tar -czf venv.tar.gz .venv
-
-      - name: Upload built env
-        uses: actions/upload-artifact@v4
-        with:
-          name: built-venv
-          path: venv.tar.gz
-          retention-days: 1
-
   lint:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: built-venv
 
-      - run: tar -xzf venv.tar.gz
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-venv-
 
       - name: Run lint with ruff
-        run: .venv/bin/ruff .
+        uses: astral-sh/ruff-action@v3
 
   outdated:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: built-venv
 
-      - run: |
-          tar -xzf built-venv/venv.tar.gz
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-venv-
 
       - name: Check for outdated packages
-        run: uv pip list --outdated
+        run: .venv/bin/uv pip list --outdated
 
   tests:
     needs: build
@@ -77,23 +78,31 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
         with:
-          name: built-venv
-
-      - run: tar -xzf venv.tar.gz
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-venv-
 
       - name: Run tests with pytest
         run: |
           mkdir -p data/uploads
           .venv/bin/pytest \
             --html=pytest-report.html \
-            --self-contained-html
+            --self-contained-html \
+            --junitxml=pytest-report.xml
+
+      - name: Publish unit test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: pytest-report.xml
 
       - name: Upload test report
-        if: ${{ always() }}
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report
+          name: Pytest HTML report
           path: pytest-report.html
           retention-days: 14

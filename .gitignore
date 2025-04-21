@@ -65,6 +65,7 @@ debug.log
 logs/
 assets
 report.html
+.artifacts.
 
 # === embeddings, models, etc. ===
 data/

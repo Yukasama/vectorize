@@ -52,7 +52,7 @@ RUN mkdir -p ${UPLOAD_DIR} ${LOG_DIR} ${DB_DIR} && \
     chmod 755 ${DATA_DIR} ${LOG_DIR} ${DB_DIR}
 
 # Copy non-writable source code into workdir
-COPY --from=builder --chown=appuser:appuser --chmod=go-w /app ./
+COPY --from=builder --chown=root:root --chmod=0755 /app /app
 
 # Drop privileges
 USER appuser
