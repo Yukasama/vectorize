@@ -1,6 +1,6 @@
 services:
   txt2vec:
-    image: txt2vec:1.0.0-prod
+    image: txt2vec:1.0.0-prod # ghcr.io/yukasama/txt2vec:latest
     ports:
       - "8000:8000"
     environment:

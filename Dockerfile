@@ -39,15 +39,13 @@ ENV DATA_DIR=/app/data \
     LOG_DIR=/app/log \
     DB_DIR=/app/db
 
-# Create user with no home dir and no login
-RUN groupadd --system appuser && useradd  --system \
+# Create user with no home dir and login, then prepare writable volumes
+RUN groupadd --system appuser && useradd --system \
             --gid appuser \
             --no-create-home \
             --shell /usr/sbin/nologin \
-            appuser
-
-# Create writable volumes with proper permissions
-RUN mkdir -p ${UPLOAD_DIR} ${LOG_DIR} ${DB_DIR} && \
+            appuser && \
+    mkdir -p ${UPLOAD_DIR} ${LOG_DIR} ${DB_DIR} && \
     chown -R appuser:appuser ${DATA_DIR} ${LOG_DIR} ${DB_DIR} && \
     chmod 755 ${DATA_DIR} ${LOG_DIR} ${DB_DIR}
 
