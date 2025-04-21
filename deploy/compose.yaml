@@ -1,0 +1,15 @@
+services:
+  txt2vec:
+    image: txt2vec:1.0.0-prod
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./db/app.db
+      - UPLOAD_DIR=/app/data/uploads
+      - LOG_DIR=/app/log
+      - DB_DIR=/app/db
+    volumes:
+      - ~/volumes/txt2vec/data:/app/data
+      - ~/volumes/txt2vec/log:/app/log
+      - ~/volumes/txt2vec/db:/app/db
+    restart: unless-stopped

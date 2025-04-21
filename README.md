@@ -32,7 +32,7 @@ uv remove <package>
 
 ```bash
 # .env
-DATABASE_URL=sqlite+aiosqlite:///./app.db
+DATABASE_URL=sqlite+aiosqlite:///./db/app.db
 ```
 
 #### Fix lock file
@@ -70,7 +70,7 @@ uv run pytest
 
 ```bash
 # Build Docker image
-docker build -t txt2vec:prod .
+docker build -t txt2vec:1.0.0-prod .
 ```
 
 ## Workflow
@@ -94,12 +94,21 @@ scoop install act
 act
 
 # Or run one specified CI
-act -W '.github/workflows/main.yml'
+act -W '.github/workflows/main.yaml'
 ```
 
 Note: If a CI relies on `GITHUB_TOKEN`, you need to run:
 
 ```bash
+# You need to have the GitHub CLI installed
 act -s GITHUB_TOKEN="$(gh auth token)"
+# Plus other arguments
+```
+
+Note 2: If a CI uploads or downloads artifacts, you need this flag:
+
+```bash
+# This will create the artifacts on your file system
+act --artifact-server-path $PWD/.artifacts.
 # Plus other arguments
 ```

@@ -33,6 +33,12 @@ WORKDIR /app
 # For real time logs
 ENV PYTHONUNBUFFERED=1
 
+# Define directory environment variables
+ENV DATA_DIR=/app/data \
+    UPLOAD_DIR=/app/data/uploads \
+    LOG_DIR=/app/log \
+    DB_DIR=/app/db
+
 # Create user with no home dir and no login
 RUN groupadd --system appuser && useradd  --system \
             --gid appuser \
@@ -40,7 +46,12 @@ RUN groupadd --system appuser && useradd  --system \
             --shell /usr/sbin/nologin \
             appuser
 
-# Copy non-writable! source code into workdir
+# Create writable volumes with proper permissions
+RUN mkdir -p ${UPLOAD_DIR} ${LOG_DIR} ${DB_DIR} && \
+    chown -R appuser:appuser ${DATA_DIR} ${LOG_DIR} ${DB_DIR} && \
+    chmod 755 ${DATA_DIR} ${LOG_DIR} ${DB_DIR}
+
+# Copy non-writable source code into workdir
 COPY --from=builder --chown=appuser:appuser --chmod=go-w /app ./
 
 # Drop privileges

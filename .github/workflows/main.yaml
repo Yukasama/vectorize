@@ -14,63 +14,83 @@ permissions:
   pull-requests: write
 
 jobs:
-  lint-and-check:
+  build:
     runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"
 
-      - name: Install uv
+      - name: Install uv (with caching)
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
 
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
+      - name: Install project dependencies
+        run: uv sync --all-extras --dev --link-mode=copy
 
-      - name: Check for outdated packages
-        run: uv pip list --outdated > outdated-packages.txt
-        continue-on-error: true
+      - name: Pack virtual environment
+        run: tar -czf venv.tar.gz .venv
 
-      - name: Run lint with ruff
-        uses: astral-sh/ruff-action@v3
-
-      - name: Upload outdated packages reports
-        if: ${{ always() }}
+      - name: Upload built env
         uses: actions/upload-artifact@v4
         with:
-          name: outdated-report
-          path: outdated-packages.txt
-          retention-days: 14
+          name: built-venv
+          path: venv.tar.gz
+          retention-days: 1
+
+  lint:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: built-venv
+
+      - run: tar -xzf venv.tar.gz
+
+      - name: Run lint with ruff
+        run: .venv/bin/ruff .
+
+  outdated:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: built-venv
+
+      - run: |
+          tar -xzf built-venv/venv.tar.gz
+
+      - name: Check for outdated packages
+        run: uv pip list --outdated
 
   tests:
+    needs: build
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: sqlite+aiosqlite:///./db/app.db
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/download-artifact@v4
         with:
-          python-version-file: ".python-version"
+          name: built-venv
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --all-extras --dev
+      - run: tar -xzf venv.tar.gz
 
       - name: Run tests with pytest
         run: |
           mkdir -p data/uploads
-          uv run pytest --html=pytest-report.html --self-contained-html
+          .venv/bin/pytest \
+            --html=pytest-report.html \
+            --self-contained-html
 
-      - name: Upload test reports
+      - name: Upload test report
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
