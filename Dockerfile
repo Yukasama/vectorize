@@ -1,25 +1,63 @@
-FROM python:3.12-slim
+# syntax=docker/dockerfile:1
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV POETRY_VERSION=1.8.2
+ARG PYTHON_LATEST_VERSION=3.13
+ARG PYTHON_VERSION=${PYTHON_LATEST_VERSION}.3
 
+# ----------------------------------------------
+# Stage 1: Builder
+# ----------------------------------------------
+FROM ghcr.io/astral-sh/uv:python${PYTHON_LATEST_VERSION}-bookworm-slim AS builder
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    curl \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=0
 
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
 
-COPY pyproject.toml poetry.lock* /app/
+COPY pyproject.toml uv.lock README.md /app/
+COPY src/ /app/src/
 
-RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-editable
 
-COPY . /app
+# ----------------------------------------------
+# Stage 2: Runtime
+# ----------------------------------------------
+FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
+WORKDIR /app
+
+# For real time logs
+ENV PYTHONUNBUFFERED=1
+
+# Define directory environment variables
+ENV DATA_DIR=/app/data \
+    UPLOAD_DIR=/app/data/uploads \
+    LOG_DIR=/app/log \
+    DB_DIR=/app/db
+
+# Create user with no home dir and login, then prepare writable volumes
+RUN groupadd --system appuser && useradd --system \
+            --gid appuser \
+            --no-create-home \
+            --shell /usr/sbin/nologin \
+            appuser && \
+    mkdir -p ${UPLOAD_DIR} ${LOG_DIR} ${DB_DIR} && \
+    chown -R appuser:appuser ${DATA_DIR} ${LOG_DIR} ${DB_DIR} && \
+    chmod 755 ${DATA_DIR} ${LOG_DIR} ${DB_DIR}
+
+# Copy non-writable source code into workdir
+COPY --from=builder --chown=root:root --chmod=0755 /app /app
+
+# Drop privileges
+USER appuser
+
+ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8000
+STOPSIGNAL SIGINT
 
-CMD ["uvicorn", "src.txt2vec.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "txt2vec.app:app", "--host", "0.0.0.0", "--port", "8000"]

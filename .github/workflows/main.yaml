@@ -1,0 +1,108 @@
+name: Main CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-venv-
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install uv (with caching)
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install project dependencies
+        run: uv sync --all-extras --dev --link-mode=copy
+
+  lint:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-venv-
+
+      - name: Run lint with ruff
+        uses: astral-sh/ruff-action@v3
+
+  outdated:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-venv-
+
+      - name: Check for outdated packages
+        run: .venv/bin/uv pip list --outdated
+
+  tests:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: sqlite+aiosqlite:///./db/app.db
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-venv-
+
+      - name: Run tests with pytest
+        run: |
+          mkdir -p data/uploads
+          .venv/bin/pytest \
+            --html=pytest-report.html \
+            --self-contained-html \
+            --junitxml=pytest-report.xml
+
+      - name: Publish unit test results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: pytest-report.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pytest HTML report
+          path: pytest-report.html
+          retention-days: 14

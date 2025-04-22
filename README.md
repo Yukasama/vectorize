@@ -32,7 +32,7 @@ uv remove <package>
 
 ```bash
 # .env
-DATABASE_URL=sqlite+aiosqlite:///./app.db
+DATABASE_URL=sqlite+aiosqlite:///./db/app.db
 ```
 
 #### Fix lock file
@@ -50,18 +50,61 @@ Note: Do **not** edit the `uv.lock`-File yourself.
 uv run app
 ```
 
-### Build
-
-```bash
-# Build project
-uv build
-```
-
 ### Run tests
-
-`Note: The server must be running.`
 
 ```bash
 # Run all tests
-pytest
+uv run pytest
+```
+
+### Build Docker Image
+
+```bash
+# Build Docker image
+docker build -t txt2vec:1.0.0-prod .
+```
+
+## Workflow
+
+### Run CI locally
+
+#### Install act
+
+```bash
+# Install uv for command line (MacOS/Linux)
+brew install act
+
+# Install uv for command line (Windows)
+scoop install act
+```
+
+#### Run act
+
+```bash
+# Run all CI workflows locally
+act
+
+# Or run one specified CI
+act -W '.github/workflows/main.yaml'
+```
+
+Note: If a CI relies on `GITHUB_TOKEN`, you need to run:
+
+```bash
+# You need to have the GitHub CLI installed
+act -s GITHUB_TOKEN="$(gh auth token)"
+# Plus other arguments
+```
+
+Note 2: If a CI uploads or downloads artifacts, you need this flag:
+
+```bash
+# This will create the artifacts on your file system
+act --artifact-server-path $PWD/.artifacts.
+# Plus other arguments
+```
+
+```bash
+# This is an example showing how to run the Main CI
+act -s GITHUB_TOKEN="$(gh auth token)" --artifact-server-path $PWD/.artifacts. -W '.github/workflows/main.yaml'
 ```

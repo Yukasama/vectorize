@@ -17,7 +17,7 @@ class ErrorInfo(SQLModel, table=True):
     )
     """Timestamp when the error was recorded."""
 
-    status_code: int
+    status_code: int = Field(ge=100, lt=1000)
     """HTTP-like status code representing the error."""
 
     path: str

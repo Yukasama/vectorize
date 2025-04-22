@@ -54,6 +54,13 @@ dependencies = [
     "lxml>=5.3.2",
     "sqlmodel>=0.0.24",
     "aiosqlite>=0.21.0",
+    "hf-xet>=1.0.3",
+    "huggingface-hub>=0.30.2",
+    "transformers>=4.51.3",
+    "torchvision>=0.21.0",
+    "torchaudio>=2.6.0",
+    "torch>=2.6.0",
+    "defusedxml>=0.7.1",
 ]
 
 [project.scripts]
@@ -64,8 +71,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
-build = ["hatch>=1.14.0", "hatchling>=1.27.0"]
 dev = [
+    "hatch>=1.14.0",
+    "hatchling>=1.27.0",
     "ruff>=0.11.2",
     "mkdocs>=1.6.1",
     "pytest>=8.3.5",
@@ -74,6 +82,7 @@ dev = [
     "safety>=3.2.9",
     "mkdocs-build-plantuml-plugin>=1.11.0",
     "pytest-html>=4.1.1",
+    "pytest-github-actions-annotate-failures>=0.3.0",
 ]
 
 [tool.hatch.build.targets.sdist]

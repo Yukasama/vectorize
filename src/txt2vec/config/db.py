@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from txt2vec.config.config import app_config
 from txt2vec.datasets.classification import Classification
 from txt2vec.datasets.models import Dataset
 
@@ -16,9 +17,11 @@ load_dotenv()
 
 __all__ = ["close_db", "engine", "init_db", "session"]
 
+db_config = app_config.get("db", {})
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine: Final = create_async_engine(DATABASE_URL, echo=True)
+engine: Final = create_async_engine(DATABASE_URL, echo=db_config.get("logging"))
 session: Final = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 

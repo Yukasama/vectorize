@@ -1,0 +1,68 @@
+# GitHub
+.git
+.github/
+.gitignore
+.artifacts.
+
+# Secrets
+.env
+.env.*
+
+# Editor Settings and other files
+.vscode/
+.editorconfig
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+
+# Caches
+__pycache__/
+**/__pycache__/
+*$py.class
+.ruff_cache/
+*.py[cod]
+*.egg-info/
+
+# Dependencies
+.venv/
+venv/
+build/
+dist/
+*.egg
+
+# Tests
+tests/
+testing_data/
+.pytest_cache/
+report.html
+.coverage
+
+# Code Analysis
+.scannerwork
+
+# Documentation
+docs/
+mkdocs.yml
+openapi.json
+
+# Data
+data/
+log/
+*.log
+*.db
+*.sqlite3
+Dockerfile
+
+# Temporary files
+tmp/
+temp/
+
+# Everything else you don’t explicitly include
+*
+!src/
+!uv.lock
+!pyproject.toml
+!README.md
