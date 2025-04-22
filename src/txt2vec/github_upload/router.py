@@ -31,10 +31,21 @@ async def add_model(request: ModelRequest):
             - 400 if the GitHub URL is invalid.
             - 500 if an unexpected error occurs during processing.
     """
+    logger.info("Received request to add model from GitHub URL: {}", request.github_url)
+
     try:
-        return await handle_model_download(request.github_url)
+        result = await handle_model_download(request.github_url)
+        logger.info("Model handled successfully for: {}", request.github_url)
+        return result
     except HTTPException as e:
+        logger.warning(
+            "Handled HTTPException for GitHub URL %s: %s", request.github_url, e.detail
+        )
         raise e
     except Exception as e:
-        logger.error("GitHub model download not possible: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception(
+            "Unhandled error %s  during GitHub model import for URL: %s",
+            e,
+            request.github_url,
+        )
+        raise HTTPException(status_code=500, detail="Internal server error.")
