@@ -6,15 +6,13 @@ from fastapi import APIRouter, File, Request, Response, UploadFile, status
 from loguru import logger
 
 from txt2vec.datasets.service import upload_file
-from txt2vec.handle_exceptions import handle_exceptions
 
 __all__ = ["router"]
 
-router = APIRouter(tags=["Dataset"])
+router = APIRouter(tags=["Dataset", "Upload"])
 
 
 @router.post("")
-@handle_exceptions
 async def upload_dataset(
     file: Annotated[UploadFile, File()],
     request: Request,
@@ -28,7 +26,7 @@ async def upload_dataset(
 
     :return: OK response with the dataset ID in the Location header
     """
-    logger.debug("file={}", file.filename)
+    logger.debug("Dataset upload started", file=file.filename)
     dataset_id: Final = await upload_file(file, sheet_name)
     logger.debug("Dataset uploaded", datasetId=dataset_id)
 

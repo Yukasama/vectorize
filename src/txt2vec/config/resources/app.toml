@@ -17,7 +17,7 @@ default_delimiter = ";"
 
 [app.model]
 model_upload_dir = "data/models"
-max_upload_size = 524288000 # 500 MB
+max_upload_size = 524288000      # 500 MB
 
 [app.logging]
 rotation = "1 MB"

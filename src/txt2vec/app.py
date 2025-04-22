@@ -5,8 +5,7 @@ from contextlib import asynccontextmanager
 from typing import Final
 
 from aiofiles.os import makedirs
-from fastapi import APIRouter, FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, FastAPI
 from loguru import logger
 
 from txt2vec.config import (
@@ -22,7 +21,7 @@ from txt2vec.config.config import (
 )
 from txt2vec.config.seed import seed_db
 from txt2vec.datasets.router import router as dataset_router
-from txt2vec.handle_exceptions import handle_exception
+from txt2vec.error_handler import register_exception_handlers
 from txt2vec.upload.router import router as upload_router
 
 config_logger()
@@ -64,8 +63,7 @@ app.include_router(base_router)
 add_security_headers(app)
 
 
-@app.exception_handler(Exception)
-def global_handler(request: Request, exc: Exception):
-    logger.opt(exception=True).error("Global error caught: {}", str(exc))
-    http_exc = handle_exception(exc)
-    return JSONResponse(status_code=http_exc.status_code, content=http_exc.detail)
+# --------------------------------------------------------
+# E X C E P T I O N S
+# --------------------------------------------------------
+register_exception_handlers(app)

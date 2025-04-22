@@ -12,7 +12,6 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, Response, Up
 from loguru import logger
 from pydantic import BaseModel
 
-from txt2vec.handle_exceptions import handle_exceptions
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.local_service import upload_embedding_model
 from txt2vec.upload.model_service import load_model_with_tag
@@ -95,7 +94,6 @@ async def load_model_github(request: GitHubModelRequest):
 
 
 @router.post("/models")
-@handle_exceptions
 async def load_model_local(
     files: List[UploadFile],
     request: Request,

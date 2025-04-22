@@ -3,7 +3,7 @@
 import os
 import tomllib
 from pathlib import Path
-from typing import Final
+from typing import Final, Literal
 
 _app_config = Path(__file__).parent / "resources" / "app.toml"
 
@@ -11,6 +11,9 @@ with open(_app_config, "rb") as f:
     _config = tomllib.load(f)
     _app_config = _config.get("app", {})
 
+
+# Environment configuration
+app_env: Literal["development", "production"] = os.getenv("ENV", "development").lower()
 
 # Server configuration
 _server_config = _app_config.get("server", {})

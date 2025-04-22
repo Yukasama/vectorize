@@ -4,7 +4,7 @@ from fastapi import status
 
 from txt2vec.config.config import allowed_extensions
 from txt2vec.datasets.utils import format_file_size
-from txt2vec.handle_exceptions import AppError, ErrorCode
+from txt2vec.errors import AppError, ErrorCode
 
 __all__ = [
     "DatasetNotFoundError",
@@ -31,7 +31,7 @@ class FileTooLargeError(AppError):
 
     def __init__(self, size: int) -> None:
         """Initialize with the size of the file."""
-        formatted_size = format_file_size(self.size)
+        formatted_size = format_file_size(size)
         super().__init__(f"File is too large: {formatted_size}")
 
 
@@ -50,14 +50,16 @@ class InvalidCSVFormatError(AppError):
     """Exception raised when the CSV format is invalid."""
 
     error_code = ErrorCode.INVALID_CSV_FORMAT
-    message = "Invalid CSV format"
+    message = (
+        "Invalid CSV format, expected: 'id, anchor, positive, negative' as columns"
+    )
     status_code = status.HTTP_400_BAD_REQUEST
 
 
-class EmptyCSVError(AppError):
+class EmptyFileError(AppError):
     """Exception raised when the CSV format is empty."""
 
-    error_code = ErrorCode.EMPTY_CSV
+    error_code = ErrorCode.EMPTY_FILE
     message = "CSV is empty"
     status_code = status.HTTP_400_BAD_REQUEST
 
@@ -65,7 +67,7 @@ class EmptyCSVError(AppError):
 class DatasetNotFoundError(AppError):
     """Exception raised when the dataset is not found."""
 
-    error_code = ErrorCode.DATASET_NOT_FOUND
+    error_code = ErrorCode.NOT_FOUND
     message = "Dataset not found"
     status_code = status.HTTP_404_NOT_FOUND
 

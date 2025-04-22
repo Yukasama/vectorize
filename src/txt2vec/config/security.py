@@ -1,14 +1,13 @@
 """Security headers."""
 
-import os
 from collections.abc import Awaitable, Callable
 from typing import Any, Final
 
 from fastapi import FastAPI, Request, Response
 
-__all__ = ["add_security_headers"]
+from txt2vec.config.config import app_env
 
-ENVIRONMENT = os.getenv("APP_ENV", "development").lower()
+__all__ = ["add_security_headers"]
 
 
 def _set_security_headers(response: Response) -> None:
@@ -18,7 +17,7 @@ def _set_security_headers(response: Response) -> None:
     """
     response.headers["X-Frame-Options"] = "DENY"
 
-    if ENVIRONMENT == "production":
+    if app_env == "production":
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "img-src 'self' data:; "

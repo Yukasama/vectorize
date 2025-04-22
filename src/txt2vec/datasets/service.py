@@ -20,7 +20,7 @@ from txt2vec.config.config import (
 )
 from txt2vec.datasets.classification import Classification
 from txt2vec.datasets.exceptions import (
-    EmptyCSVError,
+    EmptyFileError,
     FileTooLargeError,
     InvalidCSVFormatError,
     InvalidFileError,
@@ -49,11 +49,15 @@ async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
     :returns: Dictionary with ``filename``, ``rows``, ``columns``, and ``dataset_type``.
     :raises InvalidFileError: If filename is missing or the upload exceeds size limits.
     :raises UnsupportedFormatError: When the file extension is not supported.
-    :raises EmptyCSVError: If the parsed DataFrame contains no rows.
+    :raises EmptyFileError: If the parsed DataFrame contains no rows.
     :raises InvalidCSVFormatError: If the DataFrame lacks required columns.
     """
     if not file.filename:
         raise InvalidFileError("Missing filename.")
+
+    first = await file.read(1)
+    if not first:
+        raise EmptyFileError
 
     safe_name = _sanitize_filename(file.filename)
     ext = Path(safe_name).suffix.lstrip(".")
@@ -77,7 +81,7 @@ async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
         df = FILE_LOADERS[file_format](tmp_path, sheet_name)
 
     if df.empty:
-        raise EmptyCSVError
+        raise EmptyFileError
 
     _escape_csv_formulas(df)
     classification = _classify_dataset(df)
@@ -86,13 +90,15 @@ async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
     _save_dataframe(df, unique_name)
 
     dataset = Dataset(
-        name=unique_name,
+        name=safe_name,
+        file_name=unique_name,
         classification=classification,
         rows=len(df),
     )
 
+    logger.debug("Dataset DTO created", dataset=dataset)
     dataset_id = await save_dataset(dataset)
-    logger.debug("Dataset saved", dataset=dataset)
+    logger.debug("Dataset saved", datasetId=dataset_id)
     return dataset_id
 
 

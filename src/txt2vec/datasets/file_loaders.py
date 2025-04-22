@@ -32,7 +32,7 @@ def _load_csv(path: Path, *_: Any) -> pd.DataFrame:
         try:
             return pd.read_csv(path, delimiter=delim, encoding=enc)
         except UnicodeDecodeError:
-            logger.debug("decode fail (%s), retry", enc)
+            logger.debug("decode fail ({}), retry", enc)
 
     # Last attempt with engine="python" to tolerate malformed lines.
     return pd.read_csv(
