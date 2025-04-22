@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from txt2vec.handle_exceptions import handle_exceptions
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.model_service import load_model_with_tag
-from txt2vec.upload.schemas import LoadModelRequest, ModelRequest
+from txt2vec.upload.schemas import HuggingFaceModelRequest, GitHubModelRequest
 from txt2vec.upload.service import upload_embedding_model
 
 
@@ -23,7 +23,7 @@ router = APIRouter(tags=["Model Upload"])
 
 
 @router.post("/load")
-def load_model(request: LoadModelRequest, http_request: Request):
+def load_model(request: HuggingFaceModelRequest, http_request: Request):
     """Load a model from Hugging Face using a specified model ID and tag.
 
     :param request: The request body containing the model ID and tag.
@@ -47,7 +47,7 @@ def load_model(request: LoadModelRequest, http_request: Request):
 
 
 @router.post("/add_model")
-async def add_model(request: ModelRequest):
+async def add_model(request: GitHubModelRequest):
     """
     Endpoint to download and register a model from a specified GitHub URL.
 
