@@ -1,12 +1,12 @@
 """
-Service for importing github models
+Service for importing models
 """
 
 from loguru import logger
 
 import httpx
 from fastapi import HTTPException
-from txt2vec.github_upload.utils import GitHubUtils
+from upload.utils import GitHubUtils
 
 
 async def handle_model_download(github_url: str) -> dict:

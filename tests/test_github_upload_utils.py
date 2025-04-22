@@ -3,7 +3,8 @@ Unit tests for GitHubUtils URL validation.
 """
 
 import pytest
-from github_upload.utils import GitHubUtils
+
+from upload.utils import GitHubUtils
 
 
 @pytest.mark.parametrize(

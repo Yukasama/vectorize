@@ -6,7 +6,7 @@ from loguru import logger
 from fastapi import APIRouter, HTTPException
 
 from txt2vec.github_upload.service import handle_model_download
-from txt2vec.github_upload.schemas import ModelRequest
+from upload.schemas import ModelRequest
 
 router = APIRouter()
 
