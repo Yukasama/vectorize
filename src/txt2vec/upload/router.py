@@ -8,9 +8,10 @@ from urllib.parse import quote
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from loguru import logger
 from pydantic import BaseModel
+from upload.github_service import handle_model_download
+from upload.model_service import load_model_with_tag
 from upload.schemas import LoadModelRequest, ModelRequest
 
-from txt2vec.upload.model_service import handle_model_download, load_model_with_tag
 
 router = APIRouter(tags=["Model Upload"])
 
