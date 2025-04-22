@@ -17,7 +17,10 @@ class Dataset(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     """Unique identifier for the dataset."""
 
-    name: str = Field(index=True, unique=True)
+    file_name: str = Field(index=True, unique=True)
+    """Filename of the dataset file on the storage unit."""
+
+    name: str
     """Name of the dataset."""
 
     classification: Classification

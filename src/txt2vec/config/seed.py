@@ -3,7 +3,7 @@
 from loguru import logger
 from sqlmodel import select
 
-from txt2vec.config.db import session
+from txt2vec.config.db import clear_db, session
 from txt2vec.datasets.classification import Classification
 from txt2vec.datasets.models import Dataset
 
@@ -17,23 +17,22 @@ async def seed_db():
             result = await db_session.exec(select(Dataset))
             datasets = list(result)
 
-            if not datasets:
-                logger.debug("Seeding database with initial data...")
+            if datasets:
+                await clear_db()
 
-                test_dataset = Dataset(
-                    name="example_dataset",
-                    classification=Classification.SENTENCE_DUPLES,
-                    rows=5,
-                )
+            logger.debug("Seeding database with initial data...")
 
-                db_session.add(test_dataset)
-                await db_session.flush()
-                await db_session.commit()
-            else:
-                logger.debug(
-                    "Database already contains {} datasets, skipping seeding",
-                    len(datasets),
-                )
+            test_dataset = Dataset(
+                name="example_dataset",
+                file_name="example_dataset.csv",
+                classification=Classification.SENTENCE_DUPLES,
+                rows=5,
+            )
+
+            db_session.add(test_dataset)
+            await db_session.flush()
+            await db_session.commit()
+
     except Exception as e:
-        logger.error("Error seeding database: {}", str(e))
+        logger.error(str(e))
         raise
