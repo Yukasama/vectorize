@@ -4,7 +4,7 @@ Unit tests for GitHubUtils URL validation.
 
 import pytest
 
-from upload.utils import GitHubUtils
+from txt2vec.upload.utils import GitHubUtils
 
 
 @pytest.mark.parametrize(

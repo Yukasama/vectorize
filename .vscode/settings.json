@@ -9,9 +9,5 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.ruff": "always",
     "source.organizeImports.ruff": "always"
-  },
-  "python.analysis.extraPaths": [
-    "./src/txt2vec",
-    "./src/txt2vec"
-  ]
+  }
 }

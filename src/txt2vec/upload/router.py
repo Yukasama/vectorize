@@ -14,9 +14,9 @@ from pydantic import BaseModel
 
 from txt2vec.handle_exceptions import handle_exceptions
 from txt2vec.upload.github_service import handle_model_download
+from txt2vec.upload.local_service import upload_embedding_model
 from txt2vec.upload.model_service import load_model_with_tag
 from txt2vec.upload.schemas import HuggingFaceModelRequest, GitHubModelRequest
-from txt2vec.upload.service import upload_embedding_model
 
 
 router = APIRouter(tags=["Model Upload"])

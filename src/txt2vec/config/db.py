@@ -1,27 +1,20 @@
 """Database connection and session management."""
 
-import os
 from typing import Final
 
 from dotenv import load_dotenv
 from loguru import logger
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlmodel import SQLModel, select
+from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.config.config import app_config
-from txt2vec.datasets.classification import Classification
-from txt2vec.datasets.models import Dataset
+from txt2vec.config.config import db_logging, db_url
 
 load_dotenv()
 
 __all__ = ["close_db", "engine", "init_db", "session"]
 
-db_config = app_config.get("db", {})
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-engine: Final = create_async_engine(DATABASE_URL, echo=db_config.get("logging"))
+engine: Final = create_async_engine(db_url, echo=db_logging)
 session: Final = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -30,8 +23,6 @@ async def init_db():
     logger.debug("Creating database tables...")
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
-
-    await _seed_db()
 
 
 async def clear_db():
@@ -54,31 +45,3 @@ async def close_db():
     finally:
         logger.info("Closing database connection...")
         await engine.dispose()
-
-
-async def _seed_db():
-    """Seed the database with initial data."""
-    try:
-        async with session() as db_session:
-            result = await db_session.exec(select(Dataset))
-            datasets = list(result)
-
-            if not datasets:
-                logger.debug("Seeding database with initial data...")
-
-                test_dataset = Dataset(
-                    name="example_dataset",
-                    classification=Classification.SENTENCE_DUPLES,
-                )
-
-                db_session.add(test_dataset)
-                await db_session.flush()
-                await db_session.commit()
-            else:
-                logger.debug(
-                    "Database already contains {} datasets, skipping seeding",
-                    len(datasets),
-                )
-    except Exception as e:
-        logger.error("Error seeding database: {}", str(e))
-        raise

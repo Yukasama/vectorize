@@ -10,12 +10,10 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from txt2vec.app import app
-from txt2vec.config.config import app_config
+from txt2vec.config.config import prefix
 
 client = TestClient(app)
 
-server_config = app_config.get("server", {})
-prefix = server_config.get("prefix")
 
 TRAINING_FOLDER = "testing_data"
 TEST_FILE_NAME = "trainingdata"

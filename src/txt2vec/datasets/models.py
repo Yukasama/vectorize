@@ -23,6 +23,9 @@ class Dataset(SQLModel, table=True):
     classification: Classification
     """Classification type of the dataset."""
 
+    rows: int
+    """Number of rows in the dataset."""
+
     created_at: datetime | None = Field(
         default=None,
         sa_column=Column(

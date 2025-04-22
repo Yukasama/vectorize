@@ -29,9 +29,8 @@ async def upload_dataset(
     :return: OK response with the dataset ID in the Location header
     """
     logger.debug("file={}", file.filename)
-    result: Final = await upload_file(file, sheet_name)
-    dataset_id: Final = 1
-    logger.debug("(done): file={} dataset_id={}", result["filename"], dataset_id)
+    dataset_id: Final = await upload_file(file, sheet_name)
+    logger.debug("Dataset uploaded", datasetId=dataset_id)
 
     return Response(
         status_code=status.HTTP_201_CREATED,

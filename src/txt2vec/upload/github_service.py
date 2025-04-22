@@ -6,7 +6,7 @@ from loguru import logger
 
 import httpx
 from fastapi import HTTPException
-from upload.utils import GitHubUtils
+from txt2vec.upload.utils import GitHubUtils
 
 
 async def handle_model_download(github_url: str) -> dict:

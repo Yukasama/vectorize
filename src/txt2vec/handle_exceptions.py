@@ -6,6 +6,7 @@ from functools import wraps
 from typing import Any
 
 from fastapi import HTTPException, status
+from fastapi.responses import JSONResponse
 from loguru import logger
 
 __all__ = ["AppError", "ErrorCode", "handle_exceptions"]
@@ -102,12 +103,11 @@ def handle_exceptions(func: Callable) -> Callable:
         except Exception as e:
             func_name = func.__name__
             module_name = func.__module__
-
             logger.opt(exception=True).error(
                 "Error in {}.{}: {}", module_name, func_name, str(e)
             )
 
-            http_exception = handle_exception(e)
-            raise http_exception from e
+            exc = handle_exception(e)
+            return JSONResponse(status_code=exc.status_code, content=exc.detail)
 
     return wrapper

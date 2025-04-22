@@ -3,30 +3,20 @@
 from __future__ import annotations
 
 import json
+from csv import Sniffer
 from pathlib import Path
-from typing import Any, Final, Literal
+from typing import Any, Final
 
 import pandas as pd
 from defusedxml import ElementTree
 from loguru import logger
 
-from txt2vec.config.config import app_config
+from txt2vec.config.config import default_delimiter
 from txt2vec.datasets.file_format import FileFormat
 
 __all__ = ["FILE_LOADERS"]
 
-# -----------------------------------------------------------------------------
-# Config ----------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-dataset_config = app_config["dataset"]
-default_delimiter = dataset_config.get("default_delimiter", ",")
-
-Delimiter = Literal[",", ";", "\t", "|"]
-
-# -----------------------------------------------------------------------------
-# Loader functions ------------------------------------------------------------
-# -----------------------------------------------------------------------------
+DELIMITERS: Final[tuple[str, ...]] = (",", ";", "\t", "|")
 
 
 def _load_csv(path: Path, *_: Any) -> pd.DataFrame:
@@ -102,21 +92,22 @@ FILE_LOADERS: Final[dict[FileFormat, Any]] = {
     FileFormat.EXCEL_LEGACY: _load_excel,
 }
 
+
 # -----------------------------------------------------------------------------
 # Utility ---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 
 
-def _detect_delimiter(path: Path) -> Delimiter:
-    """Guess the delimiter in a CSV sample, defaulting to config value.
-
-    :param path: Path to the candidate CSV file.
-    :returns: Detected delimiter character.
-    """
-    sample = path.read_text(encoding="utf-8", errors="ignore")[:4096]
-    if not sample:
-        return default_delimiter
-    for d in (",", ";", "\t", "|"):
-        if d in sample:
-            return d
-    return default_delimiter
+def _detect_delimiter(path: Path) -> str:
+    with path.open(newline="", encoding="utf-8") as csvfile:
+        sample: Final = csvfile.read(4096)
+        if not sample:
+            return default_delimiter
+        try:
+            dialect = Sniffer().sniff(sample)
+            return dialect.delimiter
+        except Exception:
+            for d in DELIMITERS:
+                if d in sample:
+                    return d
+            return default_delimiter

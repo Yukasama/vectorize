@@ -1,22 +1,22 @@
 [app.server]
-# host-binding = "0.0.0.0"
+# host_binding = "0.0.0.0"
 # port = 8000
 prefix = "/v1"
 reload = true
 server_header = false
 
 [app.db]
-logging = true
+db_logging = true
 
 [app.dataset]
-upload_dir = "data/uploads"
+dataset_upload_dir = "data/uploads"
 allowed_extensions = ["csv", "json", "xml", "xlsx", "xls"]
 max_upload_size = 52428800                                 # 50 MB
 max_filename_length = 255
 default_delimiter = ";"
 
-[app.models]
-upload_dir = "data/models"
+[app.model]
+model_upload_dir = "data/models"
 max_upload_size = 524288000 # 500 MB
 
 [app.logging]

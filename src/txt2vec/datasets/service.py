@@ -12,26 +12,28 @@ import pandas as pd
 from fastapi import UploadFile
 from loguru import logger
 
-from txt2vec.config.config import app_config
+from txt2vec.config.config import (
+    allowed_extensions,
+    dataset_upload_dir,
+    max_filename_length,
+    max_upload_size,
+)
 from txt2vec.datasets.classification import Classification
 from txt2vec.datasets.exceptions import (
     EmptyCSVError,
+    FileTooLargeError,
     InvalidCSVFormatError,
     InvalidFileError,
     UnsupportedFormatError,
 )
 from txt2vec.datasets.file_format import FileFormat
 from txt2vec.datasets.file_loaders import FILE_LOADERS
+from txt2vec.datasets.models import Dataset
+from txt2vec.datasets.repository import save_dataset
 
 # -----------------------------------------------------------------------------
 # Config ----------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-
-dataset_config = app_config["dataset"]
-upload_dir = Path(dataset_config.get("upload_dir"))
-max_filename_length = dataset_config.get("max_filename_length")
-allowed_extensions = frozenset(dataset_config.get("allowed_extensions"))
-max_upload_size = dataset_config.get("max_upload_size")
 
 _ALLOWED_CHARS: Final[set[str]] = set(string.ascii_letters + string.digits + "_-")
 CHUNK_SIZE = 1_048_576
@@ -58,8 +60,8 @@ async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
 
     try:
         file_format = FileFormat(ext)
-    except ValueError as exc:
-        raise UnsupportedFormatError(ext) from exc
+    except ValueError as e:
+        raise UnsupportedFormatError(ext) from e
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir) / uuid.uuid4().hex
@@ -68,7 +70,7 @@ async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
             while chunk := await file.read(CHUNK_SIZE):
                 size += len(chunk)
                 if size > max_upload_size:
-                    raise InvalidFileError("file too large")
+                    raise FileTooLargeError(size)
                 await tmp_file.write(chunk)
         await file.seek(0)
 
@@ -78,21 +80,20 @@ async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
         raise EmptyCSVError
 
     _escape_csv_formulas(df)
-    dataset_type = _classify_dataset(df)
+    classification = _classify_dataset(df)
 
     unique_name = f"{Path(safe_name).stem}_{pd.Timestamp.utcnow():%Y%m%d_%H%M%S%f}.csv"
-    out_path = _save_dataframe(df, unique_name)
+    _save_dataframe(df, unique_name)
 
-    logger.debug(
-        "Dataset saved -> {} ({} rows, {} cols)", out_path, len(df), len(df.columns)
+    dataset = Dataset(
+        name=unique_name,
+        classification=classification,
+        rows=len(df),
     )
 
-    return {
-        "filename": unique_name,
-        "rows": len(df),
-        "columns": df.columns.tolist(),
-        "dataset_type": dataset_type,
-    }
+    dataset_id = await save_dataset(dataset)
+    logger.debug("Dataset saved", dataset=dataset)
+    return dataset_id
 
 
 # -----------------------------------------------------------------------------
@@ -163,7 +164,7 @@ def _save_dataframe(df: pd.DataFrame, filename: str) -> Path:
     :param filename: Target filename (already sanitised).
     :returns: Path pointing to the saved CSV file.
     """
-    out_path = upload_dir / filename
+    out_path = dataset_upload_dir / filename
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_path, index=False)
     return out_path
