@@ -23,13 +23,22 @@ router = APIRouter(tags=["Model Upload"])
 
 
 @router.post("/load")
-def load_model(request: HuggingFaceModelRequest, http_request: Request):
-    """Load a model from Hugging Face using a specified model ID and tag.
+def load_model_huggingface(request: HuggingFaceModelRequest, http_request: Request):
+    """
+    Load a model from Hugging Face using the specified model ID and tag.
 
-    :param request: The request body containing the model ID and tag.
-    :param http_request: The HTTP request object.
-    :return: A Response object with status 201 Created and a success message.
-    :raises HTTPException: If an error occurs during model loading.
+    This endpoint loads a model based on the provided Hugging Face model ID and an optional tag.
+    On success, returns a 201 Created response with a Location header pointing to the model.
+
+    Args:
+        request (HuggingFaceModelRequest): Contains the model ID and tag.
+        http_request (Request): The HTTP request object used to build the Location header.
+
+    Returns:
+        Response: A 201 Created response with a Location header.
+
+    Raises:
+        HTTPException: If an unexpected error occurs during model loading.
     """
     try:
         logger.debug(
@@ -47,24 +56,23 @@ def load_model(request: HuggingFaceModelRequest, http_request: Request):
 
 
 @router.post("/add_model")
-async def add_model(request: GitHubModelRequest):
+async def load_model_github(request: GitHubModelRequest):
     """
-    Endpoint to download and register a model from a specified GitHub URL.
+    Download and register a model from a specified GitHub repository.
 
-    This endpoint accepts a POST request containing a GitHub repository URL.
-    It then attempts to download the model files and prepare them for use.
+    This endpoint accepts a GitHub repository URL and attempts to download
+    and prepare the model files for use. If successful, a JSON response is returned.
 
     Args:
-        request (ModelRequest): A request body containing the GitHub URL of the model repository.
+        request (GitHubModelRequest): Contains the GitHub repository URL.
 
     Returns:
-    JSONResponse: A response indicating success or failure,
-    typically with model info or an error message.
+        JSONResponse: A response indicating success or error details.
 
     Raises:
-        HTTPException:
+        HTTPException: 
             - 400 if the GitHub URL is invalid.
-            - 500 if an unexpected error occurs during processing.
+            - 500 if an unexpected error occurs during model processing.
     """
     logger.info("Received request to add model from GitHub URL: {}", request.github_url)
 
@@ -88,7 +96,7 @@ async def add_model(request: GitHubModelRequest):
 
 @router.post("/models")
 @handle_exceptions
-async def upload_model(
+async def load_model_local(
     files: List[UploadFile],
     request: Request,
     model_name: Annotated[str, Query(description="Name for the uploaded model")],
@@ -99,18 +107,25 @@ async def upload_model(
         bool, Query(description="Whether to extract ZIP files")
     ] = True,
 ) -> Response:
-    """Upload embedding model files to the server.
-    
-    This endpoint accepts multiple files that constitute an embedding model
-    and saves them to the model storage directory. If a ZIP file is uploaded
-    and extract_zip is True, its contents will be extracted to the model directory.
-    
-    :param files: List of files comprising the embedding model
-    :param request: The HTTP request object
-    :param model_name: Name to give to the uploaded model
-    :param description: Optional description of the model's purpose or capabilities
-    :param extract_zip: Whether to extract contents of ZIP files (default: True)
-    :return: HTTP 201 response with location header pointing to the created model
+    """
+    Upload embedding model files to the server.
+
+    This endpoint accepts multiple files representing an embedding model. If ZIP files
+    are uploaded and extract_zip is True, they will be extracted before saving.
+    Returns a 201 Created response with a Location header pointing to the model.
+
+    Args:
+        files (List[UploadFile]): The uploaded model files.
+        request (Request): The HTTP request object.
+        model_name (str): Name to assign to the uploaded model.
+        description (str, optional): Optional description of the model.
+        extract_zip (bool): Whether to extract ZIP files (default: True).
+
+    Returns:
+        Response: A 201 Created response with a Location header.
+
+    Raises:
+        HTTPException: If an error occurs during file upload or processing.
     """
     logger.debug("Uploading model '{}' with {} files", model_name, len(files))
     
