@@ -2,7 +2,9 @@
 Router for importing github models
 """
 
+from loguru import logger
 from fastapi import APIRouter, HTTPException
+
 from txt2vec.github_upload.service import handle_model_download
 from txt2vec.github_upload.schemas import ModelRequest
 
@@ -34,4 +36,5 @@ async def add_model(request: ModelRequest):
     except HTTPException as e:
         raise e
     except Exception as e:
+        logger.error("GitHub model download not possible: %s", e)
         raise HTTPException(status_code=500, detail=str(e))

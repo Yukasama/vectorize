@@ -2,6 +2,8 @@
 Service for importing github models
 """
 
+from loguru import logger
+
 import httpx
 from fastapi import HTTPException
 from txt2vec.github_upload.utils import GitHubUtils
@@ -34,8 +36,24 @@ async def handle_model_download(github_url: str) -> dict:
         if resp.status_code == 200:
             download_url = resp.json().get("download_url")
         elif resp.status_code == 404:
+            logger.error(
+                "Model file not found on GitHub: repo=%s/%s, file=%s, status=%d, message=%s",
+                owner,
+                repo,
+                file_path,
+                resp.status_code,
+                resp.text,
+            )
             raise HTTPException(status_code=404, detail="Model file not found.")
         else:
+            logger.error(
+                "Unexpected GitHub API error: repo=%s/%s, file=%s, status=%d, message=%s",
+                owner,
+                repo,
+                file_path,
+                resp.status_code,
+                resp.text,
+            )
             raise HTTPException(status_code=500, detail="GitHub API error.")
 
         save_path = ""  # Not saving for now — placeholder

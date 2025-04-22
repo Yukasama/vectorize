@@ -13,4 +13,4 @@ class ModelRequest(BaseModel):
     github_url: HttpUrl
 
 
-# FIXME use pydantic?
+# FIXME use pydantic for Model validation
