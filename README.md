@@ -32,7 +32,7 @@ uv remove <package>
 
 ```bash
 # .env
-DATABASE_URL=sqlite+aiosqlite:///./db/app.db
+DATABASE_URL=sqlite+aiosqlite:///./app.db
 ```
 
 #### Fix lock file

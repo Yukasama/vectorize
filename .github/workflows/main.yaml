@@ -74,7 +74,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: sqlite+aiosqlite:///./db/app.db
+      DATABASE_URL: sqlite+aiosqlite:///./app.db
 
     steps:
       - uses: actions/checkout@v4

@@ -9,5 +9,6 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.ruff": "always",
     "source.organizeImports.ruff": "always"
-  }
+  },
+  "postman.settings.dotenv-detection-notification-visibility": false
 }
