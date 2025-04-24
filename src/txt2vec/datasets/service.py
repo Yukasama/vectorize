@@ -11,6 +11,7 @@ import aiofiles
 import pandas as pd
 from fastapi import UploadFile
 from loguru import logger
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.config import (
     allowed_extensions,
@@ -41,7 +42,9 @@ MINIMUM_COLS = 2
 MAXIMUM_COLS = 3
 
 
-async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
+async def upload_file(
+    db: AsyncSession, file: UploadFile, sheet_name: int
+) -> dict[str, Any]:
     """Stream upload, parse to DataFrame, save as CSV, and return metadata.
 
     :param file: FastAPI ``UploadFile`` instance provided by the client.
@@ -58,6 +61,7 @@ async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
     first = await file.read(1)
     if not first:
         raise EmptyFileError
+    await file.seek(0)
 
     safe_name = _sanitize_filename(file.filename)
     ext = Path(safe_name).suffix.lstrip(".")
@@ -97,7 +101,7 @@ async def upload_file(file: UploadFile, sheet_name: int) -> dict[str, Any]:
     )
 
     logger.debug("Dataset DTO created", dataset=dataset)
-    dataset_id = await save_dataset(dataset)
+    dataset_id = await save_dataset(db, dataset)
     logger.debug("Dataset saved", datasetId=dataset_id)
     return dataset_id
 

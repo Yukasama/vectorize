@@ -2,9 +2,11 @@
 
 from typing import Annotated, Final
 
-from fastapi import APIRouter, File, Request, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
 from loguru import logger
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from txt2vec.config.db import get_session
 from txt2vec.datasets.service import upload_file
 
 __all__ = ["router"]
@@ -16,6 +18,7 @@ router = APIRouter(tags=["Dataset", "Upload"])
 async def upload_dataset(
     file: Annotated[UploadFile, File()],
     request: Request,
+    db: Annotated[AsyncSession, Depends(get_session)],
     sheet_name: int = 0,
 ) -> Response:
     """Upload a dataset file and convert it to CSV format.
@@ -27,7 +30,7 @@ async def upload_dataset(
     :return: OK response with the dataset ID in the Location header
     """
     logger.debug("Dataset upload started", file=file.filename)
-    dataset_id: Final = await upload_file(file, sheet_name)
+    dataset_id: Final = await upload_file(db, file, sheet_name)
     logger.debug("Dataset uploaded", datasetId=dataset_id)
 
     return Response(

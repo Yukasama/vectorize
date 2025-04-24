@@ -5,6 +5,11 @@ import tomllib
 from pathlib import Path
 from typing import Final, Literal
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
 _app_config = Path(__file__).parent / "resources" / "app.toml"
 
 with open(_app_config, "rb") as f:
@@ -22,6 +27,7 @@ port: Final[int] = _server_config.get("port", 8000)
 prefix: Final[str] = _server_config.get("prefix")
 reload: Final[bool] = _server_config.get("reload", False)
 server_header: Final[bool] = _server_config.get("server_header", False)
+allow_origin: Final[str] = _server_config.get("allow_origin", ["http://localhost:3000"])
 
 # Dataset configuration
 _dataset_config = _app_config.get("dataset", {})
