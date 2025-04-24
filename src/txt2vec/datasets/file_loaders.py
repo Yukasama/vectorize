@@ -1,7 +1,5 @@
 """File loaders that convert raw files to pandas DataFrames."""
 
-from __future__ import annotations
-
 import json
 from csv import Sniffer
 from pathlib import Path
@@ -27,7 +25,7 @@ def _load_csv(path: Path, *_: Any) -> pd.DataFrame:
     :raises UnicodeDecodeError: If all encoding attempts fail.
     """
     delim = _detect_delimiter(path)
-    encodings = ("utf-8", "latin1", "cp1252")
+    encodings = ("utf-8-sig", "utf-8", "latin1", "cp1252")
     for enc in encodings:
         try:
             return pd.read_csv(path, delimiter=delim, encoding=enc)

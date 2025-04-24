@@ -68,7 +68,18 @@ jobs:
           restore-keys: ${{ runner.os }}-venv-
 
       - name: Check for outdated packages
-        run: .venv/bin/uv pip list --outdated
+        shell: bash
+        run: |
+          OUTDATED="$(.venv/bin/uv pip list --outdated | tail -n +3)"
+          if [[ -n "$OUTDATED" ]]; then
+            echo "::group::Outdated packages"
+            echo "$OUTDATED"
+            echo "::endgroup::"
+            echo "::error ::One or more Python dependencies are not up-to-date."
+            exit 1
+          else
+            echo "✅ All dependencies are up-to-date."
+          fi
 
   tests:
     needs: build

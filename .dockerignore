@@ -35,7 +35,7 @@ dist/
 
 # Tests
 tests/
-testing_data/
+test_data/
 .pytest_cache/
 report.html
 .coverage
