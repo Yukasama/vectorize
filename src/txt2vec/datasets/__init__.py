@@ -5,7 +5,6 @@ from txt2vec.datasets.exceptions import (
     DatasetNotFoundError,
     InvalidCSVFormatError,
     InvalidFileError,
-    ProcessingError,
     UnsupportedFormatError,
 )
 from txt2vec.datasets.file_format import FileFormat
@@ -20,7 +19,6 @@ __all__ = [
     "FileFormat",
     "InvalidCSVFormatError",
     "InvalidFileError",
-    "ProcessingError",
     "UnsupportedFormatError",
     "router",
     "upload_file",

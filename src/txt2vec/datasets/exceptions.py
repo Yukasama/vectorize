@@ -10,7 +10,6 @@ __all__ = [
     "DatasetNotFoundError",
     "InvalidCSVFormatError",
     "InvalidFileError",
-    "ProcessingError",
     "UnsupportedFormatError",
 ]
 
@@ -53,7 +52,7 @@ class InvalidCSVFormatError(AppError):
     message = (
         "Invalid CSV format, expected: 'id, anchor, positive, negative' as columns"
     )
-    status_code = status.HTTP_400_BAD_REQUEST
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 class EmptyFileError(AppError):
@@ -68,17 +67,8 @@ class DatasetNotFoundError(AppError):
     """Exception raised when the dataset is not found."""
 
     error_code = ErrorCode.NOT_FOUND
-    message = "Dataset not found"
     status_code = status.HTTP_404_NOT_FOUND
 
     def __init__(self, dataset_id: str) -> None:
         """Initialize with the dataset ID."""
         super().__init__(f"Dataset with ID {dataset_id} not found")
-
-
-class ProcessingError(AppError):
-    """Exception raised when there's an error processing the file."""
-
-    error_code = ErrorCode.PROCESSING_ERROR
-    message = "Error processing the dataset"
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR

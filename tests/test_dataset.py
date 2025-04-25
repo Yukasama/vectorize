@@ -23,6 +23,7 @@ TRAINING_FOLDER = "test_data"
 TEST_FILE_NAME = "trainingdata"
 INVALID_FORMAT_NAME = "trainingdata_wrong_format.csv"
 EMPTY_FILE_NAME = "trainingdata_empty.csv"
+UNSUPPORTED_FORMAT = "trainingdata_unsupported_format.txt"
 
 
 @pytest.fixture(scope="session")
@@ -36,7 +37,6 @@ async def session():
     )
 
     async with test_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
 
     async with AsyncSession(test_engine) as session:
@@ -125,3 +125,18 @@ def test_dataset_empty(client: TestClient) -> None:
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.json()["code"] == "EMPTY_FILE"
+
+
+@pytest.mark.dataset
+def test_dataset_unsupported_format(client: TestClient) -> None:
+    """Test uploading an unsupported format."""
+    base_dir = Path(__file__).parent.parent / TRAINING_FOLDER / "datasets"
+    test_file_path = base_dir / UNSUPPORTED_FORMAT
+
+    file_content = Path(test_file_path).read_bytes()
+    files = {"file": (os.path.basename(test_file_path), file_content, "text/csv")}
+
+    response = client.post(f"{prefix}/datasets", files=files)
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["code"] == "UNSUPPORTED_FORMAT"
