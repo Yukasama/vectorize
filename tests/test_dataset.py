@@ -4,7 +4,7 @@
 
 import asyncio
 import json
-import os
+from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
 from uuid import UUID
 
@@ -29,7 +29,7 @@ UNSUPPORTED_FORMAT = "trainingdata_unsupported_format.txt"
 
 
 @pytest.fixture(scope="session")
-async def session():
+async def session() -> AsyncGenerator[AsyncSession]:
     """Create a test database engine."""
     test_engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
@@ -46,10 +46,10 @@ async def session():
 
 
 @pytest.fixture(name="client")
-def client_fixture(session: AsyncSession):
+def client_fixture(session: AsyncSession) -> Generator[TestClient]:
     """Create a test client for the FastAPI app."""
 
-    def get_session_override():
+    def get_session_override() -> AsyncSession:
         return session
 
     app.dependency_overrides[get_session] = get_session_override
@@ -82,7 +82,7 @@ async def test_dataset_formats_upload(
     test_file_path = base_dir / file_name
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (os.path.basename(test_file_path), file_content, mime_type)}
+    files = {"file": (Path.name(test_file_path), file_content, mime_type)}
 
     response = client.post(f"{prefix}/datasets", files=files)
     assert response.status_code == status.HTTP_201_CREATED
@@ -110,9 +110,9 @@ async def test_dataset_custom_fields(client: TestClient, session: AsyncSession) 
     test_file_path = base_dir / CUSTOM_FORMAT_NAME
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (os.path.basename(test_file_path), file_content, "text/csv")}
+    files = {"file": (Path.name(test_file_path), file_content, "text/csv")}
 
-    column_mapping = {"query": "q", "positive": "answer", "negative": "no_context"}
+    column_mapping = {"question": "q", "positive": "answer", "negative": "no_context"}
 
     response = client.post(
         f"{prefix}/datasets",
@@ -149,7 +149,7 @@ def test_dataset_invalid_format(
     test_file_path = base_dir / file_name
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (os.path.basename(test_file_path), file_content, mime_type)}
+    files = {"file": (Path.name(test_file_path), file_content, mime_type)}
 
     response = client.post(f"{prefix}/datasets", files=files)
 
@@ -164,7 +164,7 @@ def test_dataset_empty(client: TestClient) -> None:
     test_file_path = base_dir / EMPTY_FILE_NAME
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (os.path.basename(test_file_path), file_content, "text/csv")}
+    files = {"file": (Path.name(test_file_path), file_content, "text/csv")}
 
     response = client.post(f"{prefix}/datasets", files=files)
 
@@ -179,7 +179,7 @@ def test_dataset_unsupported_format(client: TestClient) -> None:
     test_file_path = base_dir / UNSUPPORTED_FORMAT
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (os.path.basename(test_file_path), file_content, "text/csv")}
+    files = {"file": (Path.name(test_file_path), file_content, "text/csv")}
 
     response = client.post(f"{prefix}/datasets", files=files)
 

@@ -1,5 +1,7 @@
 """Database connection and session management."""
 
+from collections.abc import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -17,7 +19,7 @@ engine = create_async_engine(
 )
 
 
-async def get_session():
+async def get_session() -> AsyncGenerator[AsyncSession]:
     """Get session for database operations."""
     async with AsyncSession(engine, expire_on_commit=False) as session:
         yield session

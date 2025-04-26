@@ -28,13 +28,15 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     # --- Domain errors ------------------------------------------------
     @app.exception_handler(AppError)
-    def _handle_app_error(request: Request, exc: AppError):
+    def _handle_app_error(request: Request, exc: AppError) -> JSONResponse:
         logger.error("{}: {}", exc.error_code, exc.message)
         return _make_response(exc.status_code, exc.error_code, exc.message)
 
     # --- Validation errors -------------------------------------------------
     @app.exception_handler(RequestValidationError)
-    def _handle_validation(request: Request, exc: RequestValidationError):
+    def _handle_validation(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
         logger.info("Validation error on {}: {}", request.url, exc.errors())
         return _make_response(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -44,7 +46,7 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     # --- Catch-all barrier ------------------------------
     @app.exception_handler(Exception)
-    def _handle_unexpected(request: Request, exc: Exception):
+    def _handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
         # Pass through cancellations in dev
         if isinstance(exc, asyncio.CancelledError) and app_env != "development":
             raise exc

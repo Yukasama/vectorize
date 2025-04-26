@@ -2,14 +2,14 @@
 
 import sys
 
-from loguru import logger
+from loguru import FormatFunction, logger
 
 from txt2vec.config.config import log_path, rotation
 
 __all__ = ["config_logger"]
 
 
-def format_record(record):
+def format_record(record: str | FormatFunction) -> str:
     ts = record["time"].strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
     line = (
