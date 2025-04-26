@@ -44,7 +44,7 @@ class Synthesis(SQLModel, table=True):
     error: ErrorInfo | None = Relationship(back_populates=None)
     """Relationship to the associated error information."""
 
-    status: Status = Field(sa_column=Column(server_default=Status.RUNNING))
+    status: Status = Field(default=Status.RUNNING)
     """Current status of the synthetic generation."""
 
     generated_dataset: Optional["Dataset"] = Relationship(back_populates="synthesis")

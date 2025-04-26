@@ -11,18 +11,6 @@ from txt2vec.config.config import app_env
 from txt2vec.errors import AppError, ErrorCode
 
 
-def _make_response(
-    status_code: int,
-    code: ErrorCode,
-    message: str,
-) -> JSONResponse:
-    """Return a uniform JSON error shape."""
-    return JSONResponse(
-        status_code=status_code,
-        content={"code": code, "message": message},
-    )
-
-
 def register_exception_handlers(app: FastAPI) -> None:
     """Attach all global exception handlers to *app*."""
 
@@ -57,3 +45,15 @@ def register_exception_handlers(app: FastAPI) -> None:
             ErrorCode.SERVER_ERROR,
             "Internal server error",
         )
+
+
+def _make_response(
+    status_code: int,
+    code: ErrorCode,
+    message: str,
+) -> JSONResponse:
+    """Return a uniform JSON error shape."""
+    return JSONResponse(
+        status_code=status_code,
+        content={"code": code, "message": message},
+    )

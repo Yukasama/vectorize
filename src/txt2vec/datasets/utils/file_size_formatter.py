@@ -4,9 +4,9 @@ from typing import Final
 
 __all__ = ["format_file_size"]
 
-_bytes_per_kb: Final[int] = 1024
-_bytes_per_mb: Final[int] = 1024 * _bytes_per_kb
-_bytes_per_gb: Final[int] = 1024 * _bytes_per_mb
+_BYTES_PER_KB: Final[int] = 1024
+_BYTES_PER_MB: Final[int] = 1024 * _BYTES_PER_KB
+_BYTES_PER_GB: Final[int] = 1024 * _BYTES_PER_MB
 
 
 def format_file_size(size_in_bytes: int) -> str:
@@ -18,10 +18,10 @@ def format_file_size(size_in_bytes: int) -> str:
     Returns:
         Human-readable size string (e.g., "4.20 MB")
     """
-    if size_in_bytes >= _bytes_per_gb:
-        return f"{size_in_bytes / _bytes_per_gb:.2f} GB"
-    if size_in_bytes >= _bytes_per_mb:
-        return f"{size_in_bytes / _bytes_per_mb:.2f} MB"
-    if size_in_bytes >= _bytes_per_kb:
-        return f"{size_in_bytes / _bytes_per_kb:.2f} KB"
+    if size_in_bytes >= _BYTES_PER_GB:
+        return f"{size_in_bytes / _BYTES_PER_GB:.2f} GB"
+    if size_in_bytes >= _BYTES_PER_MB:
+        return f"{size_in_bytes / _BYTES_PER_MB:.2f} MB"
+    if size_in_bytes >= _BYTES_PER_KB:
+        return f"{size_in_bytes / _BYTES_PER_KB:.2f} KB"
     return f"{size_in_bytes} bytes"

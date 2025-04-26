@@ -11,7 +11,7 @@ from txt2vec.datasets.exceptions import InvalidFileError
 
 __all__ = ["sanitize_filename"]
 
-_allowed_chars: Final[set[str]] = set(string.ascii_letters + string.digits + "_-")
+_ALLOWED_CHARS: Final[set[str]] = set(string.ascii_letters + string.digits + "_-")
 
 
 def sanitize_filename(file: UploadFile, allowed_extensions: list[str]) -> str:
@@ -30,7 +30,7 @@ def sanitize_filename(file: UploadFile, allowed_extensions: list[str]) -> str:
     if not file.filename:
         raise InvalidFileError("Missing filename.")
 
-    base = Path.name(file.filename)
+    base = Path(file.filename).name
     stem = Path(base).stem
     ext = Path(base).suffix.lstrip(".")
     ext = ext.lower().lstrip(".")
@@ -38,7 +38,7 @@ def sanitize_filename(file: UploadFile, allowed_extensions: list[str]) -> str:
     if ext not in allowed_extensions:
         ext = ""
 
-    stem_sanitized = "".join(c if c in _allowed_chars else "_" for c in stem)
+    stem_sanitized = "".join(c if c in _ALLOWED_CHARS else "_" for c in stem)
     if not stem_sanitized:
         stem_sanitized = "_"
 

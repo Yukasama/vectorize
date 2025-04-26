@@ -6,14 +6,14 @@ import pandas as pd
 
 __all__ = ["escape_csv_formulas"]
 
-_ctl_chars = {chr(i) for i in range(32)}
-_ws_chars = set(string.whitespace)
+_CTL_CHARS = {chr(i) for i in range(32)}
+_WS_CHARS = set(string.whitespace)
 
 
 def _strip_leading_ws_ctl(value: str) -> str:
     """Remove leading whitespace & ASCII control chars without regex."""
     idx = 0
-    while idx < len(value) and (value[idx] in _ws_chars or value[idx] in _ctl_chars):
+    while idx < len(value) and (value[idx] in _WS_CHARS or value[idx] in _CTL_CHARS):
         idx += 1
     return value[idx:]
 

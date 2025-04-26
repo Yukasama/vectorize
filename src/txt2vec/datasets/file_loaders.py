@@ -15,7 +15,7 @@ from .file_format import FileFormat
 
 __all__ = ["FILE_LOADERS"]
 
-_delimiters: Final[tuple[str, ...]] = (",", ";", "\t", "|")
+_DELIMITERS: Final[tuple[str, ...]] = (",", ";", "\t", "|")
 
 
 def _load_csv(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
@@ -136,7 +136,7 @@ def _detect_delimiter(path: Path) -> str:
             dialect = Sniffer().sniff(sample)
             return dialect.delimiter
         except Exception:
-            for d in _delimiters:
+            for d in _DELIMITERS:
                 if d in sample:
                     return d
             return default_delimiter

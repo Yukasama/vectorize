@@ -82,7 +82,7 @@ async def test_dataset_formats_upload(
     test_file_path = base_dir / file_name
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (Path.name(test_file_path), file_content, mime_type)}
+    files = {"file": (Path(test_file_path).name, file_content, mime_type)}
 
     response = client.post(f"{prefix}/datasets", files=files)
     assert response.status_code == status.HTTP_201_CREATED
@@ -110,7 +110,7 @@ async def test_dataset_custom_fields(client: TestClient, session: AsyncSession) 
     test_file_path = base_dir / CUSTOM_FORMAT_NAME
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (Path.name(test_file_path), file_content, "text/csv")}
+    files = {"file": (Path(test_file_path).name, file_content, "text/csv")}
 
     column_mapping = {"question": "q", "positive": "answer", "negative": "no_context"}
 
@@ -149,7 +149,7 @@ def test_dataset_invalid_format(
     test_file_path = base_dir / file_name
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (Path.name(test_file_path), file_content, mime_type)}
+    files = {"file": (Path(test_file_path).name, file_content, mime_type)}
 
     response = client.post(f"{prefix}/datasets", files=files)
 
@@ -164,7 +164,7 @@ def test_dataset_empty(client: TestClient) -> None:
     test_file_path = base_dir / EMPTY_FILE_NAME
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (Path.name(test_file_path), file_content, "text/csv")}
+    files = {"file": (Path(test_file_path).name, file_content, "text/csv")}
 
     response = client.post(f"{prefix}/datasets", files=files)
 
@@ -179,7 +179,7 @@ def test_dataset_unsupported_format(client: TestClient) -> None:
     test_file_path = base_dir / UNSUPPORTED_FORMAT
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (Path.name(test_file_path), file_content, "text/csv")}
+    files = {"file": (Path(test_file_path).name, file_content, "text/csv")}
 
     response = client.post(f"{prefix}/datasets", files=files)
 

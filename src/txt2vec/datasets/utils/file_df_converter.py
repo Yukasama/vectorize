@@ -20,7 +20,7 @@ from txt2vec.datasets.file_loaders import FILE_LOADERS
 
 __all__ = ["convert_file_to_df"]
 
-_chunk_size = 1_048_576
+_CHUNK_SIZE = 1_048_576
 
 
 async def convert_file_to_df(file: UploadFile, ext: str, sheet_index: int) -> bool:
@@ -53,7 +53,7 @@ async def convert_file_to_df(file: UploadFile, ext: str, sheet_index: int) -> bo
         tmp_path = Path(tmp_dir) / uuid.uuid4().hex
         size = 0
         async with aiofiles.open(tmp_path, "wb") as tmp_file:
-            while chunk := await file.read(_chunk_size):
+            while chunk := await file.read(_CHUNK_SIZE):
                 size += len(chunk)
                 if size > max_upload_size:
                     raise FileTooLargeError(size)
