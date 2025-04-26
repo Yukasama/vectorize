@@ -6,6 +6,6 @@ from typing import TypedDict
 class ColumnMapping(TypedDict, total=False):
     """Mapping of columns in the dataset."""
 
-    query: str | None
+    question: str | None
     positive: str | None
     negative: str | None
