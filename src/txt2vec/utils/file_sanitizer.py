@@ -8,7 +8,6 @@ from fastapi import UploadFile
 
 from txt2vec.config.config import max_filename_length
 from txt2vec.datasets.exceptions import InvalidFileError, UnsupportedFormatError
-from txt2vec.datasets.file_format import FileFormat
 
 __all__ = ["sanitize_filename"]
 
@@ -16,7 +15,9 @@ __all__ = ["sanitize_filename"]
 _ALLOWED_CHARS: Final[set[str]] = set(string.ascii_letters + string.digits + "_-")
 
 
-def sanitize_filename(file: UploadFile, allowed_extensions: list[str]) -> str:
+def sanitize_filename(
+    file: UploadFile, allowed_extensions: list[str]
+) -> tuple[str, str]:
     """Return a filesystem safe filename trimmed to allowed chars and length.
 
     Args:
@@ -36,15 +37,11 @@ def sanitize_filename(file: UploadFile, allowed_extensions: list[str]) -> str:
     stem = Path(base).stem
     ext = Path(base).suffix.lstrip(".").lower().lstrip(".")
 
-    print(base, stem, ext)
-
     if not stem or len(stem) == 0 or not ext:
         raise InvalidFileError("Filename cannot be empty")
 
-    try:
-        FileFormat(ext)
-    except ValueError as e:
-        raise UnsupportedFormatError(ext) from e
+    if not ext or ext not in allowed_extensions:
+        raise UnsupportedFormatError(ext)
 
     stem_sanitized = "".join(c if c in _ALLOWED_CHARS else "_" for c in stem)
     if not stem_sanitized:
