@@ -6,16 +6,21 @@ from loguru import logger
 from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.datasets.exceptions import DatasetNotFoundError
-from txt2vec.datasets.models import Dataset
+from .exceptions import DatasetNotFoundError
+from .models import Dataset
+
+__all__ = ["get_dataset", "save_dataset", "update_dataset"]
 
 
 async def save_dataset(db: AsyncSession, dataset: Dataset) -> UUID:
     """Save a new dataset to the database.
 
-    :param db: Database session
-    :param dataset: The dataset object to save
-    :return: The UUID of the saved dataset
+    Args:
+        db: Database session instance.
+        dataset: The dataset object to save.
+
+    Returns:
+        UUID: The UUID of the saved dataset.
     """
     db.add(dataset)
     await db.commit()
@@ -25,12 +30,17 @@ async def save_dataset(db: AsyncSession, dataset: Dataset) -> UUID:
 
 
 async def get_dataset(db: AsyncSession, dataset_id: UUID) -> Dataset:
-    """Get a dataset by its ID.
+    """Retrieve a dataset by its ID.
 
-    :param db: Database session
-    :param dataset_id: The UUID of the dataset to retrieve
-    :return: The dataset object
-    :raises DatasetNotFoundError: If the dataset is not found
+    Args:
+        db: Database session instance.
+        dataset_id: The UUID of the dataset to retrieve.
+
+    Returns:
+        Dataset: The dataset object corresponding to the given ID.
+
+    Raises:
+        DatasetNotFoundError: If the dataset is not found.
     """
     statement = select(Dataset).where(Dataset.id == dataset_id)
     result = await db.exec(statement)
@@ -47,11 +57,16 @@ async def update_dataset(
 ) -> Dataset:
     """Update an existing dataset.
 
-    :param db: Database session
-    :param dataset_id: The UUID of the dataset to update
-    :param update_data: Dictionary containing the fields to update
-    :return: The updated dataset object
-    :raises DatasetNotFoundError: If the dataset is not found
+    Args:
+        db: Database session instance.
+        dataset_id: The UUID of the dataset to update.
+        update_data: Dictionary containing the fields to update.
+
+    Returns:
+        Dataset: The updated dataset object.
+
+    Raises:
+        DatasetNotFoundError: If the dataset is not found.
     """
     statement = select(Dataset).where(Dataset.id == dataset_id)
     result = await db.exec(statement)

@@ -9,7 +9,7 @@ from txt2vec.config.config import log_path, rotation
 __all__ = ["config_logger"]
 
 
-def format_record(record):
+def format_record(record: str) -> str:
     ts = record["time"].strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
     line = (

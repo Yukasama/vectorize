@@ -3,17 +3,23 @@
 import uuid
 from datetime import datetime
 
-from sqlmodel import Field, SQLModel, func
+from sqlmodel import Column, DateTime, Field, SQLModel, func
 
 
 class ErrorInfo(SQLModel, table=True):
     """ErrorInfo model."""
 
+    __tablename__ = "errorinfo"
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     """Unique identifier for the error info."""
 
     created_at: datetime | None = Field(
-        default=None, sa_column_kwargs={"server_default": func.now()}
+        default=None,
+        sa_column=Column(
+            DateTime(timezone=True),
+            insert_default=func.now(),
+        ),
     )
     """Timestamp when the error was recorded."""
 

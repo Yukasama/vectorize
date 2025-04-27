@@ -3,7 +3,8 @@
 """Dataset tests."""
 
 import asyncio
-import os
+import json
+from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
 from uuid import UUID
 
@@ -21,13 +22,14 @@ from txt2vec.datasets.repository import get_dataset
 
 TRAINING_FOLDER = "test_data"
 TEST_FILE_NAME = "trainingdata"
-INVALID_FORMAT_NAME = "trainingdata_wrong_format.csv"
+CUSTOM_FORMAT_NAME = "trainingdata_custom_fields.csv"
+INVALID_FORMAT_NAME = "trainingdata_invalid_format"
 EMPTY_FILE_NAME = "trainingdata_empty.csv"
 UNSUPPORTED_FORMAT = "trainingdata_unsupported_format.txt"
 
 
 @pytest.fixture(scope="session")
-async def session():
+async def session() -> AsyncGenerator[AsyncSession]:
     """Create a test database engine."""
     test_engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
@@ -44,16 +46,15 @@ async def session():
 
 
 @pytest.fixture(name="client")
-def client_fixture(session: AsyncSession):
+def client_fixture(session: AsyncSession) -> Generator[TestClient]:
     """Create a test client for the FastAPI app."""
 
-    def get_session_override():
+    def get_session_override() -> AsyncSession:
         return session
 
     app.dependency_overrides[get_session] = get_session_override
 
     client = TestClient(app)
-
     yield client
 
     app.dependency_overrides.clear()
@@ -67,6 +68,10 @@ def client_fixture(session: AsyncSession):
         (f"{TEST_FILE_NAME}.csv", "text/csv"),
         (f"{TEST_FILE_NAME}.json", "application/json"),
         (f"{TEST_FILE_NAME}.xml", "application/xml"),
+        (
+            f"{TEST_FILE_NAME}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ),
     ],
 )
 async def test_dataset_formats_upload(
@@ -77,7 +82,7 @@ async def test_dataset_formats_upload(
     test_file_path = base_dir / file_name
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (os.path.basename(test_file_path), file_content, mime_type)}
+    files = {"file": (Path(test_file_path).name, file_content, mime_type)}
 
     response = client.post(f"{prefix}/datasets", files=files)
     assert response.status_code == status.HTTP_201_CREATED
@@ -97,18 +102,58 @@ async def test_dataset_formats_upload(
             await asyncio.sleep(0.5)
 
 
+@pytest.mark.asyncio
 @pytest.mark.dataset
-def test_dataset_invalid_format(client: TestClient) -> None:
-    """Test uploading an invalid file format."""
+async def test_dataset_custom_fields(client: TestClient, session: AsyncSession) -> None:
+    """Test uploading a dataset with custom fields."""
     base_dir = Path(__file__).parent.parent / TRAINING_FOLDER / "datasets"
-    test_file_path = base_dir / INVALID_FORMAT_NAME
+    test_file_path = base_dir / CUSTOM_FORMAT_NAME
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (os.path.basename(test_file_path), file_content, "text/csv")}
+    files = {"file": (Path(test_file_path).name, file_content, "text/csv")}
+
+    column_mapping = {"question": "q", "positive": "answer", "negative": "no_context"}
+
+    response = client.post(
+        f"{prefix}/datasets",
+        files=files,
+        data={"options": json.dumps(column_mapping)},
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+    dataset_id = response.headers["Location"].split("/")[-1]
+    assert dataset_id is not None
+
+    dataset = await get_dataset(db=session, dataset_id=UUID(dataset_id))
+    assert dataset.id == UUID(dataset_id)
+
+
+@pytest.mark.dataset
+@pytest.mark.parametrize(
+    "file_name,mime_type",
+    [
+        (f"{INVALID_FORMAT_NAME}.csv", "text/csv"),
+        (f"{INVALID_FORMAT_NAME}.json", "application/json"),
+        (f"{INVALID_FORMAT_NAME}.xml", "application/xml"),
+        (
+            f"{INVALID_FORMAT_NAME}.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ),
+    ],
+)
+def test_dataset_invalid_format(
+    client: TestClient, file_name: str, mime_type: str
+) -> None:
+    """Test uploading an invalid file format."""
+    base_dir = Path(__file__).parent.parent / TRAINING_FOLDER / "datasets"
+    test_file_path = base_dir / file_name
+
+    file_content = Path(test_file_path).read_bytes()
+    files = {"file": (Path(test_file_path).name, file_content, mime_type)}
 
     response = client.post(f"{prefix}/datasets", files=files)
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert response.json()["code"] == "INVALID_CSV_FORMAT"
 
 
@@ -119,7 +164,7 @@ def test_dataset_empty(client: TestClient) -> None:
     test_file_path = base_dir / EMPTY_FILE_NAME
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (os.path.basename(test_file_path), file_content, "text/csv")}
+    files = {"file": (Path(test_file_path).name, file_content, "text/csv")}
 
     response = client.post(f"{prefix}/datasets", files=files)
 
@@ -134,7 +179,7 @@ def test_dataset_unsupported_format(client: TestClient) -> None:
     test_file_path = base_dir / UNSUPPORTED_FORMAT
 
     file_content = Path(test_file_path).read_bytes()
-    files = {"file": (os.path.basename(test_file_path), file_content, "text/csv")}
+    files = {"file": (Path(test_file_path).name, file_content, "text/csv")}
 
     response = client.post(f"{prefix}/datasets", files=files)
 

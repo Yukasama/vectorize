@@ -10,19 +10,26 @@ from defusedxml import ElementTree
 from loguru import logger
 
 from txt2vec.config.config import default_delimiter
-from txt2vec.datasets.file_format import FileFormat
+
+from .file_format import FileFormat
 
 __all__ = ["FILE_LOADERS"]
 
-DELIMITERS: Final[tuple[str, ...]] = (",", ";", "\t", "|")
+_DELIMITERS: Final[tuple[str, ...]] = (",", ";", "\t", "|")
 
 
-def _load_csv(path: Path, *_: Any) -> pd.DataFrame:
+def _load_csv(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
     """Load a CSV file with delimiter auto detection and encoding fallbacks.
 
-    :param path: Absolute path to the CSV file on disk.
-    :returns: Parsed DataFrame.
-    :raises UnicodeDecodeError: If all encoding attempts fail.
+    Args:
+        path: Absolute path to the CSV file on disk.
+        *_: Additional arguments (ignored).
+
+    Returns:
+        pd.DataFrame: Parsed DataFrame.
+
+    Raises:
+        UnicodeDecodeError: If all encoding attempts fail.
     """
     delim = _detect_delimiter(path)
     encodings = ("utf-8-sig", "utf-8", "latin1", "cp1252")
@@ -42,12 +49,18 @@ def _load_csv(path: Path, *_: Any) -> pd.DataFrame:
     )
 
 
-def _load_json(path: Path, *_: Any) -> pd.DataFrame:
+def _load_json(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
     """Load a JSON file, supporting array or object payloads.
 
-    :param path: Path to the JSON file.
-    :returns: DataFrame derived from the JSON structure.
-    :raises ValueError: When JSON cannot be decoded.
+    Args:
+        path: Path to the JSON file.
+        *_: Additional arguments (ignored).
+
+    Returns:
+        pd.DataFrame: DataFrame derived from the JSON structure.
+
+    Raises:
+        ValueError: When JSON cannot be decoded.
     """
     try:
         return pd.read_json(path)
@@ -61,11 +74,15 @@ def _load_json(path: Path, *_: Any) -> pd.DataFrame:
         return pd.json_normalize(payload)
 
 
-def _load_xml(path: Path, *_: Any) -> pd.DataFrame:
+def _load_xml(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
     """Parse an XML document into a flat DataFrame of child elements.
 
-    :param path: Path to the XML file.
-    :returns: DataFrame where each XML element becomes one record.
+    Args:
+        path: Path to the XML file.
+        *_: Additional arguments (ignored).
+
+    Returns:
+        pd.DataFrame: DataFrame where each XML element becomes one record.
     """
     tree = ElementTree.parse(path)
     root = tree.getroot()
@@ -75,9 +92,12 @@ def _load_xml(path: Path, *_: Any) -> pd.DataFrame:
 def _load_excel(path: Path, sheet_name: int = 0) -> pd.DataFrame:
     """Read an Excel workbook sheet into a DataFrame.
 
-    :param path: Path to the XLS/XLSX file.
-    :param sheet_name: Index or name of the sheet to load.
-    :returns: DataFrame with sheet contents.
+    Args:
+        path: Path to the XLS/XLSX file.
+        sheet_name: Index or name of the sheet to load.
+
+    Returns:
+        pd.DataFrame: DataFrame with sheet contents.
     """
     return pd.read_excel(path, sheet_name=sheet_name)
 
@@ -97,6 +117,17 @@ FILE_LOADERS: Final[dict[FileFormat, Any]] = {
 
 
 def _detect_delimiter(path: Path) -> str:
+    """Detect the delimiter used in a CSV file.
+
+    Tries to sniff the delimiter from file content, falls back to checking
+    common delimiters, and defaults to configured delimiter as last resort.
+
+    Args:
+        path: Path to the CSV file.
+
+    Returns:
+        str: Detected delimiter character.
+    """
     with path.open(newline="", encoding="utf-8") as csvfile:
         sample: Final = csvfile.read(4096)
         if not sample:
@@ -105,7 +136,7 @@ def _detect_delimiter(path: Path) -> str:
             dialect = Sniffer().sniff(sample)
             return dialect.delimiter
         except Exception:
-            for d in DELIMITERS:
+            for d in _DELIMITERS:
                 if d in sample:
                     return d
             return default_delimiter

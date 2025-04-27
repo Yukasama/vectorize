@@ -2,11 +2,16 @@
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
-from txt2vec.datasets.classification import Classification
 from txt2vec.synthesis.models import Synthesis
+
+from .classification import Classification
+
+if TYPE_CHECKING:
+    from txt2vec.synthesis.models import Synthesis
 
 __all__ = ["Dataset"]
 
@@ -14,8 +19,13 @@ __all__ = ["Dataset"]
 class Dataset(SQLModel, table=True):
     """Dataset model."""
 
+    __tablename__ = "dataset"
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     """Unique identifier for the dataset."""
+
+    version: int = Field(default=0)
+    """Version number of the dataset."""
 
     file_name: str = Field(index=True, unique=True)
     """Filename of the dataset file on the storage unit."""
@@ -33,8 +43,7 @@ class Dataset(SQLModel, table=True):
         default=None,
         sa_column=Column(
             DateTime(timezone=True),
-            server_default=func.now(),
-            nullable=True,
+            insert_default=func.now(),
         ),
     )
     """Timestamp when the dataset was created."""
@@ -44,13 +53,13 @@ class Dataset(SQLModel, table=True):
         sa_column=Column(
             DateTime(timezone=True),
             onupdate=func.now(),
-            nullable=True,
+            insert_default=func.now(),
         ),
     )
-    """Timestamp when the dataset was last updated (initially NULL)."""
+    """Timestamp when the dataset was last updated."""
 
     synthesis_id: uuid.UUID | None = Field(default=None, foreign_key="synthesis.id")
     """Optional ID linking to a synthetic dataset."""
 
-    synthesis: Synthesis | None = Relationship(back_populates="datasets")
+    synthesis: Optional["Synthesis"] = Relationship(back_populates="generated_dataset")
     """Relationship to the associated synthetic dataset."""

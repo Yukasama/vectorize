@@ -61,6 +61,7 @@ dependencies = [
     "torchaudio>=2.6.0",
     "torch>=2.6.0",
     "defusedxml>=0.7.1",
+    "openpyxl>=3.1.5",
 ]
 
 [project.scripts]
@@ -127,6 +128,10 @@ select = [
     "UP",     # pyupgrade https://github.com/asottile/pyupgrade
     "FURB",   # refurb https://github.com/dosisod/refurb
     "RUF",    # Ruff-specific rules https://docs.astral.sh/ruff/rules/#ruff-specific-rules-ruf
+    "PTH",    # flake8-use-pathlib
+    "SLF",    # flake8-self
+    "TD",     # flake8-todos
+    "ANN",    # flake8-annotations (enforce type hints)
 ]
 pydocstyle.convention = "google"
 ignore = [

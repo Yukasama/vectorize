@@ -3,11 +3,15 @@
 from fastapi import status
 
 from txt2vec.config.config import allowed_extensions
-from txt2vec.datasets.utils import format_file_size
 from txt2vec.errors import AppError, ErrorCode
+
+from .utils.file_size_formatter import format_file_size
 
 __all__ = [
     "DatasetNotFoundError",
+    "EmptyFileError",
+    "FileTooLargeError",
+    "InvalidCSVColumnError",
     "InvalidCSVFormatError",
     "InvalidFileError",
     "UnsupportedFormatError",
@@ -49,10 +53,19 @@ class InvalidCSVFormatError(AppError):
     """Exception raised when the CSV format is invalid."""
 
     error_code = ErrorCode.INVALID_CSV_FORMAT
-    message = (
-        "Invalid CSV format, expected: 'id, anchor, positive, negative' as columns"
-    )
+    message = "Invalid CSV format, expected: 'question, positive, negative' as columns"
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+class InvalidCSVColumnError(AppError):
+    """Exception raised when the a specified column does not exist."""
+
+    error_code = ErrorCode.INVALID_CSV_FORMAT
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, column_name: str) -> None:
+        """Initialize with the column name."""
+        super().__init__(f"Column with name {column_name} not found in the dataset")
 
 
 class EmptyFileError(AppError):

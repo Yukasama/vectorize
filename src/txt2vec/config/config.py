@@ -12,7 +12,7 @@ load_dotenv()
 
 _app_config = Path(__file__).parent / "resources" / "app.toml"
 
-with open(_app_config, "rb") as f:
+with Path.open(_app_config, "rb") as f:
     _config = tomllib.load(f)
     _app_config = _config.get("app", {})
 

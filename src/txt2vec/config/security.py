@@ -13,7 +13,8 @@ __all__ = ["add_security_headers"]
 def _set_security_headers(response: Response) -> None:
     """Set security headers to harden the API.
 
-    :param response: The HTTP response to modify
+    Args:
+        response: The HTTP response to secure
     """
     response.headers["X-Frame-Options"] = "DENY"
 
@@ -48,16 +49,30 @@ def _set_security_headers(response: Response) -> None:
 
 
 def add_security_headers(app: FastAPI) -> None:
-    """Configure application middleware."""
+    """Configure the FastAPI application to include security headers in all responses.
+
+    This middleware intercepts each HTTP request, calls the next handler,
+    and then sets security headers on the response.
+
+    Args:
+        app: The FastAPI application instance where the middleware will be added.
+    """
 
     @app.middleware("http")
-    # pylint: disable=unused-function
-    # pyright: ignore
     async def _security_headers_middleware(
         request: Request,
         call_next: Callable[[Any], Awaitable[Response]],
     ) -> Response:
-        """Add security headers to all HTTP responses."""
+        """Middleware to add security headers to every HTTP response.
+
+        Args:
+            request: The incoming HTTP request.
+            call_next: A callable to send the request to the subsequent middleware or
+            endpoint.
+
+        Returns:
+            Response: The HTTP response with security headers applied.
+        """
         response: Final[Response] = await call_next(request)
         _set_security_headers(response)
         return response
