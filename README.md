@@ -55,6 +55,9 @@ uv run app
 ```bash
 # Run all tests
 uv run pytest
+
+# Run loadtest with locust
+uvx locust -f scripts/locust.py
 ```
 
 ### Build Docker Image
