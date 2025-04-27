@@ -4,7 +4,7 @@ import string
 
 import pandas as pd
 
-from txt2vec.datasets.exceptions import InvalidCSVFormatError
+from ..exceptions import InvalidCSVFormatError
 
 __all__ = ["escape_csv_formulas"]
 
@@ -30,7 +30,13 @@ def escape_csv_formulas(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in result.columns:
         if pd.api.types.is_string_dtype(result[col]):
-            result[col] = _process_column(result[col])
+            _process_column(result[col])
+
+            for i, value in enumerate(result[col]):
+                if isinstance(value, str):
+                    stripped_val = _strip_leading_ws_ctl(value)
+                    if stripped_val.startswith(("=", "+", "-", "@")):
+                        result[col].iat[i] = f"'{value}"
 
     return result
 
@@ -43,25 +49,18 @@ def _strip_leading_ws_ctl(value: str) -> str:
     return value[idx:]
 
 
-def _process_column(series: pd.Series) -> pd.Series:
-    """Process a pandas Series to escape formulas and validate format.
+def _process_column(series: pd.Series) -> None:
+    """Validate CSV format in a pandas Series.
 
     Args:
-        series: DataFrame column to process
-
-    Returns:
-        Processed column with escaped formulas
+        series: DataFrame column to validate
 
     Raises:
         InvalidCSVFormatError: When malformed CSV data is detected
     """
-    result = series.copy()
-
-    for i, value in enumerate(series):
+    for value in series:
         if not isinstance(value, str):
             continue
-
-        stripped_val = _strip_leading_ws_ctl(value)
 
         quote_count = value.count('"')
         if quote_count > 0 and quote_count % 2 != 0:
@@ -76,8 +75,3 @@ def _process_column(series: pd.Series) -> pd.Series:
         is_properly_quoted = value.startswith('"') and value.endswith('"')
         if has_special_chars and not is_properly_quoted:
             raise InvalidCSVFormatError("Special characters must be properly quoted")
-
-        if stripped_val.startswith(("=", "+", "-", "@")):
-            result.iat[i] = f"'{value}"
-
-    return result
