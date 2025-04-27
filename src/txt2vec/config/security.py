@@ -51,9 +51,6 @@ def _set_security_headers(response: Response) -> None:
 def add_security_headers(app: FastAPI) -> None:
     """Configure the FastAPI application to include security headers in all responses.
 
-    This middleware intercepts each HTTP request, calls the next handler,
-    and then sets security headers on the response.
-
     Args:
         app: The FastAPI application instance where the middleware will be added.
     """

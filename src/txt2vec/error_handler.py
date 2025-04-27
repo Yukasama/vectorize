@@ -10,36 +10,68 @@ from loguru import logger
 from txt2vec.config.config import app_env
 from txt2vec.errors import AppError, ErrorCode
 
+__all__ = ["register_exception_handlers"]
+
 
 def register_exception_handlers(app: FastAPI) -> None:
-    """Attach all global exception handlers to *app*."""
+    """Attach all global exception handlers to the FastAPI application.
 
-    # --- Domain errors ------------------------------------------------
+    Args:
+        app: The FastAPI application instance to register handlers with.
+    """
+
     @app.exception_handler(AppError)
     def _handle_app_error(request: Request, exc: AppError) -> JSONResponse:
-        logger.error("{}: {}", exc.error_code, exc.message)
+        """Handle application-specific errors.
+
+        Args:
+            request: The incoming HTTP request.
+            exc: The application error that was raised.
+
+        Returns:
+            JSONResponse: A formatted error response with appropriate status code.
+        """
+        logger.debug("{}: {}", exc.error_code, exc.message)
         return _make_response(exc.status_code, exc.error_code, exc.message)
 
-    # --- Validation errors -------------------------------------------------
     @app.exception_handler(RequestValidationError)
     def _handle_validation(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        logger.info("Validation error on {}: {}", request.url, exc.errors())
+        """Handle request validation errors from Pydantic models.
+
+        Args:
+            request: The incoming HTTP request.
+            exc: The validation error that was raised.
+
+        Returns:
+            JSONResponse: A 422 response with validation error details.
+        """
+        logger.debug("Validation error on {}: {}", request.url, exc.errors())
         return _make_response(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             ErrorCode.VALIDATION_ERROR,
-            "Validation failed",
+            "Arguments did not pass the endpoint format",
         )
 
-    # --- Catch-all barrier ------------------------------
     @app.exception_handler(Exception)
-    def _handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
+    def _handle_unexpected(exc: Exception) -> JSONResponse:
+        """Handle any uncaught exceptions as 500 server errors.
+
+        Args:
+            exc: The uncaught exception.
+
+        Returns:
+            JSONResponse: A 500 error response.
+
+        Raises:
+            asyncio.CancelledError: Re-raised in non-development environments.
+        """
         # Pass through cancellations in dev
         if isinstance(exc, asyncio.CancelledError) and app_env != "development":
             raise exc
 
-        logger.opt(exception=True).error("Unhandled exception: {}", str(exc))
+        logger.exception("Unhandled server exception")
         return _make_response(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             ErrorCode.SERVER_ERROR,
@@ -52,7 +84,16 @@ def _make_response(
     code: ErrorCode,
     message: str,
 ) -> JSONResponse:
-    """Return a uniform JSON error shape."""
+    """Create a standardized JSON error response.
+
+    Args:
+        status_code: HTTP status code to return.
+        code: Application-specific error code enum value.
+        message: Human-readable error message.
+
+    Returns:
+        JSONResponse: A formatted JSON response with the error details.
+    """
     return JSONResponse(
         status_code=status_code,
         content={"code": code, "message": message},

@@ -15,6 +15,7 @@ from .file_format import FileFormat
 
 __all__ = ["FILE_LOADERS"]
 
+
 _DELIMITERS: Final[tuple[str, ...]] = (",", ";", "\t", "|")
 
 
