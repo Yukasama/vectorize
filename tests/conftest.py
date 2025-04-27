@@ -1,0 +1,60 @@
+"""Common test fixtures for the application."""
+
+from collections.abc import AsyncGenerator, Generator
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlmodel import SQLModel, StaticPool
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from txt2vec.app import app
+from txt2vec.config.db import get_session
+
+
+@pytest.fixture(scope="session")
+async def session() -> AsyncGenerator[AsyncSession]:
+    """Create a test database engine.
+
+    Returns:
+        AsyncSession: SQLModel async session for database operations.
+    """
+    test_engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        echo=False,
+    )
+
+    async with test_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+
+    async with AsyncSession(test_engine) as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+
+@pytest.fixture(name="client")
+def client_fixture(session: AsyncSession) -> Generator[TestClient]:
+    """Create a test client for the FastAPI app.
+
+    Args:
+        session: Database session fixture.
+
+    Returns:
+        TestClient: Configured FastAPI test client.
+    """
+
+    def get_session_override() -> AsyncSession:
+        return session
+
+    app.dependency_overrides[get_session] = get_session_override
+
+    client = TestClient(app)
+    yield client
+
+    app.dependency_overrides.clear()

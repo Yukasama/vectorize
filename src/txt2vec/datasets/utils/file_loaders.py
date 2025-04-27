@@ -11,9 +11,9 @@ from loguru import logger
 
 from txt2vec.config.config import default_delimiter
 
-from .file_format import FileFormat
+from ..file_format import FileFormat
 
-__all__ = ["FILE_LOADERS"]
+__all__ = ["load_file"]
 
 
 _DELIMITERS: Final[tuple[str, ...]] = (",", ";", "\t", "|")
@@ -103,7 +103,7 @@ def _load_excel(path: Path, sheet_name: int = 0) -> pd.DataFrame:
     return pd.read_excel(path, sheet_name=sheet_name)
 
 
-FILE_LOADERS: Final[dict[FileFormat, Any]] = {
+load_file: Final[dict[FileFormat, Any]] = {
     FileFormat.CSV: _load_csv,
     FileFormat.JSON: _load_json,
     FileFormat.XML: _load_xml,
@@ -119,9 +119,6 @@ FILE_LOADERS: Final[dict[FileFormat, Any]] = {
 
 def _detect_delimiter(path: Path) -> str:
     """Detect the delimiter used in a CSV file.
-
-    Tries to sniff the delimiter from file content, falls back to checking
-    common delimiters, and defaults to configured delimiter as last resort.
 
     Args:
         path: Path to the CSV file.

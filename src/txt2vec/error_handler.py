@@ -55,10 +55,11 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    def _handle_unexpected(exc: Exception) -> JSONResponse:
+    def _handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
         """Handle any uncaught exceptions as 500 server errors.
 
         Args:
+            request: The incoming HTTP request.
             exc: The uncaught exception.
 
         Returns:
