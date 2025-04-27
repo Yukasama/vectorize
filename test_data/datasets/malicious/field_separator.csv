@@ -1,0 +1,7 @@
+question,positive,negative
+Normal Entry,Safe content,100
+"Injection","Field breaking attack, extra columns",200
+"Double Quote Escape""Injection","Breaking parser with quotes""",300
+"Newline
+Injection","Breaking rows by adding
+line breaks",400

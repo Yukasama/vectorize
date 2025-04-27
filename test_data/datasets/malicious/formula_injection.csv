@@ -1,0 +1,6 @@
+question,positive,negative
+Normal Entry,Safe content,100
+Formula Entry,=SUM(1+1),200
+DDE Attack,=cmd|' /C calc'!A1,300
+Remote Formula,=IMPORTXML(CONCAT("http://",SUBSTITUTE(A1," ","")),"//*"),400
+System Command,=CMD|' /C notepad'!'A1',500
