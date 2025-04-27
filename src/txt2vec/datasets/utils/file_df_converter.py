@@ -9,14 +9,15 @@ import pandas as pd
 from fastapi import UploadFile
 
 from txt2vec.config.config import max_upload_size
-from txt2vec.datasets.exceptions import (
+
+from ..exceptions import (
     EmptyFileError,
     FileTooLargeError,
     InvalidCSVFormatError,
     UnsupportedFormatError,
 )
-from txt2vec.datasets.file_format import FileFormat
-from txt2vec.datasets.utils.file_loaders import load_file
+from ..file_format import FileFormat
+from .file_loaders import load_file
 
 __all__ = ["convert_file_to_df"]
 
