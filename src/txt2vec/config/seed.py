@@ -6,7 +6,11 @@ from txt2vec.datasets.models import Classification, Dataset
 
 
 async def seed_db(session: AsyncSession) -> None:
-    """Seed the database with initial data."""
+    """Seed the database with initial data.
+
+    Args:
+        session: The SQLModel async database session.
+    """
     session.add(
         Dataset(
             name="example_dataset",
