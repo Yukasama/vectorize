@@ -32,38 +32,49 @@ def normalize_dataset(
     Raises:
         InvalidCSVFormatError: if mandatory columns are not found.
     """
-    df_cols_lc = {col.lower(): col for col in df.columns}
+    header_map = _build_header_map(df, mapping)
 
-    header_map: dict[str, str] = {}
-    if mapping:
-        for role in _ROLES:
-            if mapping.get(role):
-                key = mapping[role].lower()
-                if key not in df_cols_lc:
-                    raise InvalidCSVFormatError(f"Missing column: {mapping[role]}")
-                header_map[role] = df_cols_lc[key]
-
-    for role in _ROLES:
-        if role in header_map:
-            continue
-        for candidate in (role, *_ALIASES[role]):
-            if candidate.lower() in df_cols_lc:
-                header_map[role] = df_cols_lc[candidate.lower()]
-                break
-
-    if "question" not in header_map:
-        raise InvalidCSVFormatError("Missing column: question")
-    if "positive" not in header_map:
-        raise InvalidCSVFormatError("Missing column: positive")
-
-    keep = set(header_map.values())
-    drop_cols = [c for c in df.columns if c not in keep]
-    if drop_cols:
-        df.drop(columns=drop_cols, inplace=True)
-
+    keep_columns = set(header_map.values())
+    df.drop(columns=[c for c in df.columns if c not in keep_columns], inplace=True)
     df.rename(columns={header_map[r]: r for r in header_map}, inplace=True)
 
     cols_order = ["question", "positive"]
     if "negative" in header_map:
         cols_order.append("negative")
     df[:] = df[cols_order]
+
+
+def _find_column_match(
+    role: str, df_cols_lc: dict[str, str], mapping: Mapping[str, str] | None
+) -> str | None:
+    """Find matching column for a role, using either mapping or aliases."""
+    if mapping and mapping.get(role):
+        key = mapping[role].lower()
+        if key in df_cols_lc:
+            return df_cols_lc[key]
+        raise InvalidCSVFormatError(f"Missing column: {mapping[role]}")
+
+    candidates = [role, *list(_ALIASES[role])]
+    for candidate in candidates:
+        if candidate.lower() in df_cols_lc:
+            return df_cols_lc[candidate.lower()]
+
+
+def _build_header_map(
+    df: pd.DataFrame, mapping: Mapping[str, str] | None
+) -> dict[str, str]:
+    """Build mapping from role names to actual DataFrame column names."""
+    df_cols_lc = {col.lower(): col for col in df.columns}
+    header_map = {}
+
+    for role in _ROLES:
+        column = _find_column_match(role, df_cols_lc, mapping)
+        if column:
+            header_map[role] = column
+
+    if "question" not in header_map:
+        raise InvalidCSVFormatError("Missing column: question")
+    if "positive" not in header_map:
+        raise InvalidCSVFormatError("Missing column: positive")
+
+    return header_map

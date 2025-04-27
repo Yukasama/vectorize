@@ -8,16 +8,10 @@ from txt2vec.datasets.exceptions import InvalidCSVFormatError
 
 __all__ = ["escape_csv_formulas"]
 
+
 _CTL_CHARS = {chr(i) for i in range(32)}
 _WS_CHARS = set(string.whitespace)
-
-
-def _strip_leading_ws_ctl(value: str) -> str:
-    """Remove leading whitespace & ASCII control chars without regex."""
-    idx = 0
-    while idx < len(value) and (value[idx] in _WS_CHARS or value[idx] in _CTL_CHARS):
-        idx += 1
-    return value[idx:]
+_CSV_SPECIAL_CHARS = ",;|\n\r"
 
 
 def escape_csv_formulas(df: pd.DataFrame) -> pd.DataFrame:
@@ -32,53 +26,58 @@ def escape_csv_formulas(df: pd.DataFrame) -> pd.DataFrame:
     Raises:
         InvalidCSVFormatError: When malformed CSV data is detected
     """
-    _validate_csv_format(df)
+    result = df.copy()
 
-    def needs_escape(val: str) -> bool:
-        val = _strip_leading_ws_ctl(val)
-        return val.startswith(("=", "+", "-", "@"))
+    for col in result.columns:
+        if pd.api.types.is_string_dtype(result[col]):
+            result[col] = _process_column(result[col])
 
-    for col in df.columns:
-        if pd.api.types.is_string_dtype(df[col]):
-            df[col] = df[col].map(
-                lambda x: f"'{x}" if isinstance(x, str) and needs_escape(x) else x
-            )
-
-    return df
+    return result
 
 
-def _validate_csv_format(df: pd.DataFrame) -> None:
-    """Validate proper CSV formatting of DataFrame values.
+def _strip_leading_ws_ctl(value: str) -> str:
+    """Remove leading whitespace & ASCII control chars without regex."""
+    idx = 0
+    while idx < len(value) and (value[idx] in _WS_CHARS or value[idx] in _CTL_CHARS):
+        idx += 1
+    return value[idx:]
+
+
+def _process_column(series: pd.Series) -> pd.Series:
+    """Process a pandas Series to escape formulas and validate format.
 
     Args:
-        df: DataFrame to validate
+        series: DataFrame column to process
+
+    Returns:
+        Processed column with escaped formulas
 
     Raises:
         InvalidCSVFormatError: When malformed CSV data is detected
     """
-    for col in df.columns:
-        if pd.api.types.is_string_dtype(df[col]):
-            for value in df[col].dropna():
-                if not isinstance(value, str):
-                    continue
+    result = series.copy()
 
-                quote_count = value.count('"')
-                if quote_count > 0 and quote_count % 2 != 0:
-                    raise InvalidCSVFormatError(f"CSV is malformed near '{value[:50]}'")
+    for i, value in enumerate(series):
+        if not isinstance(value, str):
+            continue
 
-                if '""' in value and not (
-                    value.startswith('"') and value.endswith('"')
-                ):
-                    raise InvalidCSVFormatError
+        stripped_val = _strip_leading_ws_ctl(value)
 
-                if "\n" in value or (
-                    "\r" in value
-                    and not (value.startswith('"') and value.endswith('"'))
-                ):
-                    raise InvalidCSVFormatError
+        quote_count = value.count('"')
+        if quote_count > 0 and quote_count % 2 != 0:
+            raise InvalidCSVFormatError(f"CSV is malformed near '{value[:50]}'")
 
-                # Check for special characters that should be quoted but aren't
-                if any(c in value for c in ",;|") and not (
-                    value.startswith('"') and value.endswith('"')
-                ):
-                    raise InvalidCSVFormatError
+        if '""' in value and not (value.startswith('"') and value.endswith('"')):
+            raise InvalidCSVFormatError(
+                "Double-quotes within value must be properly escaped"
+            )
+
+        has_special_chars = any(c in value for c in _CSV_SPECIAL_CHARS)
+        is_properly_quoted = value.startswith('"') and value.endswith('"')
+        if has_special_chars and not is_properly_quoted:
+            raise InvalidCSVFormatError("Special characters must be properly quoted")
+
+        if stripped_val.startswith(("=", "+", "-", "@")):
+            result.iat[i] = f"'{value}"
+
+    return result
