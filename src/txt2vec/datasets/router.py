@@ -63,7 +63,6 @@ async def upload_dataset(
         "negative": options.negative_name,
     }
 
-    logger.debug("Dataset upload started", file=file.filename)
     dataset_id: Final = await upload_file(db, file, column_mapping, options.sheet_index)
     logger.debug("Dataset uploaded", datasetId=dataset_id)
 

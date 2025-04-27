@@ -13,6 +13,7 @@ from txt2vec.utils import sanitize_filename
 
 from .classification import classify_dataset
 from .column_mapper import ColumnMapping
+from .exceptions import InvalidFileError
 from .models import Dataset
 from .repository import save_dataset
 from .utils.csv_escaper import escape_csv_formulas
@@ -40,12 +41,16 @@ async def upload_file(
         UUID of the created dataset record.
 
     Raises:
-        InvalidFileError: If filename is missing or the upload exceeds size limits.
+        InvalidFileError: If file, filename is missing or the upload exceeds size
+        limits.
         UnsupportedFormatError: When the file extension is not supported.
         EmptyFileError: If the parsed DataFrame contains no rows.
         InvalidCSVFormatError: If the DataFrame lacks required columns.
         FileTooLargeError: If the uploaded file exceeds the maximum size limit.
     """
+    if file is None:
+        raise InvalidFileError("No file provided")
+
     safe_name = sanitize_filename(file, allowed_extensions)
     ext = Path(safe_name).suffix.lstrip(".")
 
