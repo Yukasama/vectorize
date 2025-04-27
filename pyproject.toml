@@ -66,6 +66,7 @@ dependencies = [
 
 [project.scripts]
 app = "txt2vec:main"
+loadtest = "scripts.locust:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -93,10 +94,14 @@ include = ["src/txt2vec"]
 packages = ["src/txt2vec"]
 
 [tool.pytest.ini_options]
+markers = [
+    "dataset: marks test as a dataset test",
+    "dataset_valid: marks test as a dataset valid test",
+    "dataset_invalid: marks test as a dataset invalid test",
+]
 minversion = "8.3.5"
 testpaths = ["tests"]
 addopts = "--html report.html"
-markers = ["dataset: marks test as a dataset test", "serial"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 

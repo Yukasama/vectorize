@@ -3,7 +3,6 @@
 import uuid
 from pathlib import Path
 
-import pandas as pd
 from fastapi import UploadFile
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -51,24 +50,28 @@ async def upload_file(
     if file is None:
         raise InvalidFileError("No file provided")
 
-    safe_name = sanitize_filename(file, allowed_extensions)
-    ext = Path(safe_name).suffix.lstrip(".")
+    safe_name, ext = sanitize_filename(file, allowed_extensions)
 
     raw_df = await convert_file_to_df(file, ext, sheet_index)
-    df, classification = classify_dataset(raw_df, column_mapping)
-    escape_csv_formulas(df)
+    escaped_df = escape_csv_formulas(raw_df)
+    df, classification = classify_dataset(escaped_df, column_mapping)
 
-    unique_name = f"{Path(safe_name).stem}_{pd.Timestamp.utcnow():%Y%m%d_%H%M%S%f}.csv"
-    save_dataframe(df, unique_name)
+    try:
+        unique_name = f"{Path(safe_name).stem}_{uuid.uuid4()}.csv"
+        file_path = save_dataframe(df, unique_name)
 
-    dataset = Dataset(
-        name=safe_name,
-        file_name=unique_name,
-        classification=classification,
-        rows=len(df),
-    )
-
-    logger.debug("Dataset DTO created", dataset=dataset)
-    dataset_id = await save_dataset(db, dataset)
-    logger.debug("Dataset saved", datasetId=dataset_id)
-    return dataset_id
+        dataset = Dataset(
+            name=safe_name,
+            file_name=unique_name,
+            classification=classification,
+            rows=len(df),
+        )
+        logger.debug("Dataset DTO created", dataset=dataset)
+        dataset_id = await save_dataset(db, dataset)
+        logger.debug("Dataset saved", datasetId=dataset_id)
+        return dataset_id
+    except Exception:
+        # Clean up the saved file if database operation failed
+        if "file_path" in locals() and Path(file_path).exists():
+            Path(file_path).unlink()
+        raise

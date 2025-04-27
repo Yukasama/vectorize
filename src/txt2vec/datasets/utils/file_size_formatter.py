@@ -4,6 +4,7 @@ from typing import Final
 
 __all__ = ["format_file_size"]
 
+
 _BYTES_PER_KB: Final[int] = 1024
 _BYTES_PER_MB: Final[int] = 1024 * _BYTES_PER_KB
 _BYTES_PER_GB: Final[int] = 1024 * _BYTES_PER_MB

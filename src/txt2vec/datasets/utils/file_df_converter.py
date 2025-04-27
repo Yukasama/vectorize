@@ -5,25 +5,29 @@ import uuid
 from pathlib import Path
 
 import aiofiles
+import pandas as pd
 from fastapi import UploadFile
 
-from txt2vec.config.config import (
-    max_upload_size,
-)
+from txt2vec.config.config import max_upload_size
 from txt2vec.datasets.exceptions import (
     EmptyFileError,
     FileTooLargeError,
+    InvalidCSVFormatError,
     UnsupportedFormatError,
 )
 from txt2vec.datasets.file_format import FileFormat
-from txt2vec.datasets.file_loaders import FILE_LOADERS
+from txt2vec.datasets.utils.file_loaders import load_file
 
 __all__ = ["convert_file_to_df"]
 
+
 _CHUNK_SIZE = 1_048_576
+_FORMULA_PATTERNS = [b"=cmd", b"=sum", b"@", b"=importxml"]
 
 
-async def convert_file_to_df(file: UploadFile, ext: str, sheet_index: int) -> bool:
+async def convert_file_to_df(
+    file: UploadFile, ext: str, sheet_index: int
+) -> pd.DataFrame:
     """Convert uploaded file to pandas DataFrame.
 
     Args:
@@ -38,6 +42,7 @@ async def convert_file_to_df(file: UploadFile, ext: str, sheet_index: int) -> bo
         EmptyFileError: If the file is empty.
         UnsupportedFormatError: If the file extension is not supported.
         FileTooLargeError: If the file exceeds the maximum allowed size.
+        InvalidCSVFormatError: If the file contains malicious content like formulas.
     """
     first = await file.read(1)
     if not first:
@@ -48,6 +53,23 @@ async def convert_file_to_df(file: UploadFile, ext: str, sheet_index: int) -> bo
         file_format = FileFormat(ext)
     except ValueError as e:
         raise UnsupportedFormatError(ext) from e
+
+    # Check for malicious content in the file header
+    header = await file.read(_CHUNK_SIZE)
+    header_lower = header.lower()
+
+    # Check for null bytes (except in Excel files which may contain them)
+    if b"\x00" in header and file_format != FileFormat.EXCEL:
+        await file.seek(0)
+        raise InvalidCSVFormatError("File contains null bytes")
+
+    # Check for formula injection patterns
+    for pattern in _FORMULA_PATTERNS:
+        if pattern in header_lower and file_format != FileFormat.EXCEL:
+            await file.seek(0)
+            raise InvalidCSVFormatError("File contains potentially dangerous formulas")
+
+    await file.seek(0)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir) / uuid.uuid4().hex
@@ -60,7 +82,13 @@ async def convert_file_to_df(file: UploadFile, ext: str, sheet_index: int) -> bo
                 await tmp_file.write(chunk)
         await file.seek(0)
 
-        df = FILE_LOADERS[file_format](tmp_path, sheet_index)
+        try:
+            df = load_file[file_format](tmp_path, sheet_index)
+        except Exception as e:
+            raise InvalidCSVFormatError from e
+
+    if not isinstance(df, pd.DataFrame):
+        raise InvalidCSVFormatError
 
     if df.empty:
         raise EmptyFileError
