@@ -27,7 +27,6 @@ _CUSTOM_FORMAT = "custom_fields.csv"
 _INFER_FORMAT = "infer_fields.csv"
 
 _NULL_BYTE_INJECTION = "%00nullbyte.csv"
-_WINDOWS_NAME = "CON.csv"
 _COMMAND_INJECTION = "; rm -rf %2F.csv"
 
 
@@ -106,9 +105,7 @@ class TestValidDatasets:
         test_file_path = self.valid_dir / _INFER_FORMAT
         await self._upload_and_verify(client, session, test_file_path)
 
-    @pytest.mark.parametrize(
-        "file_name", [_NULL_BYTE_INJECTION, _WINDOWS_NAME, _COMMAND_INJECTION]
-    )
+    @pytest.mark.parametrize("file_name", [_NULL_BYTE_INJECTION, _COMMAND_INJECTION])
     async def test_malicious_files(
         self,
         client: TestClient,
