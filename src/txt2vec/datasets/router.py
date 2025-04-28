@@ -12,32 +12,17 @@ from fastapi import (
     status,
 )
 from loguru import logger
-from pydantic import BaseModel, Field
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.db import get_session
 
 from .service import upload_file
+from .upload_options_model import DatasetUploadOptions
 
 __all__ = ["router"]
 
 
 router = APIRouter(tags=["Dataset", "Upload"])
-
-
-class DatasetUploadOptions(BaseModel):
-    """Options for dataset upload."""
-
-    question_name: str | None = Field(
-        default=None, description="Column name for the question"
-    )
-    positive_name: str | None = Field(
-        default=None, description="Column name for the positive example"
-    )
-    negative_name: str | None = Field(
-        default=None, description="Column name for the negative example"
-    )
-    sheet_index: int = Field(default=0, description="Sheet index for Excel files")
 
 
 @router.post("")

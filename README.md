@@ -28,7 +28,7 @@ uv add <package>
 uv remove <package>
 ```
 
-##### Create .env
+##### Create .env file
 
 ```bash
 # .env
