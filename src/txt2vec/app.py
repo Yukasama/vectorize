@@ -25,6 +25,7 @@ from txt2vec.config.db import engine
 from txt2vec.config.seed import seed_db
 from txt2vec.datasets.router import router as dataset_router
 from txt2vec.error_handler import register_exception_handlers
+from txt2vec.inference.router import router as embeddings_router
 from txt2vec.upload.router import router as upload_router
 
 config_logger()
@@ -63,6 +64,7 @@ app: Final = FastAPI(
 base_router = APIRouter(prefix=prefix)
 base_router.include_router(dataset_router, prefix="/datasets")
 base_router.include_router(upload_router, prefix="/uploads")
+base_router.include_router(embeddings_router, prefix="/embeddings")
 
 app.include_router(base_router)
 
