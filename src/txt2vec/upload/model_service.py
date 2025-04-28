@@ -7,7 +7,6 @@ CLASSIFIER = None
 
 
 def load_model_with_tag(model_id: str, tag: str):
-
     global CLASSIFIER
 
     # Lade lokalen Snapshot vom HF-Model mit Tag

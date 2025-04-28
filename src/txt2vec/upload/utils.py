@@ -1,15 +1,12 @@
-"""
-Utilities for validating GitHub repository URLs.
-"""
+"""Utilities for validating GitHub repository URLs."""
 
 import re
+
 from loguru import logger
 
 
 class GitHubUtils:
-    """
-    Utility methods for working with GitHub repository URLs.
-    """
+    """Utility methods for working with GitHub repository URLs."""
 
     GITHUB_URL_REGEX = (
         r"^(https?://)"  # http:// or https://
@@ -23,24 +20,19 @@ class GitHubUtils:
 
     @staticmethod
     def is_github_url(url: str) -> bool:
-        """
-        Check if the given URL is a valid GitHub repository URL.
-        """
+        """Check if the given URL is a valid GitHub repository URL."""
         logger.trace("Validating GitHub URL: {}", url)
         match = re.match(GitHubUtils.GITHUB_URL_REGEX, url)
 
         if match:
             logger.debug("Valid GitHub URL detected: {}", url)
             return True
-        else:
-            logger.debug("Invalid GitHub URL: {}", url)
-            return False
+        logger.debug("Invalid GitHub URL: {}", url)
+        return False
 
     @staticmethod
     def parse_github_url(url: str) -> tuple[str, str]:
-        """
-        Extract the owner and repository name from a valid GitHub URL.
-        """
+        """Extract the owner and repository name from a valid GitHub URL."""
         logger.trace("Parsing GitHub URL: {}", url)
         match = re.match(GitHubUtils.GITHUB_URL_REGEX, url)
         if match:
