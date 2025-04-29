@@ -9,6 +9,7 @@ from loguru import logger
 
 from txt2vec.config.config import app_env
 from txt2vec.errors import AppError, ErrorCode
+from txt2vec.utils.error_path import get_error_path
 
 __all__ = ["register_exception_handlers"]
 
@@ -31,7 +32,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         Returns:
             JSONResponse: A formatted error response with appropriate status code.
         """
-        logger.debug("{}: {}", exc.error_code, exc.message)
+        logger.debug("{}: {}", exc.error_code, exc.message, path=get_error_path(exc))
         return _make_response(exc.status_code, exc.error_code, exc.message)
 
     @app.exception_handler(RequestValidationError)
