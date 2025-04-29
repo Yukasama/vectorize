@@ -1,4 +1,4 @@
-"""Embeddings Exceptions."""
+"""AI-Model Exceptions."""
 
 from fastapi import status
 
@@ -15,4 +15,15 @@ class ModelNotFoundError(AppError):
 
     def __init__(self, model_id: str) -> None:
         """Initialize with the model ID."""
-        super().__init__(f"Model with ID {model_id} not found")
+        super().__init__(f"Model with Model Tag {model_id} not found")
+
+
+class ModelLoadError(AppError):
+    """Exception raised when the model failed to load."""
+
+    error_code = ErrorCode.SERVER_ERROR
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    def __init__(self, model_id: str) -> None:
+        """Initialize with the model ID."""
+        super().__init__(f"Model with Model Tag {model_id} failed to load")

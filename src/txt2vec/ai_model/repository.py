@@ -1,4 +1,4 @@
-"""Embeddings repository."""
+"""AI-Model repository."""
 
 from uuid import UUID
 
@@ -11,25 +11,27 @@ from .models import AIModel
 from .utils.tag_helpers import next_available_tag
 
 
-async def get_ai_model(db: AsyncSession, model_id: UUID) -> AIModel:
+async def get_ai_model(db: AsyncSession, model_tag: str) -> AIModel:
     """Retrieve an AI model by its ID.
 
     Args:
         db: Database session instance.
-        model_id: The UUID of the model to retrieve.
+        model_tag: The Tag of the model to retrieve.
 
     Returns:
-        AIModel: The AI model object corresponding to the given ID.
+        AIModel: The AI model object corresponding to the given Model Tag.
 
     Raises:
         ModelNotFoundError: If the model is not found.
     """
-    statement = select(AIModel).where(AIModel.id == model_id)
+    statement = select(AIModel).where(AIModel.model_tag == model_tag)
     result = await db.exec(statement)
     model = result.first()
 
     if model is None:
-        raise ModelNotFoundError(str(model_id))
+        raise ModelNotFoundError(str(model_tag))
+
+    logger.debug("AI model loaded from DB", model=model)
 
     return model
 

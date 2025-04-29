@@ -13,7 +13,6 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.config.config import prefix
 from txt2vec.datasets.repository import get_dataset
 
 from .utils import get_test_file
@@ -50,11 +49,7 @@ class TestValidDatasets:
         """Upload a file and verify the dataset is created."""
         files = get_test_file(file_path)
 
-        response = client.post(
-            f"{prefix}/datasets",
-            files=files,
-            data=extra_data or {},
-        )
+        response = client.post("/datasets", files=files, data=extra_data or {})
         assert response.status_code == status.HTTP_201_CREATED
 
         dataset_id = response.headers["Location"].split("/")[-1]
