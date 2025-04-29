@@ -1,6 +1,4 @@
-"""
-Service for importing models
-"""
+"""Service for importing models"""
 
 from loguru import logger
 
