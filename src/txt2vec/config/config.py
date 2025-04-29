@@ -44,6 +44,10 @@ _model_config = _app_config.get("model", {})
 model_upload_dir: Final[str] = Path(_model_config.get("model_upload_dir"))
 max_upload_size: Final[int] = _model_config.get("max_upload_size")
 
+# Inference configuration
+_inference_config = _app_config.get("inference", {})
+inference_device: Final[str] = _inference_config.get("device")
+
 # Database configuration
 _db_config = _app_config.get("db", {})
 db_url: Final[str] = os.getenv("DATABASE_URL")

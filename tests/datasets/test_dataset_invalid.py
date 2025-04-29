@@ -10,7 +10,6 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from txt2vec.config.config import prefix
 from txt2vec.errors import ErrorCode
 
 from .utils import get_test_file
@@ -48,12 +47,7 @@ class TestInvalidDatasets:
     ) -> UUID:
         """Upload a file and verify the dataset is created."""
         files = get_test_file(file_path)
-
-        response = client.post(
-            f"{prefix}/datasets",
-            files=files,
-            data=extra_data or {},
-        )
+        response = client.post("/datasets", files=files, data=extra_data or {})
 
         assert response.status_code == expected_status
         assert response.json()["code"] == expected_code

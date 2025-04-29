@@ -19,6 +19,9 @@ default_delimiter = ";"
 model_upload_dir = "data/models"
 max_upload_size = 524288000      # 500 MB
 
+[app.inference]
+device = "cpu" # "cpu" or "cuda"
+
 [app.logging]
 rotation = "1 MB"
 log_dir = "log"

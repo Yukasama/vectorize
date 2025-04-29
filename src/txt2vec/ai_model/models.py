@@ -1,20 +1,13 @@
-"""Dataset models."""
+"""AI-Model model."""
 
 import uuid
 from datetime import datetime
-from enum import StrEnum
 
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
-__all__ = ["AIModel", "ModelSource"]
+from .model_source import ModelSource
 
-
-class ModelSource(StrEnum):
-    """Source types for AI models."""
-
-    GITHUB = "github"
-    HUGGINGFACE = "huggingface"
-    LOCAL = "local"
+__all__ = ["AIModel"]
 
 
 class AIModel(SQLModel, table=True):
