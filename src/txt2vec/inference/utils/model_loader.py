@@ -8,7 +8,7 @@ from loguru import logger
 from transformers import AutoConfig, AutoModel, AutoModelForMaskedLM, AutoTokenizer
 
 from txt2vec.ai_model.exceptions import ModelLoadError, ModelNotFoundError
-from txt2vec.config.config import model_upload_dir
+from txt2vec.config import settings
 
 __all__ = ["load_model"]
 
@@ -35,7 +35,7 @@ def load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
         ModelNotFoundError: If the model directory doesn't exist
         ModelLoadError: If the model can't be successfully loaded
     """
-    folder = Path(model_upload_dir) / model_tag
+    folder = Path(settings.model_upload_dir) / model_tag
     logger.debug("Loading model '{}' from {}", model_tag, folder)
 
     if not folder.exists():

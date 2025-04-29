@@ -2,7 +2,7 @@
 
 from fastapi import status
 
-from txt2vec.config.config import allowed_extensions
+from txt2vec.config import settings
 from txt2vec.errors import AppError, ErrorCode
 
 from .utils.file_size_formatter import format_file_size
@@ -44,7 +44,7 @@ class UnsupportedFormatError(AppError):
     error_code = ErrorCode.UNSUPPORTED_FORMAT
     message = (
         "This format is not supported. Supported formats: "
-        f"{', '.join(allowed_extensions)}"
+        f"{', '.join(settings.allowed_extensions)}"
     )
     status_code = status.HTTP_400_BAD_REQUEST
 

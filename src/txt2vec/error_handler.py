@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from txt2vec.config.config import app_env
+from txt2vec.config import settings
 from txt2vec.errors import AppError, ErrorCode
 from txt2vec.utils.error_path import get_error_path
 
@@ -70,7 +70,10 @@ def register_exception_handlers(app: FastAPI) -> None:
             asyncio.CancelledError: Re-raised in non-development environments.
         """
         # Pass through cancellations in dev
-        if isinstance(exc, asyncio.CancelledError) and app_env != "development":
+        if (
+            isinstance(exc, asyncio.CancelledError)
+            and settings.app_env != "development"
+        ):
             raise exc
 
         logger.exception("Unhandled server exception")

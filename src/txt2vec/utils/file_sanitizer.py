@@ -6,7 +6,7 @@ from typing import Final
 
 from fastapi import UploadFile
 
-from txt2vec.config.config import max_filename_length
+from txt2vec.config import settings
 from txt2vec.datasets.exceptions import InvalidFileError, UnsupportedFormatError
 
 __all__ = ["sanitize_filename"]
@@ -47,7 +47,7 @@ def sanitize_filename(
     if not stem_sanitized:
         stem_sanitized = "_"
 
-    if len(stem_sanitized) > max_filename_length:
+    if len(stem_sanitized) > settings.max_filename_length:
         raise InvalidFileError("Filename is too long")
 
     return f"{stem_sanitized}.{ext}" if ext else stem_sanitized, ext

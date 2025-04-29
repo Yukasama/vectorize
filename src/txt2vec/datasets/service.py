@@ -7,7 +7,7 @@ from fastapi import UploadFile
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.config.config import allowed_extensions
+from txt2vec.config import settings
 from txt2vec.datasets.upload_options_model import DatasetUploadOptions
 from txt2vec.utils import sanitize_filename
 
@@ -49,7 +49,7 @@ async def upload_file(
     if file is None:
         raise InvalidFileError("No file provided")
 
-    safe_name, ext = sanitize_filename(file, allowed_extensions)
+    safe_name, ext = sanitize_filename(file, settings.allowed_extensions)
 
     column_mapping = {
         "question": options.question_name,

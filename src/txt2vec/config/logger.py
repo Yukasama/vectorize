@@ -4,7 +4,7 @@ import sys
 
 from loguru import logger
 
-from txt2vec.config.config import log_path, rotation
+from txt2vec.config import settings
 
 __all__ = ["config_logger"]
 
@@ -33,8 +33,8 @@ def config_logger() -> None:
     logger.remove()
 
     logger.add(
-        log_path,
-        rotation=rotation,
+        settings.log_path,
+        rotation=settings.rotation,
         format=format_record,
         enqueue=True,
     )

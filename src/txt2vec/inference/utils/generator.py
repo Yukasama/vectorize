@@ -7,7 +7,7 @@ from loguru import logger
 from transformers import AutoTokenizer
 
 from txt2vec.ai_model.exceptions import ModelLoadError
-from txt2vec.config.config import inference_device
+from txt2vec.config import settings
 
 from ..embedding_model import EmbeddingData
 from ..request_model import EmbeddingRequest
@@ -16,7 +16,7 @@ from .pool_mean import mean_pool
 __all__ = ["generate_embeddings"]
 
 
-_DEVICE = torch.device(inference_device)
+_DEVICE = torch.device(settings.inference_device)
 
 
 def generate_embeddings(

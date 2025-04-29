@@ -8,7 +8,7 @@ import aiofiles
 import pandas as pd
 from fastapi import UploadFile
 
-from txt2vec.config.config import max_upload_size
+from txt2vec.config import settings
 
 from ..exceptions import (
     EmptyFileError,
@@ -78,7 +78,7 @@ async def convert_file_to_df(
         async with aiofiles.open(tmp_path, "wb") as tmp_file:
             while chunk := await file.read(_CHUNK_SIZE):
                 size += len(chunk)
-                if size > max_upload_size:
+                if size > settings.dataset_max_upload_size:
                     raise FileTooLargeError(size)
                 await tmp_file.write(chunk)
         await file.seek(0)

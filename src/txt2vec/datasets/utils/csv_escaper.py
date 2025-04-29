@@ -50,14 +50,7 @@ def _strip_leading_ws_ctl(value: str) -> str:
 
 
 def _process_column(series: pd.Series) -> None:
-    """Validate CSV format in a pandas Series.
-
-    Args:
-        series: DataFrame column to validate
-
-    Raises:
-        InvalidCSVFormatError: When malformed CSV data is detected
-    """
+    """Validate CSV format in a pandas Series."""
     for value in series:
         if not isinstance(value, str):
             continue
