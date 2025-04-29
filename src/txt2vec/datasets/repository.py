@@ -52,6 +52,23 @@ async def get_dataset(db: AsyncSession, dataset_id: UUID) -> Dataset:
     return dataset
 
 
+async def get_all_datasets(db: AsyncSession) -> list[Dataset]:
+    """Retrieve all datasets from the database.
+
+    Args:
+        db: Database session instance.
+
+    Returns:
+        A list of all Dataset objects in the database.
+    """
+    statement = select(Dataset)
+    result = await db.exec(statement)
+    datasets = result.all()
+
+    logger.info("Retrieved {} datasets from database", len(datasets))
+    return datasets
+
+
 async def update_dataset(
     db: AsyncSession, dataset_id: UUID, update_data: dict
 ) -> Dataset:

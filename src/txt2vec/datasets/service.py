@@ -8,10 +8,10 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.config import allowed_extensions
+from txt2vec.datasets.upload_options_model import DatasetUploadOptions
 from txt2vec.utils import sanitize_filename
 
 from .classification import classify_dataset
-from .column_mapper import ColumnMapping
 from .exceptions import InvalidFileError
 from .models import Dataset
 from .repository import save_dataset
@@ -25,16 +25,15 @@ __all__ = ["upload_file"]
 async def upload_file(
     db: AsyncSession,
     file: UploadFile,
-    column_mapping: ColumnMapping | None = None,
-    sheet_index: int = 0,
+    options: DatasetUploadOptions | None = None,
 ) -> uuid.UUID:
     """Stream upload, parse file to DataFrame, save as CSV, and return dataset ID.
 
     Args:
         db: Database session for storing the dataset information.
         file: FastAPI UploadFile instance provided by the client.
-        column_mapping: Optional mapping to rename standard columns in the dataset.
-        sheet_index: Sheet index to read when the file is an Excel workbook.
+        options: DatasetUploadOptions instance containing column names and
+            sheet index for Excel files.
 
     Returns:
         UUID of the created dataset record.
@@ -52,7 +51,13 @@ async def upload_file(
 
     safe_name, ext = sanitize_filename(file, allowed_extensions)
 
-    raw_df = await convert_file_to_df(file, ext, sheet_index)
+    column_mapping = {
+        "question": options.question_name,
+        "positive": options.positive_name,
+        "negative": options.negative_name,
+    }
+
+    raw_df = await convert_file_to_df(file, ext, options.sheet_index)
     escaped_df = escape_csv_formulas(raw_df)
     df, classification = classify_dataset(escaped_df, column_mapping)
 
