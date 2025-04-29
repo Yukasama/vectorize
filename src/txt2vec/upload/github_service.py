@@ -37,34 +37,28 @@ async def handle_model_download(github_url: str) -> dict:
             download_url = resp.json().get("download_url")
         elif resp.status_code == 404:
             logger.error(
-                "Model file not found on GitHub: repo=%s/%s, file=%s, status=%d, message=%s",
+                "Model file not found on GitHub: repo={}/{} file={} status={} message={}",
                 owner,
                 repo,
                 file_path,
                 resp.status_code,
                 resp.text,
             )
+            # FIXME: use logger.bind(...) for structured logging instead
             raise HTTPException(status_code=404, detail="Model file not found.")
         else:
             logger.error(
-                "Unexpected GitHub API error: repo=%s/%s, file=%s, status=%d, message=%s",
+                "Unexpected GitHub API error: repo={}/{} file={} status={} message={}",
                 owner,
                 repo,
                 file_path,
                 resp.status_code,
                 resp.text,
             )
+            # FIXME: use logger.bind(...) for structured logging instead
             raise HTTPException(status_code=500, detail="GitHub API error.")
 
         save_path = ""  # Not saving for now — placeholder
-
-        # TODO: Decide where and how to save models in dev/prod environments
-        # model_dir = f"./models/{owner}_{repo}"
-        # os.makedirs(model_dir, exist_ok=True)
-        # save_path = os.path.join(model_dir, file_path)
-        # file_resp = await client.get(download_url)
-        # with open(save_path, "wb") as f:
-        #     f.write(file_resp.content)
 
     return {
         "message": f"Model would be saved to {save_path} (saving disabled for now)."
