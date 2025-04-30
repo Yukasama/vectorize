@@ -83,7 +83,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         ):
             raise exc
 
-        logger.exception("Unhandled server exception")
+        logger.exception(
+            "{}: {}", exc.error_code, exc.message, path=get_error_path(exc)
+        )
         return _make_response(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             ErrorCode.SERVER_ERROR,

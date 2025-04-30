@@ -65,7 +65,7 @@ async def get_all_datasets(db: AsyncSession) -> list[Dataset]:
     result = await db.exec(statement)
     datasets = result.all()
 
-    logger.info("Retrieved {} datasets from database", len(datasets))
+    logger.debug("Retrieved {} datasets from database", len(datasets))
     return datasets
 
 
@@ -100,5 +100,5 @@ async def update_dataset(
     result = await db.exec(statement)
     updated_dataset = result.first()
 
-    logger.info("Dataset updated", datasetId=dataset_id)
+    logger.debug("Dataset updated", datasetId=dataset_id)
     return updated_dataset

@@ -36,9 +36,16 @@ async def seed_db(session: AsyncSession) -> None:
     )
     session.add(
         AIModel(
-            name="big_model",
+            name="Big Model",
             source=ModelSource.LOCAL,
             model_tag="big_model",
+        ),
+    )
+    session.add(
+        AIModel(
+            name="Huge Model",
+            source=ModelSource.LOCAL,
+            model_tag="huge_model",
         ),
     )
     await session.commit()

@@ -155,11 +155,11 @@ def _extract_embedding_vector(
 
     if vec is None:
         logger.error(
-            "Unable to extract embeddings from model output type: %s",
+            "Unable to extract embeddings from model output type: {}",
             type(model_output).__name__,
         )
         if isinstance(model_output, dict):
-            logger.error("Available keys: %s", list(model_output.keys()))
+            logger.debug("Available keys: {}", list(model_output.keys()))
         raise UnsupportedModelError(type(model_output).__name__)
 
     return vec

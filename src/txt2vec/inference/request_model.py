@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from txt2vec.config.errors import ErrorNames
 
@@ -46,5 +46,5 @@ class EmbeddingRequest(BaseModel):
     def validate_encoding_format(cls, v: str) -> Literal["float", "base64"]:
         """Validate that encoding_format is either 'float' or 'base64'."""
         if v not in {"float", "base64"}:
-            raise ValueError(ErrorNames.ENCODING_FORMAT_ERROR)
+            raise ValidationError(ErrorNames.ENCODING_FORMAT_ERROR)
         return v
