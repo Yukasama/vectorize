@@ -18,9 +18,11 @@ class EmbeddingRequest(BaseModel):
             "or a list of token arrays."
         ),
     )
+
     model: str = Field(
         description="ID of the model to use, e.g. `text-embedding-ada-002`."
     )
+
     dimensions: int | None = Field(
         None,
         description=(
@@ -28,10 +30,12 @@ class EmbeddingRequest(BaseModel):
         ),
         ge=1,
     )
+
     encoding_format: str = Field(
         default="float",
         description="Either `float` (default) or `base64` for the embedding values.",
     )
+
     user: str | None = Field(
         None,
         description="An identifier for your end-user (helps OpenAI monitor for abuse).",
