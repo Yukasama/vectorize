@@ -7,7 +7,6 @@ from typing import Final
 from aiofiles.os import makedirs
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from loguru import logger
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -19,9 +18,9 @@ from txt2vec.config import (
     settings,
 )
 from txt2vec.datasets.router import router as dataset_router
-from txt2vec.error_handler import register_exception_handlers
 from txt2vec.inference.router import router as embeddings_router
 from txt2vec.upload.router import router as upload_router
+from txt2vec.utils.error_handler import register_exception_handlers
 
 config_logger()
 
@@ -41,7 +40,6 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
 
     yield
 
-    logger.info("Server being shutdown...")
     await engine.dispose()
 
 

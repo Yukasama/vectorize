@@ -10,7 +10,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from txt2vec.errors import ErrorCode
+from txt2vec.config.errors import ErrorCode
 
 from .utils import get_test_file
 
@@ -82,14 +82,11 @@ class TestInvalidDatasets:
         await self._upload_and_verify(
             client,
             test_file_path,
-            expected_status=status.HTTP_400_BAD_REQUEST,
+            expected_status=status.HTTP_422_UNPROCESSABLE_ENTITY,
             expected_code=ErrorCode.UNSUPPORTED_FORMAT,
         )
 
-    async def test_no_file_name(
-        self,
-        client: TestClient,
-    ) -> None:
+    async def test_no_file_name(self, client: TestClient) -> None:
         """Test uploading a file with no name."""
         test_file_path = self.invalid_dir / _NO_FILE_NAME
 
@@ -101,11 +98,7 @@ class TestInvalidDatasets:
         )
 
     @pytest.mark.parametrize("file_name", [_FORMULA_INJECTION, _FIELD_SEPARATOR])
-    async def test_malicious_files(
-        self,
-        client: TestClient,
-        file_name: str,
-    ) -> None:
+    async def test_malicious_files(self, client: TestClient, file_name: str) -> None:
         """Test uploading a file with no name."""
         test_file_path = self.malicious_dir / file_name
 

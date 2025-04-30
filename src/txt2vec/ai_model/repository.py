@@ -10,6 +10,8 @@ from .exceptions import ModelNotFoundError
 from .models import AIModel
 from .utils.tag_helpers import next_available_tag
 
+__all__ = ["get_ai_model", "save_ai_model"]
+
 
 async def get_ai_model(db: AsyncSession, model_tag: str) -> AIModel:
     """Retrieve an AI model by its ID.

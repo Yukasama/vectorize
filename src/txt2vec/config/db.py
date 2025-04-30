@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.config import settings
+from .config import settings
 
 __all__ = ["engine", "get_session"]
 

@@ -70,12 +70,12 @@ def load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
         try:
             model = _instantiate_from_weights(folder)
         except Exception as exc:
-            raise ModelLoadError(f"{model_tag}: {exc!s}") from exc
+            raise ModelLoadError(model_tag) from exc
     except Exception as exc:
-        raise ModelLoadError(f"{model_tag}: {exc!s}") from exc
+        raise ModelLoadError(model_tag) from exc
 
     if model is None:
-        raise ModelLoadError(f"Failed to load model {model_tag}")
+        raise ModelLoadError(model_tag)
 
     try:
         tokenizer = AutoTokenizer.from_pretrained(folder)
@@ -132,6 +132,4 @@ def _instantiate_from_weights(folder: Path) -> torch.nn.Module:
                 model.load_state_dict(state_dict, strict=True)
                 return model.eval()
 
-    raise FileNotFoundError(
-        f"No weight file named 'pytorch_model.bin' or 'model.bin' in {folder}"
-    )
+    raise ModelNotFoundError(folder)

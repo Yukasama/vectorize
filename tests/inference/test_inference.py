@@ -8,7 +8,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from txt2vec.errors import ErrorCode
+from txt2vec.config.errors import ErrorCode
 
 _MODEL_NAME = "pytorch_model"
 _BAD_MODEL_NAME = "nonexistent_model"

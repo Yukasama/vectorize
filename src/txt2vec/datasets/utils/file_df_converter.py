@@ -9,6 +9,7 @@ import pandas as pd
 from fastapi import UploadFile
 
 from txt2vec.config import settings
+from txt2vec.config.errors import ErrorNames
 
 from ..exceptions import (
     EmptyFileError,
@@ -30,6 +31,9 @@ async def convert_file_to_df(
     file: UploadFile, ext: str, sheet_index: int
 ) -> pd.DataFrame:
     """Convert uploaded file to pandas DataFrame.
+
+    Securely processes files into DataFrames, checking for formula injection
+    and malicious content across supported formats (CSV, JSON, Excel, etc).
 
     Args:
         file: FastAPI UploadFile object containing the uploaded file.
@@ -62,13 +66,13 @@ async def convert_file_to_df(
     # Check for null bytes (except in Excel files which may contain them)
     if b"\x00" in header and file_format != FileFormat.EXCEL:
         await file.seek(0)
-        raise InvalidCSVFormatError("File contains null bytes")
+        raise EmptyFileError
 
     # Check for formula injection patterns
     for pattern in _FORMULA_PATTERNS:
         if pattern in header_lower and file_format != FileFormat.EXCEL:
             await file.seek(0)
-            raise InvalidCSVFormatError("File contains potentially dangerous formulas")
+            raise InvalidCSVFormatError(ErrorNames.DETECT_MALICIOUS_CONTENT)
 
     await file.seek(0)
 

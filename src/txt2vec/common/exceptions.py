@@ -2,7 +2,12 @@
 
 from fastapi import status
 
-from txt2vec.errors import ErrorCode
+from txt2vec.config.errors import ErrorCode
+
+__all__ = [
+    "InternalServerError",
+    "NotFoundError",
+]
 
 
 class NotFoundError(Exception):
@@ -16,6 +21,6 @@ class NotFoundError(Exception):
 class InternalServerError(Exception):
     """Exception raised for internal server errors."""
 
-    error_code = ErrorCode.INTERNAL_SERVER_ERROR
+    error_code = ErrorCode.SERVER_ERROR
     message = "Internal server error"
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR

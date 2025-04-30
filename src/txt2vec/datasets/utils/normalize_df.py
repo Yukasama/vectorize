@@ -4,7 +4,7 @@ from collections.abc import Mapping
 
 import pandas as pd
 
-from ..exceptions import InvalidCSVFormatError
+from ..exceptions import MissingColumnError
 
 __all__ = ["normalize_dataset"]
 
@@ -21,16 +21,21 @@ _ROLES = ("question", "positive", "negative")
 def normalize_dataset(
     df: pd.DataFrame, mapping: Mapping[str, str] | None = None
 ) -> None:
-    """Mutate `df` to the canonical names, and ordered [question, positive, (negative)].
+    """Normalize DataFrame columns to canonical names and order.
+
+    Mutates the provided DataFrame in-place to standardize column names to
+    'question', 'positive', and optionally 'negative', and reorders columns
+    in that sequence. Columns not matching these roles are removed.
 
     Args:
-        df: the DataFrame to normalize (in-place).
-        mapping: optional explicit mapping {role: col_name}. If provided,
-            those names are used verbatim (and must exist on df); otherwise
-            aliases+defaults are applied.
+        df: DataFrame to normalize (modified in-place).
+        mapping: Optional explicit mapping {role: col_name} to override
+            automatic column detection. If provided, these names must exist
+            in the DataFrame.
 
     Raises:
-        InvalidCSVFormatError: if mandatory columns are not found.
+        InvalidCSVFormatError: If required columns (question, positive) cannot
+            be found in the DataFrame.
     """
     header_map = _build_header_map(df, mapping)
 
@@ -47,12 +52,24 @@ def normalize_dataset(
 def _find_column_match(
     role: str, df_cols_lc: dict[str, str], mapping: Mapping[str, str] | None
 ) -> str | None:
-    """Find matching column for a role, using either mapping or aliases."""
+    """Find matching column for a semantic role.
+
+    Args:
+        role: Semantic role to find ('question', 'positive', or 'negative').
+        df_cols_lc: Dictionary mapping lowercase column names to actual column names.
+        mapping: Optional explicit mapping from roles to column names.
+
+    Returns:
+        Actual column name from DataFrame if found, None otherwise.
+
+    Raises:
+        InvalidCSVFormatError: If mapping specifies a column that doesn't exist.
+    """
     if mapping and mapping.get(role):
         key = mapping[role].lower()
         if key in df_cols_lc:
             return df_cols_lc[key]
-        raise InvalidCSVFormatError(f"Missing column: {mapping[role]}")
+        raise MissingColumnError(mapping[role])
 
     candidates = [role, *list(_ALIASES[role])]
     for candidate in candidates:
@@ -63,7 +80,19 @@ def _find_column_match(
 def _build_header_map(
     df: pd.DataFrame, mapping: Mapping[str, str] | None
 ) -> dict[str, str]:
-    """Build mapping from role names to actual DataFrame column names."""
+    """Build mapping from semantic roles to actual DataFrame column names.
+
+    Args:
+        df: Source DataFrame containing the columns to map.
+        mapping: Optional explicit mapping from roles to column names.
+
+    Returns:
+        Dictionary mapping role names to actual DataFrame column names.
+
+    Raises:
+        InvalidCSVFormatError: If mandatory columns (question, positive)
+            cannot be found in the DataFrame.
+    """
     df_cols_lc = {col.lower(): col for col in df.columns}
     header_map = {}
 
@@ -72,9 +101,12 @@ def _build_header_map(
         if column:
             header_map[role] = column
 
+    missing_column = None
     if "question" not in header_map:
-        raise InvalidCSVFormatError("Missing column: question")
+        missing_column = "question"
+        raise MissingColumnError(missing_column)
     if "positive" not in header_map:
-        raise InvalidCSVFormatError("Missing column: positive")
+        missing_column = "positive"
+        raise MissingColumnError(missing_column)
 
     return header_map
