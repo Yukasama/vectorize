@@ -99,8 +99,7 @@ def _instantiate_from_weights(folder: Path) -> torch.nn.Module:
         The loaded PyTorch model in evaluation mode.
 
     Raises:
-        FileNotFoundError: If neither pytorch_model.bin nor model.bin exist
-        ValueError: If the state dict can't be loaded into the model
+        ModelNotFoundError: If neither pytorch_model.bin nor model.bin exist
     """
     cfg = AutoConfig.from_pretrained(folder)
 

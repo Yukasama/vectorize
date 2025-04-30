@@ -1,6 +1,8 @@
 """Logger configuration."""
 
 import sys
+from collections.abc import Mapping
+from typing import Any
 
 from loguru import logger
 
@@ -25,7 +27,7 @@ def config_logger() -> None:
     )
 
 
-def _format_record(record: str) -> str:
+def _format_record(record: Mapping[str, Any]) -> str:
     ts = record["time"].strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
     line = (

@@ -59,9 +59,6 @@ def _load_json(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
 
     Returns:
         pd.DataFrame: DataFrame derived from the JSON structure.
-
-    Raises:
-        ValueError: When JSON cannot be decoded.
     """
     try:
         return pd.read_json(path)

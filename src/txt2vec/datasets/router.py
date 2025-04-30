@@ -17,9 +17,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.db import get_session
 
-from .models import Dataset
-from .repository import get_all_datasets, get_dataset
-from .service import upload_file
+from .models import DatasetAll, DatasetDetail
+from .service import read_all_datasets, read_dataset, upload_file
 from .upload_options_model import DatasetUploadOptions
 
 __all__ = ["router"]
@@ -31,39 +30,33 @@ router = APIRouter(tags=["Dataset", "Upload"])
 @router.get("")
 async def get_datasets(
     db: Annotated[AsyncSession, Depends(get_session)],
-) -> list[dict]:
+) -> list[DatasetAll]:
     """Retrieve all datasets with limited fields.
 
     Args:
         db: Database session for persistence operations
 
     Returns:
-        List of datasets with limited fields (name, file_name, classification,
-        created_at)
+        List of datasets with limited fields (DatasetAll model)
     """
-    datasets = await get_all_datasets(db)
-
-    return [
-        {
-            "id": str(dataset.id),
-            "name": dataset.name,
-            "file_name": dataset.file_name,
-            "classification": dataset.classification,
-            "created_at": dataset.created_at,
-        }
-        for dataset in datasets
-    ]
+    datasets = await read_all_datasets(db)
+    logger.debug("Datasets retrieved", length=len(datasets))
+    return datasets
 
 
 @router.get("/{dataset_id}")
 async def get_dataset_by_id(
     dataset_id: UUID,
+    request: Request,
+    response: Response,
     db: Annotated[AsyncSession, Depends(get_session)],
-) -> Dataset:
+) -> DatasetDetail | None:
     """Retrieve a single dataset by its ID.
 
     Args:
         dataset_id: The UUID of the dataset to retrieve
+        request: The HTTP request object
+        response: FastAPI response object for setting headers
         db: Database session for persistence operations
 
     Returns:
@@ -72,18 +65,25 @@ async def get_dataset_by_id(
     Raises:
         DatasetNotFoundError: If the dataset with the specified ID doesn't exist
     """
-    dataset = await get_dataset(db, dataset_id)
+    dataset, version = await read_dataset(db, dataset_id)
+    response.headers["ETAG"] = f'"{version}"'
 
-    return {
-        "id": str(dataset.id),
-        "name": dataset.name,
-        "file_name": dataset.file_name,
-        "classification": dataset.classification,
-        "created_at": dataset.created_at,
-        "updated_at": dataset.updated_at,
-        "rows": dataset.rows,
-        "synthesis_id": dataset.synthesis_id,
-    }
+    e_tag = request.headers.get("If-None-Match")
+    if e_tag:
+        clean_etag = e_tag.strip().strip('"')
+        if clean_etag == str(version):
+            logger.debug(
+                "Dataset not modified",
+                datasetId=dataset_id,
+                etag=clean_etag,
+                version=version,
+            )
+            response.status_code = status.HTTP_304_NOT_MODIFIED
+            return None
+
+    logger.debug("Dataset retrieved", datasetId=dataset_id, version=version)
+
+    return dataset
 
 
 @router.post("")

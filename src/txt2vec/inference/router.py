@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import (
     APIRouter,
     Depends,
-    Response,
 )
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -24,7 +23,6 @@ router = APIRouter(tags=["Embeddings", "Inference"])
 @router.post("")
 async def get_embeddings(
     data: EmbeddingRequest,
-    response: Response,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Embeddings:
     """Get embeddings for an input text.
@@ -42,6 +40,4 @@ async def get_embeddings(
         ModelNotFoundError: If the requested model cannot be found.
         ModelLoadError: If there's an error loading the AI model.
     """
-    embeddings = await create_embeddings(db, data)
-    response.headers["ETAG"] = "0"
-    return embeddings
+    return await create_embeddings(db, data)

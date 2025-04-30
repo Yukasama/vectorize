@@ -12,15 +12,50 @@ from txt2vec.config.errors import ErrorNames
 from txt2vec.utils import sanitize_filename
 
 from .exceptions import InvalidFileError
-from .models import Dataset
-from .repository import save_dataset
+from .models import Dataset, DatasetAll, DatasetDetail
+from .repository import get_all_datasets, get_dataset, save_dataset
 from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import escape_csv_formulas
 from .utils.dataset_classifier import classify_dataset
 from .utils.file_df_converter import convert_file_to_df
 from .utils.save_dataset import save_dataframe
 
-__all__ = ["upload_file"]
+__all__ = ["read_all_datasets", "read_dataset", "upload_file"]
+
+
+async def read_all_datasets(db: AsyncSession) -> list[DatasetAll]:
+    """Read all datasets from the database.
+
+    This function retrieves all datasets from the database and returns them as a
+    list of dictionaries. Each dictionary contains limited fields (name,
+    file_name, classification, created_at) for each dataset.
+
+    Returns:
+        List of dictionaries representing datasets with limited fields.
+    """
+    datasets = await get_all_datasets(db)
+
+    return [DatasetAll.model_validate(dataset) for dataset in datasets]
+
+
+async def read_dataset(
+    db: AsyncSession, dataset_id: uuid.UUID
+) -> tuple[DatasetDetail, int]:
+    """Read a single dataset from the database.
+
+    This function retrieves a dataset by its ID from the database and returns it
+    as a dictionary. The dictionary contains all fields of the dataset.
+
+    Args:
+        db: Database session for persistence operations
+        dataset_id: The UUID of the dataset to retrieve
+
+    Returns:
+        Dictionary representing the dataset with all fields.
+    """
+    dataset = await get_dataset(db, dataset_id)
+
+    return DatasetDetail.model_validate(dataset), dataset.version
 
 
 async def upload_file(
