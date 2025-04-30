@@ -8,25 +8,31 @@ This module provides endpoints to:
 from typing import Annotated, Final, List
 from urllib.parse import quote
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, Response, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Query, Request, Response, UploadFile, status, Depends
 from loguru import logger
 from pydantic import BaseModel
 
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.local_service import upload_embedding_model
-from txt2vec.upload.huggingface_service import load_model_HF
+from txt2vec.upload.huggingface_service import load_model_and_save_to_db
 from txt2vec.upload.schemas import HuggingFaceModelRequest, GitHubModelRequest
+from sqlmodel.ext.asyncio.session import AsyncSession
+from txt2vec.config.db import get_session
 
 
 router = APIRouter(tags=["Model Upload"])
 
 
 @router.post("/load", status_code=status.HTTP_201_CREATED)
-def load_model(request: HuggingFaceModelRequest, http_request: Request):
+async def load_model(
+    request: HuggingFaceModelRequest,
+    http_request: Request,
+    db: AsyncSession = Depends(get_session),
+):
     """Lädt ein Modell und gibt Location-Header zurück."""
     try:
         logger.debug(f"Ladeanfrage: {request.model_id}@{request.tag}")
-        load_model_HF(request.model_id, request.tag)
+        await load_model_and_save_to_db(request.model_id, request.tag, db)
 
         key = f"{request.model_id}@{request.tag}"
         return Response(
