@@ -14,43 +14,27 @@ from pydantic import BaseModel
 
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.local_service import upload_embedding_model
-from txt2vec.upload.model_service import load_model_with_tag
+from txt2vec.upload.model_service import load_model_HF
 from txt2vec.upload.schemas import HuggingFaceModelRequest, GitHubModelRequest
 
 
 router = APIRouter(tags=["Model Upload"])
 
 
-@router.post("/load")
-def load_model_huggingface(request: HuggingFaceModelRequest, http_request: Request):
-    """
-    Load a model from Hugging Face using the specified model ID and tag.
-
-    This endpoint loads a model based on the provided Hugging Face model ID and an optional tag.
-    On success, returns a 201 Created response with a Location header pointing to the model.
-
-    Args:
-        request (HuggingFaceModelRequest): Contains the model ID and tag.
-        http_request (Request): The HTTP request object used to build the Location header.
-
-    Returns:
-        Response: A 201 Created response with a Location header.
-
-    Raises:
-        HTTPException: If an unexpected error occurs during model loading.
-    """
+@router.post("/load", status_code=status.HTTP_201_CREATED)
+def load_model(request: HuggingFaceModelRequest, http_request: Request):
+    """Lädt ein Modell und gibt Location-Header zurück."""
     try:
-        logger.debug(
-            "Loading model: model_id={}, tag={}", request.model_id, request.tag
-        )
-        load_model_with_tag(request.model_id, request.tag)
+        logger.debug(f"Ladeanfrage: {request.model_id}@{request.tag}")
+        load_model_HF(request.model_id, request.tag)
 
-        safe_model_id = quote(request.model_id, safe="")
+        key = f"{request.model_id}@{request.tag}"
         return Response(
             status_code=status.HTTP_201_CREATED,
-            headers={"Location": f"{http_request.url}/{safe_model_id}"},
+            headers={"Location": f"{http_request.url}/{key}"},
         )
     except Exception as e:
+        logger.exception("Fehler beim Laden:")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -69,7 +53,7 @@ async def load_model_github(request: GitHubModelRequest):
         JSONResponse: A response indicating success or error details.
 
     Raises:
-        HTTPException: 
+        HTTPException:
             - 400 if the GitHub URL is invalid.
             - 500 if an unexpected error occurs during model processing.
     """
@@ -126,11 +110,11 @@ async def load_model_local(
         HTTPException: If an error occurs during file upload or processing.
     """
     logger.debug("Uploading model '{}' with {} files", model_name, len(files))
-    
+
     result = await upload_embedding_model(files, model_name, description, extract_zip)
-    
+
     logger.info("Successfully uploaded model: {}", result["model_dir"])
-    
+
     return Response(
         status_code=status.HTTP_201_CREATED,
         headers={"Location": f"{request.url}/{result['model_id']}"},

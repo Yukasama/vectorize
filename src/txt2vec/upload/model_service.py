@@ -1,42 +1,46 @@
+"""Service zum lokalen Laden und Cachen von HF-Modellen."""
+
 from huggingface_hub import snapshot_download
 from loguru import logger
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
-# Globale Pipeline (wird beim Laden gesetzt)
-CLASSIFIER = None
+from txt2vec.upload.exceptions import InvalidModelError
+
+__all__ = ["get_classifier", "load_model_HF", "reset_models"]
+
+_models = {}
 
 
-def load_model_with_tag(model_id: str, tag: str):
+def load_model_HF(model_id: str, tag: str) -> None:
+    """Lädt Modell von HF und cached es."""
+    key = f"{model_id}@{tag}"
+    if key in _models:
+        logger.info(f"'{key}' bereits geladen.")
+        return
 
-    global CLASSIFIER
-
-    # Lade lokalen Snapshot vom HF-Model mit Tag
-    snapshot_path = snapshot_download(
-        repo_id=model_id, revision=tag, cache_dir="./hf_cache"
-    )
-    logger.debug("Model snapshot path: {}", snapshot_path)
-
-    # Lade Tokenizer und Model
-    tokenizer = AutoTokenizer.from_pretrained(snapshot_path)
-    model = AutoModelForSequenceClassification.from_pretrained(snapshot_path)
-
-    # Erstelle Pipeline
-    CLASSIFIER = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
-
-
-def get_classifier():
-    """Gibt die geladene Pipeline zurück.
-
-    :raises ValueError: Wenn kein Modell geladen wurde.
-    :return: Die geladene Pipeline.
-    """
-    global CLASSIFIER
-    if CLASSIFIER is None:
-        raise ValueError("Kein Modell geladen.")
-    return CLASSIFIER
+    try:
+        logger.info(f"Lade '{key}'...")
+        snapshot_path = snapshot_download(
+            repo_id=model_id, revision=tag, cache_dir="./hf_cache"
+        )
+        tokenizer = AutoTokenizer.from_pretrained(snapshot_path)
+        model = AutoModelForSequenceClassification.from_pretrained(snapshot_path)
+        _models[key] = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+        logger.info(f"'{key}' geladen.")
+    except Exception as e:
+        logger.exception(f"Fehler bei '{key}'")
+        raise InvalidModelError() from e
 
 
-def reset_classifier():
-    """Setzt die globale Pipeline zurück (nur für Tests oder Debugging)."""
-    global CLASSIFIER
-    CLASSIFIER = None
+def get_classifier(model_id: str, tag: str):
+    """Gibt Pipeline zu einem geladenen Modell zurück."""
+    key = f"{model_id}@{tag}"
+    if key not in _models:
+        raise ValueError(f"'{key}' nicht geladen.")
+    return _models[key]
+
+
+def reset_models():
+    """Leert den Modell-Cache."""
+    logger.info("Modell-Cache geleert.")
+    _models.clear()

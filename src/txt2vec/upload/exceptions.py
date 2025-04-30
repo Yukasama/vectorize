@@ -1,0 +1,20 @@
+"""Custom-Fehler für Upload-Prozesse."""
+
+from fastapi import status
+
+from txt2vec.errors import AppError, ErrorCode
+
+
+
+__all__ = ["InvalidModelError"]
+
+
+class InvalidModelError(AppError):
+    """Fehler beim Laden eines Modells."""
+
+    error_code = ErrorCode.INVALID_FILE
+    message = (
+        "Das Modell konnte nicht geladen werden. "
+        "Bitte überprüfe model_id und tag."
+    )
+    status_code = status.HTTP_400_BAD_REQUEST
