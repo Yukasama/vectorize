@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.local_service import upload_embedding_model
-from txt2vec.upload.model_service import load_model_HF
+from txt2vec.upload.huggingface_service import load_model_HF
 from txt2vec.upload.schemas import HuggingFaceModelRequest, GitHubModelRequest
 
 
