@@ -9,14 +9,17 @@ from .exceptions import (
     InvalidCSVColumnError,
     InvalidCSVFormatError,
     InvalidFileError,
+    MissingColumnError,
     UnsupportedFormatError,
 )
 from .file_format import FileFormat
 from .models import Dataset
-from .repository import get_dataset, save_dataset, update_dataset
+from .repository import get_all_datasets, get_dataset, save_dataset, update_dataset
 from .router import router
 from .service import upload_file
+from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import escape_csv_formulas
+from .utils.dataset_classifier import classify_dataset
 from .utils.file_df_converter import convert_file_to_df
 from .utils.file_loaders import load_file
 from .utils.file_size_formatter import format_file_size
@@ -27,16 +30,20 @@ __all__ = [
     "ColumnMapping",
     "Dataset",
     "DatasetNotFoundError",
+    "DatasetUploadOptions",
     "EmptyFileError",
     "FileFormat",
     "FileTooLargeError",
     "InvalidCSVColumnError",
     "InvalidCSVFormatError",
     "InvalidFileError",
+    "MissingColumnError",
     "UnsupportedFormatError",
+    "classify_dataset",
     "convert_file_to_df",
     "escape_csv_formulas",
     "format_file_size",
+    "get_all_datasets",
     "get_dataset",
     "load_file",
     "router",

@@ -1,15 +1,31 @@
-"""Logger configuration module."""
+"""Logger configuration."""
 
 import sys
 
 from loguru import logger
 
-from txt2vec.config.config import log_path, rotation
+from .config import settings
 
 __all__ = ["config_logger"]
 
 
-def format_record(record: str) -> str:
+def config_logger() -> None:
+    """Logger configuration."""
+    logger.remove()
+
+    logger.add(
+        settings.log_path,
+        rotation=settings.rotation,
+        format=_format_record,
+        enqueue=True,
+    )
+
+    logger.add(
+        sys.stdout, format=_format_record, level="DEBUG", colorize=True, enqueue=True
+    )
+
+
+def _format_record(record: str) -> str:
     ts = record["time"].strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
     line = (
@@ -26,19 +42,3 @@ def format_record(record: str) -> str:
         line += f" | {extras}"
 
     return line + "\n"
-
-
-def config_logger() -> None:
-    """Logger configuration."""
-    logger.remove()
-
-    logger.add(
-        log_path,
-        rotation=rotation,
-        format=format_record,
-        enqueue=True,
-    )
-
-    logger.add(
-        sys.stdout, format=format_record, level="DEBUG", colorize=True, enqueue=True
-    )

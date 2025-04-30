@@ -7,15 +7,16 @@ from fastapi import UploadFile
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.config.config import allowed_extensions
-from txt2vec.datasets.upload_options_model import DatasetUploadOptions
+from txt2vec.config import settings
+from txt2vec.config.errors import ErrorNames
 from txt2vec.utils import sanitize_filename
 
-from .classification import classify_dataset
 from .exceptions import InvalidFileError
 from .models import Dataset
 from .repository import save_dataset
+from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import escape_csv_formulas
+from .utils.dataset_classifier import classify_dataset
 from .utils.file_df_converter import convert_file_to_df
 from .utils.save_dataset import save_dataframe
 
@@ -47,9 +48,9 @@ async def upload_file(
         FileTooLargeError: If the uploaded file exceeds the maximum size limit.
     """
     if file is None:
-        raise InvalidFileError("No file provided")
+        raise InvalidFileError(ErrorNames.FILE_MISSING_ERROR)
 
-    safe_name, ext = sanitize_filename(file, allowed_extensions)
+    safe_name, ext = sanitize_filename(file, settings.allowed_extensions)
 
     column_mapping = {
         "question": options.question_name,

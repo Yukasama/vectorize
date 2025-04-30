@@ -11,7 +11,8 @@ from typing import Any, Dict, List, Final, Optional
 from fastapi import UploadFile
 from loguru import logger
 
-from txt2vec.config.config import model_upload_dir
+from txt2vec.config import settings
+
 
 
 async def upload_embedding_model(
@@ -42,7 +43,7 @@ async def upload_embedding_model(
     model_id = uuid.uuid4()
     
     # Create a model directory with the sanitized name and ID
-    model_dir = Path(model_upload_dir) / "models" / f"{safe_model_name}_{model_id}"
+    model_dir = Path(settings.model_upload_dir) / "models" / f"{safe_model_name}_{model_id}"
     model_dir.mkdir(parents=True, exist_ok=True)
     
     # Write a description file if provided
@@ -95,7 +96,7 @@ async def upload_embedding_model(
             await file.seek(0)
     
     # Get the relative path from UPLOAD_DIR
-    relative_path = model_dir.relative_to(model_upload_dir)
+    relative_path = model_dir.relative_to(settings.model_upload_dir)
     
     # In a future version, we'll add database persistence here
     

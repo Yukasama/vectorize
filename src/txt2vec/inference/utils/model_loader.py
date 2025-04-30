@@ -8,7 +8,7 @@ from loguru import logger
 from transformers import AutoConfig, AutoModel, AutoModelForMaskedLM, AutoTokenizer
 
 from txt2vec.ai_model.exceptions import ModelLoadError, ModelNotFoundError
-from txt2vec.config.config import model_upload_dir
+from txt2vec.config import settings
 
 __all__ = ["load_model"]
 
@@ -35,7 +35,7 @@ def load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
         ModelNotFoundError: If the model directory doesn't exist
         ModelLoadError: If the model can't be successfully loaded
     """
-    folder = Path(model_upload_dir) / model_tag
+    folder = Path(settings.model_upload_dir) / model_tag
     logger.debug("Loading model '{}' from {}", model_tag, folder)
 
     if not folder.exists():
@@ -70,12 +70,12 @@ def load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
         try:
             model = _instantiate_from_weights(folder)
         except Exception as exc:
-            raise ModelLoadError(f"{model_tag}: {exc!s}") from exc
+            raise ModelLoadError(model_tag) from exc
     except Exception as exc:
-        raise ModelLoadError(f"{model_tag}: {exc!s}") from exc
+        raise ModelLoadError(model_tag) from exc
 
     if model is None:
-        raise ModelLoadError(f"Failed to load model {model_tag}")
+        raise ModelLoadError(model_tag)
 
     try:
         tokenizer = AutoTokenizer.from_pretrained(folder)
@@ -132,6 +132,4 @@ def _instantiate_from_weights(folder: Path) -> torch.nn.Module:
                 model.load_state_dict(state_dict, strict=True)
                 return model.eval()
 
-    raise FileNotFoundError(
-        f"No weight file named 'pytorch_model.bin' or 'model.bin' in {folder}"
-    )
+    raise ModelNotFoundError(folder)

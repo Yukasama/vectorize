@@ -2,6 +2,8 @@
 
 from enum import StrEnum
 
+__all__ = ["Status"]
+
 
 class Status(StrEnum):
     """Status of a process."""

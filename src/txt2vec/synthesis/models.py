@@ -20,8 +20,11 @@ class Synthesis(SQLModel, table=True):
 
     __tablename__ = "synthesis"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    """Unique identifier for the synthetic generation."""
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="Unique identifier for the synthetic generation.",
+    )
 
     start_time: datetime = Field(
         default=None,
@@ -29,26 +32,33 @@ class Synthesis(SQLModel, table=True):
             DateTime(timezone=True),
             insert_default=func.now(),
         ),
+        description="Start time of the synthetic generation.",
     )
-    """Start time of the synthetic generation."""
 
-    end_date: datetime | None = Field(default=None)
-    """Optional end time of the synthetic generation."""
+    end_date: datetime | None = Field(
+        default=None, description="Optional end time of the synthetic generation."
+    )
 
-    error_msg: str | None = Field(default=None)
-    """Optional error message encountered during generation."""
+    error_msg: str | None = Field(
+        default=None,
+        description="Optional error message encountered during generation.",
+    )
 
-    error_id: uuid.UUID | None = Field(default=None, foreign_key="errorinfo.id")
-    """Optional foreign key linking to a specific error."""
+    error_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="errorinfo.id",
+        description="Optional foreign key linking to a specific error.",
+    )
 
     error: ErrorInfo | None = Relationship(back_populates=None)
-    """Relationship to the associated error information."""
 
-    status: Status = Field(default=Status.RUNNING)
-    """Current status of the synthetic generation."""
+    status: Status = Field(
+        default=Status.RUNNING,
+        description="Current status of the synthetic generation.",
+    )
 
     generated_dataset: Optional["Dataset"] = Relationship(back_populates="synthesis")
-    """Relationship to the associated datasets."""
 
-    deleted_at: datetime | None = Field(default=None)
-    """Optional timestamp for when the synthetic generation was deleted."""
+    deleted_at: datetime | None = Field(
+        description="Optional timestamp for when the synthetic generation was deleted.",
+    )

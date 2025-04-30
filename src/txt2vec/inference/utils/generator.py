@@ -6,8 +6,8 @@ import torch
 from loguru import logger
 from transformers import AutoTokenizer
 
-from txt2vec.ai_model.exceptions import ModelLoadError
-from txt2vec.config.config import inference_device
+from txt2vec.ai_model.exceptions import ModelLoadError, UnsupportedModelError
+from txt2vec.config import settings
 
 from ..embedding_model import EmbeddingData
 from ..request_model import EmbeddingRequest
@@ -16,7 +16,7 @@ from .pool_mean import mean_pool
 __all__ = ["generate_embeddings"]
 
 
-_DEVICE = torch.device(inference_device)
+_DEVICE = torch.device(settings.inference_device)
 
 
 def generate_embeddings(
@@ -63,6 +63,7 @@ def generate_embeddings(
                     item if isinstance(item, str) else " ".join(map(str, item)),
                     return_tensors="pt",
                     truncation=True,
+                    max_length=128,
                     padding=False,
                 )
                 ids, attn = (
@@ -72,10 +73,7 @@ def generate_embeddings(
 
             total_toks += ids.size(1)
 
-            # Get model output
             out = model(ids, attention_mask=attn)
-
-            # Use the helper function to extract embedding
             vec = _extract_embedding_vector(out, model, attn, ids)
 
             # Apply dimension filtering if specified
@@ -83,7 +81,6 @@ def generate_embeddings(
             if data.dimensions is not None:
                 emb = emb[: data.dimensions]
 
-            # Add to results
             results.append(
                 EmbeddingData(object="embedding", embedding=list(emb), index=idx)
             )
@@ -156,7 +153,6 @@ def _extract_embedding_vector(
             else encoded
         )
 
-    # If we still couldn't extract an embedding
     if vec is None:
         logger.error(
             "Unable to extract embeddings from model output type: %s",
@@ -164,8 +160,6 @@ def _extract_embedding_vector(
         )
         if isinstance(model_output, dict):
             logger.error("Available keys: %s", list(model_output.keys()))
-        raise ModelLoadError(
-            f"Unsupported model output format: {type(model_output).__name__}"
-        )
+        raise UnsupportedModelError(type(model_output).__name__)
 
     return vec

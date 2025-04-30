@@ -11,12 +11,13 @@ import pytest
 from fastapi import status
 from httpx import post
 
-from txt2vec.config.config import model_upload_dir, prefix
+from txt2vec.config import settings
 
-BASE_URL = f"http://localhost:8000/{prefix}/datasets"
+
+BASE_URL = f"http://localhost:8000/{settings.prefix}/datasets"
 
 # Ensure the models directory exists
-model_upload_dir.mkdir(parents=True, exist_ok=True)
+settings.model_upload_dir.mkdir(parents=True, exist_ok=True)
 
 # Test data
 TEST_MODEL_NAME = "test-model"
@@ -65,7 +66,7 @@ def test_upload_single_files():
         model_id = location.split("/")[-1]
         
         # Verify files were saved
-        model_dir = list(model_upload_dir.glob(f"{TEST_MODEL_NAME}_{model_id}*"))
+        model_dir = list(settings.model_upload_dir.glob(f"{TEST_MODEL_NAME}_{model_id}*"))
         assert len(model_dir) == 1, "Model directory not found"
         
         model_dir = model_dir[0]
@@ -141,7 +142,7 @@ def test_upload_zip_file():
         model_id = location.split("/")[-1]
         
         # Verify files were saved and extracted
-        model_dir = list(model_upload_dir.glob(f"{TEST_MODEL_NAME}-zip_{model_id}*"))
+        model_dir = list(settings.model_upload_dir.glob(f"{TEST_MODEL_NAME}-zip_{model_id}*"))
         assert len(model_dir) == 1, "Model directory not found"
         
         model_dir = model_dir[0]

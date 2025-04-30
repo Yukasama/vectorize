@@ -9,7 +9,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from .exceptions import DatasetNotFoundError
 from .models import Dataset
 
-__all__ = ["get_dataset", "save_dataset", "update_dataset"]
+__all__ = ["get_all_datasets", "get_dataset", "save_dataset", "update_dataset"]
 
 
 async def save_dataset(db: AsyncSession, dataset: Dataset) -> UUID:
