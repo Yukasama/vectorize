@@ -25,6 +25,10 @@ Table of contents
 
 ## Introduction
 
+**txt2vec** is a self-hosted text embedding service that makes it easy to upload your own corpora, train and evaluate embedding models, and generate synthetic datasets from existing data. Built on FastAPI and PyTorch with SQLModel for persistence, it exposes RESTful endpoints to manage the full lifecycle of text embedding workflows.
+
+The project uses the `uv` tool for seamless dependency management and environment isolation, combined with GitHub Actions for CI and Locust-based load testing to ensure reliability at scale. Packaged in Docker and configured via `.env`, txt2vec is designed for both rapid prototyping and production deployment, offering a unified, extensible platform for NLP experimentation and integration.  
+
 ## Setup
 
 ### Dependency management
