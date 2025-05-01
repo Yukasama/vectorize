@@ -28,13 +28,12 @@ from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
 
 router = APIRouter(tags=["Model Upload"])
 
-
 @router.post("/load", status_code=status.HTTP_201_CREATED)
 async def load_model_huggingface(
     data: HuggingFaceModelRequest,
     http_request: Request,
-    db: AsyncSession = Depends(get_session),
-):
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
     """Lädt ein Modell und gibt Location-Header zurück."""
     try:
         logger.debug(f"Ladeanfrage: {data.model_id}@{data.tag}")
