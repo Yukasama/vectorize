@@ -33,4 +33,4 @@ class GetUser(HttpUser):
             )
             files = get_test_file(file_path)
             response = self.client.post("/v1/datasets", files=files)
-            print(f"{response.headers['Location'].split('/')[-1]}")
+            print(f"{response.headers['Location'].split('/')[-1]}")  # noqa: T201
