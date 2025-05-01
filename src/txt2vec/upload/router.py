@@ -5,6 +5,7 @@ This module provides endpoints to:
 2. Add models from GitHub repositories
 3. Upload model files directly to the server
 """
+
 from typing import Annotated
 from urllib.parse import quote
 
@@ -60,7 +61,7 @@ def load_model_huggingface(request: HuggingFaceModelRequest, http_request: Reque
 
 
 @router.post("/add_model")
-async def load_model_github(request: GitHubModelRequest):
+async def load_model_github(request: GitHubModelRequest) -> Response:
     """Download and register a model from a specified GitHub repository.
 
     This endpoint accepts a GitHub repository URL and attempts to download
@@ -73,7 +74,7 @@ async def load_model_github(request: GitHubModelRequest):
         JSONResponse: A response indicating success or error details.
 
     Raises:
-        HTTPException: 
+        HTTPException:
             - 400 if the GitHub URL is invalid.
             - 500 if an unexpected error occurs during model processing.
     """
@@ -94,7 +95,6 @@ async def load_model_github(request: GitHubModelRequest):
             e,
             request.github_url,
         )
-        raise HTTPException(status_code=500, detail="Internal server error.")
 
 
 @router.post("/models")
@@ -102,9 +102,7 @@ async def load_model_local(
     files: list[UploadFile],
     request: Request,
     model_name: Annotated[str, Query(description="Name for the uploaded model")],
-    description: Annotated[
-        str, Query(description="Description of the model")
-    ] = "",
+    description: Annotated[str, Query(description="Description of the model")] = "",
     extract_zip: Annotated[
         bool, Query(description="Whether to extract ZIP files")
     ] = True,
