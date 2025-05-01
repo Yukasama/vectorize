@@ -24,17 +24,17 @@ router = APIRouter(tags=["Model Upload"])
 
 
 @router.post("/load", status_code=status.HTTP_201_CREATED)
-async def load_model(
-    request: HuggingFaceModelRequest,
+async def load_model_huggingface(
+    data: HuggingFaceModelRequest,
     http_request: Request,
     db: AsyncSession = Depends(get_session),
 ):
     """Lädt ein Modell und gibt Location-Header zurück."""
     try:
-        logger.debug(f"Ladeanfrage: {request.model_id}@{request.tag}")
-        await load_model_and_save_to_db(request.model_id, request.tag, db)
+        logger.debug(f"Ladeanfrage: {data.model_id}@{data.tag}")
+        await load_model_and_save_to_db(data.model_id, data.tag, db)
 
-        key = f"{request.model_id}@{request.tag}"
+        key = f"{data.model_id}@{data.tag}"
         return Response(
             status_code=status.HTTP_201_CREATED,
             headers={"Location": f"{http_request.url}/{key}"},

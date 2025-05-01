@@ -21,6 +21,8 @@ class ErrorCode(StrEnum):
     INVALID_CSV_FORMAT = "INVALID_CSV_FORMAT"
     EMPTY_FILE = "EMPTY_FILE"
 
+    # Database errors
+    DATABASE_ERROR = "DATABASE_ERROR"
 
 class AppError(Exception):
     """Base exception for application errors."""

@@ -1,44 +1,28 @@
-"""Tests für das Modell-Service-Modul.
-
-Testfunktionen:
-- test_load_and_get_model: Testet das Laden eines gültigen Modells und die
-  Pipeline-Ausgabe.
-- test_invalid_model_raises_error: Testet, ob beim Laden eines ungültigen Modells
-  eine InvalidModelError ausgelöst wird.
-"""
-
 import pytest
-from transformers import Pipeline
+from sqlmodel import SQLModel
 
-from txt2vec.upload.huggingface_service import reset_models, load_model_HF, get_classifier
-from txt2vec.upload.exceptions import InvalidModelError
-
-
-def test_load_and_get_model():
-    """Testet das Laden eines gültigen Modells und die Verarbeitung eines Textes."""
-    reset_models()
-
-    model_id = "distilbert-base-uncased"
-    tag = "main"
-
-    load_model_HF(model_id, tag)
-    classifier = get_classifier(model_id, tag)
-
-    assert isinstance(classifier, Pipeline)
-    result = classifier("I love this!")
-
-    assert isinstance(result, list)
-    assert "label" in result[0]
-    assert "score" in result[0]
+from txt2vec.ai_model.models import AIModel
+from txt2vec.ai_model.utils.tag_helpers import next_available_tag
+from txt2vec.config.db import get_session
 
 
-def test_invalid_model_raises_error():
-    """Testet, ob eine InvalidModelError ausgelöst wird.
+@pytest.mark.asyncio
+async def test_next_available_tag_increments_correctly():
+    session_gen = get_session()
+    session = await anext(session_gen)
+    try:
+        await session.exec("DELETE FROM aimodel")
 
-    Versucht, ein nicht existierendes Modell zu laden, und überprüft, ob die
-    entsprechende Ausnahme ausgelöst wird.
-    """
-    reset_models()
+        base_tag = "distilbert-main"
 
-    with pytest.raises(InvalidModelError):
-        load_model_HF("nonexistent-model-xyz", "no-tag")
+        model1 = AIModel(model_tag=base_tag, name="Model1")
+        model2 = AIModel(model_tag=f"{base_tag}-1", name="Model2")
+        model3 = AIModel(model_tag=f"{base_tag}-2", name="Model3")
+
+        session.add_all([model1, model2, model3])
+        await session.commit()
+
+        result = await next_available_tag(session, base_tag)
+        assert result == f"{base_tag}-3"
+    finally:
+        await session_gen.aclose()

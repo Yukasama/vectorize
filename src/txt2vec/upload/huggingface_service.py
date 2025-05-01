@@ -2,7 +2,7 @@ from huggingface_hub import snapshot_download
 from loguru import logger
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
-from txt2vec.upload.exceptions import InvalidModelError
+from txt2vec.upload.exceptions import InvalidModelError, DatabaseError
 from txt2vec.ai_model import AIModel
 from txt2vec.ai_model.models import ModelSource
 from txt2vec.ai_model.repository import get_ai_model, save_ai_model
@@ -35,13 +35,22 @@ async def load_model_and_save_to_db(model_id: str, tag: str, db: AsyncSession) -
 
     # In die Datenbank schreiben, wenn noch nicht vorhanden
     try:
-        await get_ai_model(db, key)  # Wenn gefunden → nichts tun
-        logger.info(f"Modell '{key}' bereits in der Datenbank.")
-    except Exception:
-        logger.info(f"Speichere Modell '{key}' in der Datenbank...")
+        try:
+            await get_ai_model(db, key)  # Wenn gefunden → nichts tun
+            logger.info(f"Modell '{key}' bereits in der Datenbank.")
+            return  # Frühzeitig beenden
+        except Exception:
+            logger.info(f"Modell '{key}' nicht in der DB – wird gespeichert...")
+
         ai_model = AIModel(
             model_tag=key,
             name=model_id,
             source=ModelSource.HUGGINGFACE,
         )
         await save_ai_model(db, ai_model)
+        logger.info(f"Modell '{key}' erfolgreich in der Datenbank gespeichert.")
+
+    except Exception as db_error:
+        logger.error(f"Fehler beim Datenbankzugriff für Modell '{key}': {db_error}")
+        raise DatabaseError() from db_error
+
