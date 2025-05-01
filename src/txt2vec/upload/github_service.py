@@ -43,7 +43,6 @@ async def handle_model_download(github_url: str) -> dict:
                 resp.text,
             )
             # FIXME: use logger.bind(...) for structured logging instead
-            raise HTTPException(status_code=404, detail="Model file not found.")
         else:
             logger.error(
                 "Unexpected GitHub API error: repo={}/{} file={} status={} message={}",
@@ -54,7 +53,6 @@ async def handle_model_download(github_url: str) -> dict:
                 resp.text,
             )
             # FIXME: use logger.bind(...) for structured logging instead
-            raise HTTPException(status_code=500, detail="GitHub API error.")
 
         save_path = ""  # Not saving for now — placeholder
 
