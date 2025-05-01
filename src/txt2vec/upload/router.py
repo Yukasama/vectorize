@@ -35,7 +35,24 @@ async def load_model_huggingface(
     http_request: Request,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Lädt ein Modell und gibt Location-Header zurück."""
+    """Load a Hugging Face model and return a Location header.
+
+    This endpoint loads a Hugging Face model using the provided model ID and
+    tag, caches it locally, and stores it in the database. If successful, it
+    returns a 201 Created response with a Location header pointing to the
+    model.
+
+    Args:
+        data (HuggingFaceModelRequest): Contains the model ID and tag.
+        http_request (Request): The HTTP request object.
+        db (AsyncSession): The database session.
+
+    Returns:
+        Response: A 201 Created response with a Location header.
+
+    Raises:
+        HTTPException: If an error occurs during model loading or processing.
+    """
     try:
         logger.debug(f"Ladeanfrage: {data.model_id}@{data.tag}")
         await load_model_and_save_to_db(data.model_id, data.tag, db)
