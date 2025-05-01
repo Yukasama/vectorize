@@ -1,3 +1,9 @@
+"""Service zum Laden und Speichern von Hugging Face Modellen.
+
+Dieses Modul lädt Modelle von Hugging Face, cached sie lokal und speichert sie
+in der Datenbank, falls sie noch nicht vorhanden sind.
+"""
+
 from huggingface_hub import snapshot_download
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -11,20 +17,36 @@ from txt2vec.upload.exceptions import DatabaseError, InvalidModelError
 _models = {}
 
 
-async def load_model_and_save_to_db(model_id: str, tag: str, db: AsyncSession) -> None:
-    """Lädt HF-Modell, cached es lokal und speichert es in die DB, falls noch nicht vorhanden."""
+async def load_model_and_save_to_db(
+    model_id: str, tag: str, db: AsyncSession
+) -> None:
+    """Lädt ein Hugging Face Modell, cached es lokal und speichert es in die Datenbank.
+
+    Args:
+        model_id (str): Die ID des Modells auf Hugging Face.
+        tag (str): Der Tag oder die Version des Modells.
+        db (AsyncSession): Die Datenbank-Session.
+
+    Raises:
+        InvalidModelError: Wenn das Modell nicht geladen werden konnte.
+        DatabaseError: Wenn ein Fehler beim Zugriff auf die Datenbank auftritt.
+    """
     key = f"{model_id}@{tag}"
 
     if key not in _models:
         try:
             logger.info(f"Lade Modell '{key}'...")
             snapshot_path = snapshot_download(
-                repo_id=model_id, revision=tag, cache_dir="./hf_cache"
+                repo_id=model_id,
+                revision=tag,
+                cache_dir="./hf_cache",
             )
             tokenizer = AutoTokenizer.from_pretrained(snapshot_path)
             model = AutoModelForSequenceClassification.from_pretrained(snapshot_path)
             _models[key] = pipeline(
-                "sentiment-analysis", model=model, tokenizer=tokenizer
+                "sentiment-analysis",
+                model=model,
+                tokenizer=tokenizer,
             )
             logger.info(f"Modell '{key}' erfolgreich geladen und gecached.")
         except Exception as e:
@@ -38,9 +60,11 @@ async def load_model_and_save_to_db(model_id: str, tag: str, db: AsyncSession) -
         try:
             await get_ai_model(db, key)  # Wenn gefunden → nichts tun
             logger.info(f"Modell '{key}' bereits in der Datenbank.")
-            return  # Frühzeitig beenden
+            return
         except Exception:
-            logger.info(f"Modell '{key}' nicht in der DB – wird gespeichert...")
+            logger.info(
+                f"Modell '{key}' nicht in der DB - wird gespeichert..."
+            )
 
         ai_model = AIModel(
             model_tag=key,

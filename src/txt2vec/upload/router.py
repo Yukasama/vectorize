@@ -28,6 +28,7 @@ from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
 
 router = APIRouter(tags=["Model Upload"])
 
+
 @router.post("/load", status_code=status.HTTP_201_CREATED)
 async def load_model_huggingface(
     data: HuggingFaceModelRequest,
