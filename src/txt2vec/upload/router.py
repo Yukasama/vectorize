@@ -1,11 +1,6 @@
-"""Router module for handling model upload requests.
+"""Router for model upload and management."""
 
-This module provides endpoints to:
-1. Load Hugging Face models using a specified model ID and tag
-2. Add models from GitHub repositories
-3. Upload model files directly to the server
-"""
-
+import json
 from typing import Annotated, Any
 from urllib.parse import quote
 
@@ -20,6 +15,7 @@ from fastapi import (
 )
 from loguru import logger
 
+from txt2vec.errors import ErrorCode
 from txt2vec.upload.exceptions import (
     EmptyModelError,
     InvalidModelError,
@@ -121,9 +117,70 @@ async def load_github_model(request: GitHubModelRequest) -> dict[str, Any]:
         ) from e
 
 
+def _create_error_response(status_code: int, code: ErrorCode, message: str) -> dict:
+    """Create a standardized error response dictionary.
+
+    Args:
+        status_code: HTTP status code
+        code: Application error code
+        message: Error message
+
+    Returns:
+        Dictionary with code and message
+    """
+    return {"code": str(code), "message": message}
+
+
+def _handle_model_upload_error(e: Exception) -> Response:
+    """Handle different upload error types with appropriate responses.
+
+    Args:
+        e: The exception that was raised
+
+    Returns:
+        Response object with error details
+    """
+    if isinstance(e, EmptyModelError):
+        logger.warning("Empty model file: {}", str(e))
+        status_code = status.HTTP_400_BAD_REQUEST
+        error_code = ErrorCode.EMPTY_FILE
+    elif isinstance(e, ModelTooLargeError):
+        logger.warning("Model too large: {}", str(e))
+        status_code = status.HTTP_400_BAD_REQUEST
+        error_code = ErrorCode.INVALID_FILE
+    elif isinstance(e, UnsupportedModelFormatError):
+        logger.warning("Unsupported model format: {}", str(e))
+        status_code = status.HTTP_400_BAD_REQUEST
+        error_code = ErrorCode.UNSUPPORTED_FORMAT
+    elif isinstance(e, (InvalidZipError, NoValidModelsFoundError, InvalidModelError)):
+        logger.warning("{}: {}", e.__class__.__name__, str(e))
+        status_code = status.HTTP_400_BAD_REQUEST
+        error_code = ErrorCode.INVALID_FILE
+    else:
+        logger.exception("Unhandled error during model upload")
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        error_code = ErrorCode.SERVER_ERROR
+        # Use a generic message for unexpected errors
+        return Response(
+            status_code=status_code,
+            content=json.dumps(
+                _create_error_response(
+                    status_code, error_code, "Error processing upload"
+                )
+            ),
+            media_type="application/json",
+        )
+
+    # For expected errors, use the exception message
+    return Response(
+        status_code=status_code,
+        content=json.dumps(_create_error_response(status_code, error_code, str(e))),
+        media_type="application/json",
+    )
+
+
 @router.post("/models")
 async def load_local_model(
-    files: list[UploadFile],
     request: Request,
     model_name: Annotated[
         str,
@@ -133,14 +190,15 @@ async def load_local_model(
         bool,
         Query(description="Whether to extract ZIP files"),
     ] = True,
+    files: list[UploadFile] | None = None,
 ) -> Response:
     """Upload PyTorch model files to the server.
 
     Args:
-        files: The uploaded model files.
         request: The HTTP request object.
         model_name: Name to assign to the uploaded model.
         extract_zip: Whether to extract ZIP files (default: True).
+        files: The uploaded model files.
 
     Returns:
         A 201 Created response with a Location header.
@@ -149,6 +207,21 @@ async def load_local_model(
         HTTPException: If an error occurs during file upload or processing.
 
     """
+    # Manuelle Validierung für leere Dateien
+    if not files:
+        logger.warning("No files provided in request")
+        return Response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=json.dumps(
+                _create_error_response(
+                    status.HTTP_400_BAD_REQUEST,
+                    ErrorCode.INVALID_FILE,
+                    "No files provided for upload",
+                )
+            ),
+            media_type="application/json",
+        )
+
     logger.debug(
         "Uploading model '{}' with {} files",
         model_name,
@@ -166,45 +239,5 @@ async def load_local_model(
             status_code=status.HTTP_201_CREATED,
             headers={"Location": f"{request.url}/{result['model_id']}"},
         )
-    except EmptyModelError as e:
-        logger.warning("Empty model file: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        ) from e
-    except ModelTooLargeError as e:
-        logger.warning("Model too large: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=str(e),
-        ) from e
-    except UnsupportedModelFormatError as e:
-        logger.warning("Unsupported model format: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=str(e),
-        ) from e
-    except InvalidZipError as e:
-        logger.warning("Invalid ZIP file: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        ) from e
-    except NoValidModelsFoundError as e:
-        logger.warning("No valid models found: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        ) from e
-    except InvalidModelError as e:
-        logger.warning("Invalid model: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        ) from e
     except Exception as e:
-        logger.exception("Unhandled error during model upload")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error processing upload",
-        ) from e
+        return _handle_model_upload_error(e)

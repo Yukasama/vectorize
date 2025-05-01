@@ -1,6 +1,6 @@
 """Service for handling PyTorch model uploads including ZIP files."""
 
-import os
+import re
 import shutil
 import tempfile
 import uuid
@@ -13,7 +13,6 @@ from fastapi import UploadFile
 from loguru import logger
 
 from txt2vec.config.config import max_upload_size, model_upload_dir
-from txt2vec.datasets.service import _sanitize_filename
 from txt2vec.upload.exceptions import (
     EmptyModelError,
     InvalidModelError,
@@ -23,7 +22,7 @@ from txt2vec.upload.exceptions import (
     UnsupportedModelFormatError,
 )
 
-# Gültige PyTorch-Modelldateiendungen
+# Valid PyTorch model file extensions
 PYTORCH_EXTENSIONS: Final[set[str]] = {
     ".pt",
     ".pth",
@@ -39,35 +38,33 @@ async def upload_embedding_model(
     model_name: str,
     extract_zip: bool = True,
 ) -> dict[str, Any]:
-    """Verarbeitet PyTorch-Modell-Uploads mit ZIP-Unterstützung.
+    """Process PyTorch model uploads with ZIP support.
 
     Args:
-        files: Liste der hochzuladenden Modelldateien
-        model_name: Name für das Modell (wird als Verzeichnisname verwendet)
-        extract_zip: Ob ZIP-Dateien extrahiert werden sollen (Standard: True)
+        files: List of model files to be uploaded
+        model_name: Name for the model (used as directory name)
+        extract_zip: Whether ZIP files should be extracted (default: True)
 
     Returns:
-        Dictionary mit Informationen über das hochgeladene Modell
+        Dictionary with information about the uploaded model
 
     Raises:
-        InvalidModelError: Wenn keine oder ungültige Dateien bereitgestellt werden
-        EmptyModelError: Wenn eine Datei leer ist
-        ModelTooLargeError: Wenn eine Datei zu groß ist
-        UnsupportedModelFormatError: Wenn das Dateiformat nicht unterstützt wird
-        InvalidZipError: Wenn eine ZIP-Datei ungültig ist
-        NoValidModelsFoundError: Wenn keine gültigen PyTorch-Modelle gefunden wurden
-
+        InvalidModelError: When no or invalid files are provided
+        EmptyModelError: When a file is empty
+        ModelTooLargeError: When a file is too large
+        UnsupportedModelFormatError: When the file format is not supported
+        InvalidZipError: When a ZIP file is invalid
+        NoValidModelsFoundError: When no valid PyTorch models were found
     """
     if not files:
         raise InvalidModelError("No files provided for upload")
 
-    # Sanitize model name using existing dataset function
-    safe_model_name = _sanitize_filename(model_name)
+    # Sanitize model name using simple regex for safety
+    safe_model_name = re.sub(r"[^a-zA-Z0-9_-]", "_", model_name)
+
     model_id = uuid.uuid4()
     model_dir = Path(model_upload_dir) / f"{safe_model_name}_{model_id}"
     model_dir.mkdir(parents=True, exist_ok=True)
-
-    pytorch_file_count = 0
 
     try:
         pytorch_file_count = await _process_uploaded_files(
@@ -85,6 +82,7 @@ async def upload_embedding_model(
             "model_dir": str(model_dir),
             "file_count": pytorch_file_count,
         }
+
     except (
         ModelTooLargeError,
         InvalidModelError,
@@ -92,9 +90,9 @@ async def upload_embedding_model(
         UnsupportedModelFormatError,
         InvalidZipError,
         NoValidModelsFoundError,
-    ) as e:
+    ):
         _cleanup_model_dir(model_dir)
-        raise e
+        raise
     except Exception as e:
         _cleanup_model_dir(model_dir)
         logger.exception("Unexpected error during model upload")
@@ -106,7 +104,19 @@ async def _process_uploaded_files(
     model_dir: Path,
     extract_zip: bool,
 ) -> int:
-    """Process each uploaded file and count valid PyTorch models."""
+    """Process each uploaded file and count valid PyTorch models.
+
+    Args:
+        files: List of files to process
+        model_dir: Directory to save models to
+        extract_zip: Whether to extract ZIP files
+
+    Returns:
+        int: Number of valid PyTorch models processed
+
+    Raises:
+        Various exceptions based on file validation errors
+    """
     pytorch_file_count = 0
 
     for file in files:
@@ -135,30 +145,41 @@ async def _process_uploaded_files(
                     f"Supported: {', '.join(PYTORCH_EXTENSIONS)}"
                 )
         except (ModelTooLargeError, EmptyModelError, UnsupportedModelFormatError) as e:
-            # Den Fehler logger, aber explizit die original Exception weiterleiten
-            logger.error(f"Error processing file {file.filename}: {e!s}")
-            # Wichtig: Cleanup vor dem Raise
-            if temp_path and os.path.exists(temp_path):
+            # Log the error, but explicitly pass the original exception
+            logger.error("Error processing file {}: {}", file.filename, str(e))
+            # Important: Cleanup before raising
+            if temp_path and Path(temp_path).exists():
                 try:
-                    os.unlink(temp_path)
+                    Path.unlink(temp_path)
                 except Exception:
-                    logger.warning(f"Failed to delete temporary file: {temp_path}")
-            raise  # Explizites re-raise der original Exception
+                    logger.warning("Failed to delete temporary file: {}", temp_path)
+            raise  # Explicit re-raise of the original exception
         finally:
-            # Nur Cleanup der temporären Datei, wenn sie noch existiert und nicht durch eine Exception behandelt wurde
-            if temp_path and os.path.exists(temp_path) and "e" not in locals():
+            # Only cleanup the temporary file if it still exists and wasn't handled
+            if temp_path and Path(temp_path).exists() and "e" not in locals():
                 try:
-                    os.unlink(temp_path)
+                    Path.unlink(temp_path)
                 except Exception:
-                    logger.warning(f"Failed to delete temporary file: {temp_path}")
+                    logger.warning("Failed to delete temporary file: {}", temp_path)
             await file.seek(0)
 
     return pytorch_file_count
 
 
 async def _process_single_file(file: UploadFile) -> tuple[int, str]:
-    """Process a single uploaded file into a temporary file."""
-    logger.debug(f"Starting to process file: {file.filename}")
+    """Process a single uploaded file into a temporary file.
+
+    Args:
+        file: The file to process
+
+    Returns:
+        tuple: File size and path to temporary file
+
+    Raises:
+        ModelTooLargeError: If file exceeds size limit
+        InvalidModelError: For other processing errors
+    """
+    logger.debug("Starting to process file: {}", file.filename)
     file_size = 0
     chunk_size = 1024 * 1024  # 1 MB chunks
     temp_path = None
@@ -169,71 +190,113 @@ async def _process_single_file(file: UploadFile) -> tuple[int, str]:
             while chunk := await file.read(chunk_size):
                 file_size += len(chunk)
                 logger.debug(
-                    f"Read chunk, total size now: {file_size}/{max_upload_size}"
+                    "Read chunk, total size now: {}/{}", file_size, max_upload_size
                 )
                 if file_size > max_upload_size:
                     logger.warning(
-                        f"File size ({file_size}) exceeds limit ({max_upload_size})"
+                        "File size ({}) exceeds limit ({})", file_size, max_upload_size
                     )
                     raise ModelTooLargeError(file_size)
                 temp.write(chunk)
             logger.debug(
-                f"Completed processing file: {file.filename}, size: {file_size}"
+                "Completed processing file: {}, size: {}", file.filename, file_size
             )
             return file_size, temp_path
     except ModelTooLargeError:
-        # Bei Größenfehler die Temp-Datei löschen und den Fehler weiterleiten
-        if temp_path and os.path.exists(temp_path):
-            os.unlink(temp_path)
-        raise  # Wichtig: den original ModelTooLargeError weiterleiten
+        # For size errors, delete the temp file and pass the error
+        if temp_path and Path(temp_path).exists():
+            Path.unlink(temp_path)
+        raise  # Important: pass the original ModelTooLargeError
     except Exception as e:
-        # Bei anderen Fehlern die Temp-Datei löschen und einen allgemeinen Fehler auslösen
-        if temp_path and os.path.exists(temp_path):
-            os.unlink(temp_path)
-        logger.exception(f"Error processing file {file.filename}")
+        # For other errors, delete the temp file and raise a general error
+        if temp_path and Path(temp_path).exists():
+            Path.unlink(temp_path)
+        logger.exception("Error processing file {}", file.filename)
         raise InvalidModelError(f"Error processing file {file.filename}: {e!s}") from e
 
 
 def _handle_zip_file(zip_path: str, model_dir: Path) -> int:
-    """Handle ZIP file extraction and return count of valid models."""
+    """Handle ZIP file extraction and return count of valid models.
+
+    Args:
+        zip_path: Path to the ZIP file
+        model_dir: Directory to extract models to
+
+    Returns:
+        int: Number of valid PyTorch models extracted
+
+    Raises:
+        InvalidZipError: If the ZIP file is invalid
+    """
     if not zipfile.is_zipfile(zip_path):
-        logger.warning(f"Invalid ZIP file: {zip_path}")
+        logger.warning("Invalid ZIP file: {}", zip_path)
         raise InvalidZipError("File is not a valid ZIP file")
 
     extracted = _extract_pytorch_models(zip_path, model_dir)
-    logger.debug(f"Extracted {extracted} PyTorch models from ZIP")
+    logger.debug("Extracted {} PyTorch models from ZIP", extracted)
     return extracted
 
 
 def _handle_pytorch_file(file_path: str, model_dir: Path, filename: str) -> int:
-    """Handle PyTorch model file and return 1 if valid, otherwise raise."""
+    """Handle PyTorch model file and return 1 if valid, otherwise raise.
+
+    Args:
+        file_path: Path to the PyTorch file
+        model_dir: Directory to save the model to
+        filename: Filename to use for the model
+
+    Returns:
+        int: 1 if model is valid, 0 otherwise
+
+    Raises:
+        InvalidModelError: If the file is not a valid PyTorch model
+    """
     if _is_valid_pytorch_model(file_path):
         dest_path = model_dir / filename
         shutil.move(file_path, dest_path)
-        logger.debug(f"Saved valid PyTorch model: {filename}")
+        logger.debug("Saved valid PyTorch model: {}", filename)
         return 1
-    logger.warning(f"Invalid PyTorch model: {filename}")
+    logger.warning("Invalid PyTorch model: {}", filename)
     raise InvalidModelError("File is not a valid PyTorch model")
 
 
 def _cleanup_model_dir(model_dir: Path) -> None:
-    """Clean up the model directory if it exists."""
-    if os.path.exists(model_dir):
+    """Clean up the model directory if it exists.
+
+    Args:
+        model_dir: Directory to clean up
+    """
+    if Path(model_dir).exists():
         shutil.rmtree(model_dir)
 
 
 def _is_valid_pytorch_model(file_path: str) -> bool:
-    """Prüft, ob eine Datei ein gültiges PyTorch-Modell ist."""
+    """Check if a file is a valid PyTorch model.
+
+    Args:
+        file_path: Path to the file to check
+
+    Returns:
+        bool: True if file is a valid PyTorch model, False otherwise
+    """
     try:
         torch.load(file_path, map_location="cpu")
         return True
     except Exception as e:
-        logger.debug(f"Invalid PyTorch model: {e!s}")
+        logger.debug("Invalid PyTorch model: {}", str(e))
         return False
 
 
 def _extract_pytorch_models(zip_path: str, extract_to: Path) -> int:
-    """Extrahiert nur gültige PyTorch-Modelldateien aus einer ZIP-Datei."""
+    """Extract only valid PyTorch model files from a ZIP file.
+
+    Args:
+        zip_path: Path to the ZIP file
+        extract_to: Directory to extract models to
+
+    Returns:
+        int: Number of valid PyTorch models extracted
+    """
     count = 0
 
     with zipfile.ZipFile(zip_path, "r") as zip_ref:
@@ -250,7 +313,7 @@ def _extract_pytorch_models(zip_path: str, extract_to: Path) -> int:
 
                     with (
                         zip_ref.open(file_info) as source,
-                        open(temp_path, "wb") as target,
+                        Path.open(temp_path, "wb") as target,
                     ):
                         shutil.copyfileobj(source, target)
 
@@ -258,9 +321,9 @@ def _extract_pytorch_models(zip_path: str, extract_to: Path) -> int:
                         target_path = extract_to / Path(file_info.filename).name
                         shutil.move(temp_path, target_path)
                         count += 1
-                        logger.debug(f"Extracted valid model: {file_info.filename}")
+                        logger.debug("Extracted valid model: {}", file_info.filename)
                 finally:
-                    if temp_path and os.path.exists(temp_path):
-                        os.unlink(temp_path)
+                    if temp_path and Path(temp_path).exists():
+                        Path.unlink(temp_path)
 
     return count

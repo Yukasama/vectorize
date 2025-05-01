@@ -71,3 +71,6 @@ report.html
 data/
 models/
 checkpoints/
+
+#
+test_data\local_models\zip_different_models.zip
