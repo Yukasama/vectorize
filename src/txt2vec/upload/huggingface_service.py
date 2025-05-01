@@ -1,12 +1,12 @@
 from huggingface_hub import snapshot_download
 from loguru import logger
+from sqlmodel.ext.asyncio.session import AsyncSession
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
-from txt2vec.upload.exceptions import InvalidModelError, DatabaseError
 from txt2vec.ai_model import AIModel
 from txt2vec.ai_model.models import ModelSource
 from txt2vec.ai_model.repository import get_ai_model, save_ai_model
-from sqlmodel.ext.asyncio.session import AsyncSession
+from txt2vec.upload.exceptions import DatabaseError, InvalidModelError
 
 _models = {}
 
@@ -53,4 +53,3 @@ async def load_model_and_save_to_db(model_id: str, tag: str, db: AsyncSession) -
     except Exception as db_error:
         logger.error(f"Fehler beim Datenbankzugriff für Modell '{key}': {db_error}")
         raise DatabaseError() from db_error
-

@@ -1,5 +1,4 @@
 import pytest
-from sqlmodel import SQLModel
 
 from txt2vec.ai_model.models import AIModel
 from txt2vec.ai_model.utils.tag_helpers import next_available_tag

@@ -1,5 +1,4 @@
-"""
-Schemas for importing models
+"""Schemas for importing models
 """
 
 from pydantic import BaseModel, HttpUrl
@@ -19,8 +18,7 @@ class HuggingFaceModelRequest(BaseModel):
 
 
 class GitHubModelRequest(BaseModel):
-    """
-    Request param for loading a model from GitHub
+    """Request param for loading a model from GitHub
 
     Attributes:
         github_url (HttpUrl): The url to the model to be loaded.

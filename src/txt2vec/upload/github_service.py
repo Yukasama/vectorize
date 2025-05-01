@@ -1,17 +1,15 @@
+"""Service for importing models
 """
-Service for importing models
-"""
-
-from loguru import logger
 
 import httpx
 from fastapi import HTTPException
+from loguru import logger
+
 from txt2vec.upload.utils import GitHubUtils
 
 
 async def handle_model_download(github_url: str) -> dict:
-    """
-    Handles downloading a PyTorch model file from a GitHub repository.
+    """Handles downloading a PyTorch model file from a GitHub repository.
 
     Args:
         github_url (str): A valid GitHub repository URL.

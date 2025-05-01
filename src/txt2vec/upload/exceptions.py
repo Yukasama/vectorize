@@ -4,8 +4,6 @@ from fastapi import status
 
 from txt2vec.errors import AppError, ErrorCode
 
-
-
 __all__ = ["InvalidModelError"]
 
 
@@ -18,6 +16,7 @@ class InvalidModelError(AppError):
         "Bitte überprüfe model_id und tag."
     )
     status_code = status.HTTP_400_BAD_REQUEST
+
 
 class DatabaseError(AppError):
     """Fehler beim Zugriff auf die Datenbank."""

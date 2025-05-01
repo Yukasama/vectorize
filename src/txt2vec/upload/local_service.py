@@ -6,7 +6,7 @@ import tempfile
 import uuid
 import zipfile
 from pathlib import Path
-from typing import Any, Dict, List, Final, Optional
+from typing import Any
 
 from fastapi import UploadFile
 from loguru import logger
@@ -15,11 +15,11 @@ from txt2vec.config.config import model_upload_dir
 
 
 async def upload_embedding_model(
-    files: List[UploadFile], 
-    model_name: str, 
-    description: str = "", 
+    files: list[UploadFile],
+    model_name: str,
+    description: str = "",
     extract_zip: bool = True
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Process embedding model upload with ZIP support.
 
     This function handles temporary file storage and creation of the model directory
@@ -34,41 +34,41 @@ async def upload_embedding_model(
     """
     if not files:
         raise ValueError("No files provided for upload")
-    
+
     # Sanitize model name for filesystem usage
     safe_model_name = "".join(c if c.isalnum() or c in ['-', '_'] else '_' for c in model_name)
-    
+
     # Generate a unique model ID
     model_id = uuid.uuid4()
-    
+
     # Create a model directory with the sanitized name and ID
     model_dir = Path(model_upload_dir) / "models" / f"{safe_model_name}_{model_id}"
     model_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Write a description file if provided
     if description:
         with open(model_dir / "description.txt", "w", encoding="utf-8") as f:
             f.write(description)
-    
+
     # Counter for extracted files from ZIP
     extracted_file_count = 0
-    
+
     # Store all uploaded files
     for file in files:
         if not file.filename:
             continue
-        
+
         # Create temporary file
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             # Read content in chunks to handle large files
             content = await file.read()
             temp_file.write(content)
             temp_path = temp_file.name
-        
+
         try:
             filename = Path(file.filename).name
             dest_path = model_dir / filename
-            
+
             # Check if this is a ZIP file that should be extracted
             if extract_zip and filename.lower().endswith('.zip'):
                 extracted_file_count = _extract_zip_file(temp_path, model_dir)
@@ -81,7 +81,7 @@ async def upload_embedding_model(
                 shutil.move(temp_path, dest_path)
                 logger.debug(f"Saved {filename} to {dest_path}")
         except Exception as e:
-            logger.error(f"Error processing {file.filename}: {str(e)}")
+            logger.error(f"Error processing {file.filename}: {e!s}")
             # Cleanup on error
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
@@ -90,15 +90,15 @@ async def upload_embedding_model(
             # Ensure the temporary file is deleted
             if os.path.exists(temp_path):
                 os.unlink(temp_path)
-            
+
             # Reset file position for potential reuse
             await file.seek(0)
-    
+
     # Get the relative path from UPLOAD_DIR
     relative_path = model_dir.relative_to(model_upload_dir)
-    
+
     # In a future version, we'll add database persistence here
-    
+
     return {
         "model_id": str(model_id),
         "model_name": safe_model_name,

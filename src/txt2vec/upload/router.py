@@ -5,20 +5,26 @@ This module provides endpoints to:
 2. Add models from GitHub repositories
 3. Upload model files directly to the server
 """
-from typing import Annotated, Final, List
-from urllib.parse import quote
+from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, Response, UploadFile, status, Depends
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from loguru import logger
-from pydantic import BaseModel
-
-from txt2vec.upload.github_service import handle_model_download
-from txt2vec.upload.local_service import upload_embedding_model
-from txt2vec.upload.huggingface_service import load_model_and_save_to_db
-from txt2vec.upload.schemas import HuggingFaceModelRequest, GitHubModelRequest
 from sqlmodel.ext.asyncio.session import AsyncSession
-from txt2vec.config.db import get_session
 
+from txt2vec.config.db import get_session
+from txt2vec.upload.github_service import handle_model_download
+from txt2vec.upload.huggingface_service import load_model_and_save_to_db
+from txt2vec.upload.local_service import upload_embedding_model
+from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
 
 router = APIRouter(tags=["Model Upload"])
 
@@ -46,8 +52,7 @@ async def load_model_huggingface(
 
 @router.post("/add_model")
 async def load_model_github(request: GitHubModelRequest):
-    """
-    Download and register a model from a specified GitHub repository.
+    """Download and register a model from a specified GitHub repository.
 
     This endpoint accepts a GitHub repository URL and attempts to download
     and prepare the model files for use. If successful, a JSON response is returned.
@@ -85,7 +90,7 @@ async def load_model_github(request: GitHubModelRequest):
 
 @router.post("/models")
 async def load_model_local(
-    files: List[UploadFile],
+    files: list[UploadFile],
     request: Request,
     model_name: Annotated[str, Query(description="Name for the uploaded model")],
     description: Annotated[
@@ -95,8 +100,7 @@ async def load_model_local(
         bool, Query(description="Whether to extract ZIP files")
     ] = True,
 ) -> Response:
-    """
-    Upload embedding model files to the server.
+    """Upload embedding model files to the server.
 
     This endpoint accepts multiple files representing an embedding model. If ZIP files
     are uploaded and extract_zip is True, they will be extracted before saving.

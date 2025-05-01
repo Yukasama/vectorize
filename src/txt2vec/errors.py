@@ -24,6 +24,7 @@ class ErrorCode(StrEnum):
     # Database errors
     DATABASE_ERROR = "DATABASE_ERROR"
 
+
 class AppError(Exception):
     """Base exception for application errors."""
 

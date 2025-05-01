@@ -1,5 +1,4 @@
-"""
-Unit tests for GitHubUtils URL validation.
+"""Unit tests for GitHubUtils URL validation.
 """
 
 import pytest
@@ -19,8 +18,7 @@ from txt2vec.upload.utils import GitHubUtils
     ],
 )
 def test_is_github_url_valid(url):
-    """
-    Ensure that valid GitHub repository URLs are recognized as such.
+    """Ensure that valid GitHub repository URLs are recognized as such.
 
     Valid formats covered:
       - HTTP or HTTPS schemes
@@ -47,8 +45,7 @@ def test_is_github_url_valid(url):
     ],
 )
 def test_is_github_url_invalid(url):
-    """
-    Ensure that non‑GitHub or malformed URLs are correctly rejected.
+    """Ensure that non‑GitHub or malformed URLs are correctly rejected.
 
     Invalid cases include:
       - Wrong domains (e.g., gitlab.com or notgithub.com)
