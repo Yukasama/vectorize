@@ -17,7 +17,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.db import get_session
 
-from .models import DatasetAll, DatasetDetail
+from .models import DatasetAll, DatasetPublic
 from .service import read_all_datasets, read_dataset, upload_file
 from .upload_options_model import DatasetUploadOptions
 
@@ -50,7 +50,7 @@ async def get_dataset_by_id(
     request: Request,
     response: Response,
     db: Annotated[AsyncSession, Depends(get_session)],
-) -> DatasetDetail | None:
+) -> DatasetPublic | None:
     """Retrieve a single dataset by its ID.
 
     Args:

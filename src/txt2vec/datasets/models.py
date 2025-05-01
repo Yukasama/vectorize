@@ -17,7 +17,7 @@ __all__ = [
     "Dataset",
     "DatasetAll",
     "DatasetCreate",
-    "DatasetDetail",
+    "DatasetPublic",
     "DatasetUpdate",
 ]
 
@@ -64,7 +64,7 @@ class DatasetAll(_DatasetBase):
     )
 
 
-class DatasetDetail(DatasetAll):
+class DatasetPublic(DatasetAll):
     """Dataset model for detailed view with all fields."""
 
     updated_at: datetime | None = Field(
