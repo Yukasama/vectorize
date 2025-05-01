@@ -12,7 +12,7 @@ from txt2vec.config.errors import ErrorNames
 from txt2vec.utils import sanitize_filename
 
 from .exceptions import InvalidFileError
-from .models import Dataset, DatasetAll, DatasetDetail
+from .models import Dataset, DatasetAll, DatasetPublic
 from .repository import get_all_datasets, get_dataset, save_dataset
 from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import escape_csv_formulas
@@ -40,7 +40,7 @@ async def read_all_datasets(db: AsyncSession) -> list[DatasetAll]:
 
 async def read_dataset(
     db: AsyncSession, dataset_id: uuid.UUID
-) -> tuple[DatasetDetail, int]:
+) -> tuple[DatasetPublic, int]:
     """Read a single dataset from the database.
 
     This function retrieves a dataset by its ID from the database and returns it
@@ -55,7 +55,7 @@ async def read_dataset(
     """
     dataset = await get_dataset(db, dataset_id)
 
-    return DatasetDetail.model_validate(dataset), dataset.version
+    return DatasetPublic.model_validate(dataset), dataset.version
 
 
 async def upload_file(

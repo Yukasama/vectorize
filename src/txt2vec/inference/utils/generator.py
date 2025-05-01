@@ -73,10 +73,14 @@ def generate_embeddings(
 
             total_toks += ids.size(1)
 
-            out = model(ids, attention_mask=attn)
+            out = model(
+                ids,
+                attention_mask=attn,
+                return_dict=True,
+                output_hidden_states=True,
+            )
             vec = _extract_embedding_vector(out, model, attn, ids)
 
-            # Apply dimension filtering if specified
             emb: Iterable[float] = vec.tolist()
             if data.dimensions is not None:
                 emb = emb[: data.dimensions]

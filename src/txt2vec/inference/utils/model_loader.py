@@ -1,11 +1,18 @@
-"""Load a model and optional tokenizer."""
+"""Model loader for saved AI-Models."""
 
 from functools import cache
 from pathlib import Path
 
 import torch
 from loguru import logger
-from transformers import AutoConfig, AutoModel, AutoModelForMaskedLM, AutoTokenizer
+from safetensors.torch import load_file
+from transformers import (
+    AutoConfig,
+    AutoModel,
+    AutoModelForMaskedLM,
+    AutoTokenizer,
+    T5EncoderModel,
+)
 
 from txt2vec.ai_model.exceptions import ModelLoadError, ModelNotFoundError
 from txt2vec.config import settings
@@ -13,7 +20,16 @@ from txt2vec.config import settings
 __all__ = ["load_model"]
 
 
-_DEVICE = torch.device("cpu")
+_DEVICE = torch.device(settings.inference_device)
+_IS_TORCH_NEW = torch.__version__ >= "2.7"
+_MODEL_NAME = "model.bin"
+
+_COMMON_KWARGS = {
+    "trust_remote_code": True,
+    "torch_dtype": "auto",
+    "low_cpu_mem_usage": True,
+    "use_safetensors": True,
+}
 
 
 @cache
@@ -36,57 +52,49 @@ def load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
         ModelLoadError: If the model can't be successfully loaded
     """
     folder = Path(settings.model_upload_dir) / model_tag
-    logger.debug("Loading model '{}' from {}", model_tag, folder)
-
     if not folder.exists():
         raise ModelNotFoundError(model_tag)
 
-    model = None
     try:
-        config = AutoConfig.from_pretrained(folder)
-        if hasattr(config, "architectures") and config.architectures:
-            arch = config.architectures[0]
-            logger.debug(f"Loading model with architecture {arch}")
-
-            if "MaskedLM" in arch:
-                model = (
-                    AutoModelForMaskedLM.from_pretrained(folder, trust_remote_code=True)
-                    .to(_DEVICE)
-                    .eval()
-                )
-            else:
-                model = (
-                    AutoModel.from_pretrained(folder, trust_remote_code=True)
-                    .to(_DEVICE)
-                    .eval()
-                )
-        else:
-            model = (
-                AutoModel.from_pretrained(folder, trust_remote_code=True)
-                .to(_DEVICE)
-                .eval()
-            )
-    except (FileNotFoundError, OSError):
-        try:
-            model = _instantiate_from_weights(folder)
-        except Exception as exc:
-            raise ModelLoadError(model_tag) from exc
+        cfg = AutoConfig.from_pretrained(folder)
     except Exception as exc:
         raise ModelLoadError(model_tag) from exc
 
-    if model is None:
-        raise ModelLoadError(model_tag)
+    try:
+        if cfg.model_type == "t5":
+            model = T5EncoderModel.from_pretrained(folder, **_COMMON_KWARGS)
+        elif (
+            "architectures" in cfg.to_dict()
+            and cfg.architectures
+            and "MaskedLM" in cfg.architectures[0]
+        ):
+            model = AutoModelForMaskedLM.from_pretrained(folder, **_COMMON_KWARGS)
+        else:
+            model = AutoModel.from_pretrained(folder, **_COMMON_KWARGS)
+
+    except (FileNotFoundError, OSError):
+        model = _instantiate_from_weights(folder, cfg)
+    except Exception as exc:
+        raise ModelLoadError(model_tag) from exc
+
+    model = model.to(_DEVICE).eval()
 
     try:
-        tokenizer = AutoTokenizer.from_pretrained(folder)
+        tok = AutoTokenizer.from_pretrained(folder, trust_remote_code=True)
     except Exception as e:
-        tokenizer = None
-        logger.warning("No tokenizer found for model '{}': {}", model_tag, str(e))
+        logger.warning("No tokenizer for '{}': {}", model_tag, e)
+        tok = None
 
-    return model, tokenizer
+    logger.debug(
+        "Loaded {} on {}",
+        model.__class__.__name__,
+        _DEVICE,
+        tokenizer=tok is not None,
+    )
+    return model, tok
 
 
-def _instantiate_from_weights(folder: Path) -> torch.nn.Module:
+def _instantiate_from_weights(folder: Path, cfg: AutoConfig) -> torch.nn.Module:
     """Create a model from config.json and load weights from a state dict file.
 
     This is a fallback method for loading models that don't follow the standard
@@ -94,6 +102,7 @@ def _instantiate_from_weights(folder: Path) -> torch.nn.Module:
 
     Args:
         folder: Path to the directory containing config.json and weight files.
+        cfg: The AutoConfig object containing model configuration.
 
     Returns:
         The loaded PyTorch model in evaluation mode.
@@ -101,34 +110,34 @@ def _instantiate_from_weights(folder: Path) -> torch.nn.Module:
     Raises:
         ModelNotFoundError: If neither pytorch_model.bin nor model.bin exist
     """
-    cfg = AutoConfig.from_pretrained(folder)
-
-    if hasattr(cfg, "architectures") and cfg.architectures:
-        architecture = cfg.architectures[0]
-        logger.debug(f"Using architecture from config: {architecture}")
-
-        if "MaskedLM" in architecture:
-            model = AutoModelForMaskedLM.from_config(cfg).to(_DEVICE)
-        else:
-            model = AutoModel.from_config(cfg).to(_DEVICE)
+    if cfg.model_type == "t5":
+        model = T5EncoderModel.from_config(cfg)
+    elif (
+        "architectures" in cfg.to_dict()
+        and cfg.architectures
+        and "MaskedLM" in cfg.architectures[0]
+    ):
+        model = AutoModelForMaskedLM.from_config(cfg)
     else:
-        model = AutoModel.from_config(cfg).to(_DEVICE)
+        model = AutoModel.from_config(cfg)
+    model.to(_DEVICE)
 
-    for fname in ("pytorch_model.bin", "model.bin"):
-        weight_file = folder / fname
-        if weight_file.is_file():
-            logger.debug("Loading state-dict from {}", weight_file)
-            state_dict = torch.load(weight_file, map_location=_DEVICE)
-            try:
-                missing, unexpected = model.load_state_dict(state_dict, strict=False)
-                if missing:
-                    logger.warning(f"Missing keys: {len(missing)} keys")
-                if unexpected:
-                    logger.warning(f"Unexpected keys: {len(unexpected)} keys")
-                return model.eval()
-            except Exception as e:
-                logger.warning(f"Non-strict loading failed: {e!s}")
-                model.load_state_dict(state_dict, strict=True)
-                return model.eval()
+    st_path = next(folder.glob("*.safetensors"), None)
+    if st_path:
+        logger.debug("Loading weights from {}", st_path)
+        state = load_file(st_path, device=_DEVICE)
+        model.load_state_dict(state, strict=False)
+        return model.eval()
+
+    f = folder / _MODEL_NAME
+    if f.is_file():
+        state = torch.load(
+            f,
+            mmap=_IS_TORCH_NEW,
+            map_location=_DEVICE,
+            weights_only=_IS_TORCH_NEW,
+        )
+        model.load_state_dict(state, strict=False)
+        return model.eval()
 
     raise ModelNotFoundError(folder)
