@@ -7,8 +7,8 @@ from typing import Final
 from fastapi import UploadFile
 
 from txt2vec.config import settings
-from txt2vec.datasets.exceptions import InvalidFileError, UnsupportedFormatError
 from txt2vec.config.errors import ErrorNames
+from txt2vec.datasets.exceptions import InvalidFileError, UnsupportedFormatError
 
 __all__ = ["sanitize_filename"]
 
