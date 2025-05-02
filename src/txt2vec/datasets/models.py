@@ -39,17 +39,17 @@ class DatasetCreate(_DatasetBase):
         description="Filename of the dataset file on the storage unit",
     )
 
-    rows: int = Field(description="Number of rows in the dataset")
+    rows: int = Field(description="Number of rows in the new dataset")
 
     synthesis_id: uuid.UUID | None = Field(
-        None, description="Optional ID linking to a synthetic dataset"
+        None, description="Optional ID linking to a synthetic dataset when created"
     )
 
 
 class DatasetUpdate(SQLModel):
     """Dataset update model with optional fields."""
 
-    name: str | None = Field(None, description="Name of the dataset")
+    name: str | None = Field(None, description="Name of the dataset to update")
 
 
 class DatasetAll(_DatasetBase):

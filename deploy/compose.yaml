@@ -13,3 +13,4 @@ services:
       - ~/volumes/txt2vec/log:/app/log
       - ~/volumes/txt2vec/db:/app/db
     restart: unless-stopped
+    cap_drop: [ALL]
