@@ -96,7 +96,6 @@ async def upload_embedding_model(
             await file.seek(0)
 
     # Get the relative path from UPLOAD_DIR
-    relative_path = model_dir.relative_to(model_upload_dir)
 
     relative_path = model_dir.relative_to(settings.model_upload_dir)
 
