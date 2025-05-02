@@ -11,7 +11,6 @@ from httpx import post
 
 from txt2vec.config import settings
 
-
 BASE_URL = f"http://localhost:8000/{settings.prefix}/datasets"
 
 # Ensure the models directory exists

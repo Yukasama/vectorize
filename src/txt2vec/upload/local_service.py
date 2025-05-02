@@ -14,7 +14,6 @@ from loguru import logger
 from txt2vec.config import settings
 
 
-
 async def upload_embedding_model(
     files: list[UploadFile],
     model_name: str,

@@ -51,7 +51,7 @@ async def load_model_and_save_to_db(
             logger.info(f"Modell '{key}' erfolgreich geladen und gecached.")
         except Exception as e:
             logger.exception(f"Fehler beim Laden des Modells '{key}'")
-            raise InvalidModelError() from e
+            raise InvalidModelError from e
     else:
         logger.info(f"Modell '{key}' bereits im Cache.")
 
@@ -76,4 +76,4 @@ async def load_model_and_save_to_db(
 
     except Exception as db_error:
         logger.error(f"Fehler beim Datenbankzugriff für Modell '{key}': {db_error}")
-        raise DatabaseError() from db_error
+        raise DatabaseError from db_error
