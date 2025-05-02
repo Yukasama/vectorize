@@ -2,7 +2,8 @@
 
 from fastapi import status
 
-from txt2vec.config.errors import AppError, ErrorCode
+from txt2vec.common.app_error import AppError
+from txt2vec.config.errors import ErrorCode
 from txt2vec.datasets.utils.file_size_formatter import format_file_size
 
 
