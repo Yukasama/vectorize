@@ -22,6 +22,7 @@ async def handle_model_download(github_url: str) -> dict:
     Raises:
         HTTPException: If the URL is invalid, the file is not found,
                        or a GitHub API error occurs.
+
     """
     if not GitHubUtils.is_github_url(github_url):
         raise HTTPException(

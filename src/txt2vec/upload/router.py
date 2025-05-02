@@ -1,18 +1,10 @@
-"""Router module for handling model upload requests.
-
-This module provides endpoints to:
-1. Load Hugging Face models using a specified model ID and tag
-2. Add models from GitHub repositories
-3. Upload model files directly to the server
-"""
+"""Router for model upload and management."""
 
 from typing import Annotated
-from urllib.parse import quote
 
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException,
     Query,
     Request,
     Response,
@@ -23,11 +15,12 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.db import get_session
+from txt2vec.datasets.exceptions import InvalidFileError
+from txt2vec.upload.exceptions import ServiceUnavailableError
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.huggingface_service import load_model_and_save_to_db
 from txt2vec.upload.local_service import upload_embedding_model
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
-from txt2vec.upload.exceptions import ServiceUnavailableError
 
 router = APIRouter(tags=["Model Upload"])
 
@@ -51,7 +44,7 @@ async def load_model_huggingface(
         db (AsyncSession): The database session.
 
     Returns:
-        Response: A 201 Created response with a Location header.
+        A 201 Created response with a Location header.
 
     Raises:
         HTTPException: If an error occurs during model loading or processing.
@@ -78,33 +71,28 @@ async def load_model_github(request: GitHubModelRequest) -> Response:
     and prepare the model files for use. If successful, a JSON response is returned.
 
     Args:
-        request (GitHubModelRequest): Contains the GitHub repository URL.
+        request: Contains the GitHub repository URL.
 
     Returns:
-        JSONResponse: A response indicating success or error details.
+        A response indicating success or error details.
 
     Raises:
         HTTPException:
             - 400 if the GitHub URL is invalid.
             - 500 if an unexpected error occurs during model processing.
-    """
-    logger.info("Received request to add model from GitHub URL: {}", request.github_url)
 
-    try:
-        result = await handle_model_download(request.github_url)
-        logger.info("Model handled successfully for: {}", request.github_url)
-        return result
-    except HTTPException as e:
-        logger.warning(
-            "Handled HTTPException for GitHub URL %s: %s", request.github_url, e.detail
-        )
-        raise e
-    except Exception as e:
-        logger.exception(
-            "Unhandled error %s  during GitHub model import for URL: %s",
-            e,
-            request.github_url,
-        )
+    """
+    logger.info(
+        "Received request to add model from GitHub URL: {}",
+        request.github_url,
+    )
+
+    result = await handle_model_download(request.github_url)
+    logger.info(
+        "Model handled successfully for: {}",
+        request.github_url,
+    )
+    return result
 
 
 @router.post("/models")
@@ -112,35 +100,40 @@ async def load_model_local(
     files: list[UploadFile],
     request: Request,
     model_name: Annotated[str, Query(description="Name for the uploaded model")],
-    description: Annotated[str, Query(description="Description of the model")] = "",
     extract_zip: Annotated[
-        bool, Query(description="Whether to extract ZIP files")
+        bool,
+        Query(description="Whether to extract ZIP files"),
     ] = True,
 ) -> Response:
-    """Upload embedding model files to the server.
-
-    This endpoint accepts multiple files representing an embedding model. If ZIP files
-    are uploaded and extract_zip is True, they will be extracted before saving.
-    Returns a 201 Created response with a Location header pointing to the model.
+    """Upload PyTorch model files to the server.
 
     Args:
-        files (List[UploadFile]): The uploaded model files.
-        request (Request): The HTTP request object.
-        model_name (str): Name to assign to the uploaded model.
-        description (str, optional): Optional description of the model.
-        extract_zip (bool): Whether to extract ZIP files (default: True).
+        request: The HTTP request object.
+        model_name: Name to assign to the uploaded model.
+        extract_zip: Whether to extract ZIP files (default: True).
+        files: The uploaded model files.
 
     Returns:
-        Response: A 201 Created response with a Location header.
+        A 201 Created response with a Location header.
 
     Raises:
         HTTPException: If an error occurs during file upload or processing.
+
     """
-    logger.debug("Uploading model '{}' with {} files", model_name, len(files))
+    if not files:
+        raise InvalidFileError
 
-    result = await upload_embedding_model(files, model_name, description, extract_zip)
+    logger.debug(
+        "Uploading model '{}' with {} files",
+        model_name,
+        len(files),
+    )
 
-    logger.info("Successfully uploaded model: {}", result["model_dir"])
+    result = await upload_embedding_model(files, model_name, extract_zip)
+    logger.info(
+        "Successfully uploaded model: {}",
+        result["model_dir"],
+    )
 
     return Response(
         status_code=status.HTTP_201_CREATED,
