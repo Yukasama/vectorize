@@ -54,6 +54,7 @@ coverage.xml
 .pyre/
 .pytype/
 .ruff_cache/
+.scannerwork/
 
 # === Notebooks ===
 *.ipynb_checkpoints

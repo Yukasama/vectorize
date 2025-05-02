@@ -72,7 +72,7 @@ def load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
         else:
             model = AutoModel.from_pretrained(folder, **_COMMON_KWARGS)
 
-    except (FileNotFoundError, OSError):
+    except OSError:
         model = _instantiate_from_weights(folder, cfg)
     except Exception as exc:
         raise ModelLoadError(model_tag) from exc

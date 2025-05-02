@@ -80,8 +80,8 @@ def _resolve_headers(
     Raises:
         InvalidCSVColumnError: When a column name specified in mapping is
             not found in the DataFrame.
-        InvalidCSVFormatError: When mandatory columns (question, positive)
-            cannot be resolved.
+        MissingColumnError: When mandatory columns (question, positive, or
+            an explicitly requested negative) cannot be resolved.
     """
     resolved: dict[str, str] = {}
 
@@ -97,19 +97,26 @@ def _resolve_headers(
     for role in _ROLES:
         if role in resolved:
             continue
-        candidates = (role, *_ALIASES.get(role, ()))
-        for cand in candidates:
-            if cand.lower() in df_cols_lc:
-                resolved[role] = df_cols_lc[cand.lower()]
-                break
+        col_name = next(
+            (
+                df_cols_lc[c.lower()]
+                for c in (role, *_ALIASES.get(role, ()))
+                if c.lower() in df_cols_lc
+            ),
+            None,
+        )
+        if col_name:
+            resolved[role] = col_name
 
-    missing_column = None
-    if "question" not in resolved:
-        missing_column = "question"
-        raise MissingColumnError(missing_column)
-    if "positive" not in resolved:
-        missing_column = "positive"
-        raise MissingColumnError(missing_column)
-    if mapping and mapping.get("negative") is not None and "negative" not in resolved:
-        raise MissingColumnError(mapping["negative"])
+    mandatory = ["question", "positive"]
+    if mapping and mapping.get("negative") is not None:
+        mandatory.append("negative")
+
+    for role in mandatory:
+        if role not in resolved:
+            explicit = (
+                mapping[role] if mapping and role in mapping and mapping[role] else role
+            )
+            raise MissingColumnError(explicit)
+
     return resolved

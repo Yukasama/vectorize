@@ -1,0 +1,28 @@
+services:
+  sonarqube:
+    image: sonarqube:community
+    ports:
+      - published: 9000
+        target: 9000
+      - published: 9092
+        target: 9092
+    volumes:
+      - type: bind
+        source: ~/volumes/sonarqube/data
+        target: /opt/sonarqube/data
+      - type: bind
+        source: ~/volumes/sonarqube/logs
+        target: /opt/sonarqube/logs
+        read_only: true
+    env_file: .env
+    hostname: sonarqube
+    container_name: sonarqube
+    cap_drop: [ALL]
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4096M
+        reservations:
+          cpus: "2.0"
+          memory: 2048M

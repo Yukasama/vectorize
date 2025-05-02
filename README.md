@@ -95,6 +95,53 @@ Note: Do **not** edit the `uv.lock`-File yourself.
 uv run app
 ```
 
+### Run linter
+
+```bash
+# Run ruff over everything
+uv run ruff check .
+
+# Run ruff over specific folder
+uv run ruff check src/txt2vec/datasets
+```
+
+#### Run SonarQube
+
+````bash
+# 0. Install sonar-scanner (for Mac/Linux)
+brew install sonar-scanner
+
+# 0. Install sonar-scanner (for Windows)
+Go to https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner and install
+
+# Only once: Create .env under resources/sonarqube
+
+```bash
+# .env
+TZ=Europe/Berlin
+```
+
+# 1. Run docker container
+
+cd resources/sonarqube
+docker compose up
+
+# Only once: Get token from SonarQube
+
+# 1. Go to http://localhost:9000
+
+# 2. Account > Settings
+
+# 3. Generate Global Token with 'No expiration'
+
+# 4. Copy into .env under SONAR_TOKEN
+
+# 2. Run sonar scan
+
+uv run scripts/sonar_scan.py
+
+````
+
 ### Run tests
 
 ```bash
