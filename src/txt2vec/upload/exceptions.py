@@ -2,10 +2,8 @@
 
 from fastapi import status
 
-from txt2vec.datasets.utils.file_size_formatter import (
-    format_file_size,  # Nur zur Erinnerung
-)
-from txt2vec.errors import AppError, ErrorCode
+from txt2vec.config.errors import AppError, ErrorCode
+from txt2vec.datasets.utils.file_size_formatter import format_file_size
 
 
 class InvalidModelError(AppError):
@@ -58,3 +56,19 @@ class NoValidModelsFoundError(AppError):
     error_code = ErrorCode.INVALID_FILE
     message = "No valid PyTorch model files found"
     status_code = status.HTTP_400_BAD_REQUEST
+
+
+class DatabaseError(AppError):
+    """Fehler beim Zugriff auf die Datenbank."""
+
+    error_code = ErrorCode.DATABASE_ERROR
+    message = "Datenbankfehler. Bitte überprüfe die Verbindung."
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+class ServiceUnavailableError(AppError):
+    """Fehler beim Zugriff auf den Dienst."""
+
+    error_code = ErrorCode.SERVICE_UNAVAILABLE
+    message = "Der Dienst ist derzeit nicht verfügbar."
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE

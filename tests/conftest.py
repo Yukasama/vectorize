@@ -1,5 +1,9 @@
 """Common test fixtures for the application."""
 
+import os
+
+os.environ.setdefault("ENV", "testing")
+
 from collections.abc import AsyncGenerator, Generator
 
 import pytest
@@ -9,7 +13,9 @@ from sqlmodel import SQLModel, StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.app import app
+from txt2vec.config import settings
 from txt2vec.config.db import get_session
+from txt2vec.config.seed import seed_db
 
 
 @pytest.fixture(scope="session")
@@ -28,6 +34,9 @@ async def session() -> AsyncGenerator[AsyncSession]:
 
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+
+    async with AsyncSession(test_engine) as session:
+        await seed_db(session)
 
     async with AsyncSession(test_engine) as session:
         try:
@@ -54,7 +63,7 @@ def client_fixture(session: AsyncSession) -> Generator[TestClient]:
 
     app.dependency_overrides[get_session] = get_session_override
 
-    client = TestClient(app)
+    client = TestClient(app, base_url=f"http://testserver{settings.prefix}")
     yield client
 
     app.dependency_overrides.clear()

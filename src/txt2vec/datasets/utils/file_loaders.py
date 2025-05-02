@@ -9,7 +9,7 @@ import pandas as pd
 from defusedxml import ElementTree
 from loguru import logger
 
-from txt2vec.config.config import default_delimiter
+from txt2vec.config import settings
 
 from ..file_format import FileFormat
 
@@ -59,9 +59,6 @@ def _load_json(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
 
     Returns:
         pd.DataFrame: DataFrame derived from the JSON structure.
-
-    Raises:
-        ValueError: When JSON cannot be decoded.
     """
     try:
         return pd.read_json(path)
@@ -129,7 +126,7 @@ def _detect_delimiter(path: Path) -> str:
     with path.open(newline="", encoding="utf-8") as csvfile:
         sample: Final = csvfile.read(4096)
         if not sample:
-            return default_delimiter
+            return settings.default_delimiter
         try:
             dialect = Sniffer().sniff(sample)
             return dialect.delimiter
@@ -137,4 +134,4 @@ def _detect_delimiter(path: Path) -> str:
             for d in _DELIMITERS:
                 if d in sample:
                     return d
-            return default_delimiter
+            return settings.default_delimiter

@@ -1,12 +1,10 @@
 """Router for model upload and management."""
 
-import json
-from typing import Annotated, Any
-from urllib.parse import quote
+from typing import Annotated
 
 from fastapi import (
     APIRouter,
-    HTTPException,
+    Depends,
     Query,
     Request,
     Response,
@@ -14,67 +12,63 @@ from fastapi import (
     status,
 )
 from loguru import logger
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.errors import ErrorCode
-from txt2vec.upload.exceptions import (
-    EmptyModelError,
-    InvalidModelError,
-    InvalidZipError,
-    ModelTooLargeError,
-    NoValidModelsFoundError,
-    UnsupportedModelFormatError,
-)
+from txt2vec.config.db import get_session
+from txt2vec.datasets.exceptions import InvalidFileError
+from txt2vec.upload.exceptions import ServiceUnavailableError
 from txt2vec.upload.github_service import handle_model_download
+from txt2vec.upload.huggingface_service import load_model_and_save_to_db
 from txt2vec.upload.local_service import upload_embedding_model
-from txt2vec.upload.model_service import load_model_with_tag
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
 
 router = APIRouter(tags=["Model Upload"])
 
 
-@router.post("/load")
-def load_huggingface_model(
-    request: HuggingFaceModelRequest,
+@router.post("/load", status_code=status.HTTP_201_CREATED)
+async def load_model_huggingface(
+    data: HuggingFaceModelRequest,
     http_request: Request,
+    db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Load a model from Hugging Face using the specified model ID and tag.
+    """Load a Hugging Face model and return a Location header.
+
+    This endpoint loads a Hugging Face model using the provided model ID and
+    tag, caches it locally, and stores it in the database. If successful, it
+    returns a 201 Created response with a Location header pointing to the
+    model.
 
     Args:
-        request: Contains the model ID and tag.
-        http_request: The HTTP request object used to build the Location header.
+        data (HuggingFaceModelRequest): Contains the model ID and tag.
+        http_request (Request): The HTTP request object.
+        db (AsyncSession): The database session.
 
     Returns:
         A 201 Created response with a Location header.
 
     Raises:
-        HTTPException: If an unexpected error occurs during model loading.
-
+        HTTPException: If an error occurs during model loading or processing.
     """
     try:
-        logger.debug(
-            "Loading model: model_id={}, tag={}",
-            request.model_id,
-            request.tag,
-        )
-        load_model_with_tag(request.model_id, request.tag)
+        logger.debug(f"Ladeanfrage: {data.model_id}@{data.tag}")
+        await load_model_and_save_to_db(data.model_id, data.tag, db)
 
-        safe_model_id = quote(request.model_id, safe="")
-        location = f"{http_request.url}/{safe_model_id}"
+        key = f"{data.model_id}@{data.tag}"
         return Response(
             status_code=status.HTTP_201_CREATED,
-            headers={"Location": location},
+            headers={"Location": f"{http_request.url}/{key}"},
         )
     except Exception as e:
-        logger.error("Error loading Hugging Face model: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to load model",
-        ) from e
+        logger.exception("Fehler beim Laden:")
+        raise ServiceUnavailableError from e
 
 
 @router.post("/add_model")
-async def load_github_model(request: GitHubModelRequest) -> dict[str, Any]:
+async def load_model_github(request: GitHubModelRequest) -> Response:
     """Download and register a model from a specified GitHub repository.
+
+    This endpoint accepts a GitHub repository URL and attempts to download
+    and prepare the model files for use. If successful, a JSON response is returned.
 
     Args:
         request: Contains the GitHub repository URL.
@@ -93,104 +87,23 @@ async def load_github_model(request: GitHubModelRequest) -> dict[str, Any]:
         request.github_url,
     )
 
-    try:
-        result = await handle_model_download(request.github_url)
-        logger.info(
-            "Model handled successfully for: {}",
-            request.github_url,
-        )
-        return result
-    except HTTPException:
-        logger.warning(
-            "Handled HTTPException for GitHub URL: {}",
-            request.github_url,
-        )
-        raise
-    except Exception as e:
-        logger.exception(
-            "Unhandled error during GitHub model import for URL: {}",
-            request.github_url,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error",
-        ) from e
-
-
-def _create_error_response(status_code: int, code: ErrorCode, message: str) -> dict:
-    """Create a standardized error response dictionary.
-
-    Args:
-        status_code: HTTP status code
-        code: Application error code
-        message: Error message
-
-    Returns:
-        Dictionary with code and message
-    """
-    return {"code": str(code), "message": message}
-
-
-def _handle_model_upload_error(e: Exception) -> Response:
-    """Handle different upload error types with appropriate responses.
-
-    Args:
-        e: The exception that was raised
-
-    Returns:
-        Response object with error details
-    """
-    if isinstance(e, EmptyModelError):
-        logger.warning("Empty model file: {}", str(e))
-        status_code = status.HTTP_400_BAD_REQUEST
-        error_code = ErrorCode.EMPTY_FILE
-    elif isinstance(e, ModelTooLargeError):
-        logger.warning("Model too large: {}", str(e))
-        status_code = status.HTTP_400_BAD_REQUEST
-        error_code = ErrorCode.INVALID_FILE
-    elif isinstance(e, UnsupportedModelFormatError):
-        logger.warning("Unsupported model format: {}", str(e))
-        status_code = status.HTTP_400_BAD_REQUEST
-        error_code = ErrorCode.UNSUPPORTED_FORMAT
-    elif isinstance(e, (InvalidZipError, NoValidModelsFoundError, InvalidModelError)):
-        logger.warning("{}: {}", e.__class__.__name__, str(e))
-        status_code = status.HTTP_400_BAD_REQUEST
-        error_code = ErrorCode.INVALID_FILE
-    else:
-        logger.exception("Unhandled error during model upload")
-        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        error_code = ErrorCode.SERVER_ERROR
-        # Use a generic message for unexpected errors
-        return Response(
-            status_code=status_code,
-            content=json.dumps(
-                _create_error_response(
-                    status_code, error_code, "Error processing upload"
-                )
-            ),
-            media_type="application/json",
-        )
-
-    # For expected errors, use the exception message
-    return Response(
-        status_code=status_code,
-        content=json.dumps(_create_error_response(status_code, error_code, str(e))),
-        media_type="application/json",
+    result = await handle_model_download(request.github_url)
+    logger.info(
+        "Model handled successfully for: {}",
+        request.github_url,
     )
+    return result
 
 
 @router.post("/models")
-async def load_local_model(
+async def load_model_local(
+    files: list[UploadFile],
     request: Request,
-    model_name: Annotated[
-        str,
-        Query(description="Name for the uploaded model"),
-    ],
+    model_name: Annotated[str, Query(description="Name for the uploaded model")],
     extract_zip: Annotated[
         bool,
         Query(description="Whether to extract ZIP files"),
     ] = True,
-    files: list[UploadFile] | None = None,
 ) -> Response:
     """Upload PyTorch model files to the server.
 
@@ -207,20 +120,8 @@ async def load_local_model(
         HTTPException: If an error occurs during file upload or processing.
 
     """
-    # Manuelle Validierung für leere Dateien
     if not files:
-        logger.warning("No files provided in request")
-        return Response(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content=json.dumps(
-                _create_error_response(
-                    status.HTTP_400_BAD_REQUEST,
-                    ErrorCode.INVALID_FILE,
-                    "No files provided for upload",
-                )
-            ),
-            media_type="application/json",
-        )
+        raise InvalidFileError
 
     logger.debug(
         "Uploading model '{}' with {} files",
@@ -228,16 +129,13 @@ async def load_local_model(
         len(files),
     )
 
-    try:
-        result = await upload_embedding_model(files, model_name, extract_zip)
-        logger.info(
-            "Successfully uploaded model: {}",
-            result["model_dir"],
-        )
+    result = await upload_embedding_model(files, model_name, extract_zip)
+    logger.info(
+        "Successfully uploaded model: {}",
+        result["model_dir"],
+    )
 
-        return Response(
-            status_code=status.HTTP_201_CREATED,
-            headers={"Location": f"{request.url}/{result['model_id']}"},
-        )
-    except Exception as e:
-        return _handle_model_upload_error(e)
+    return Response(
+        status_code=status.HTTP_201_CREATED,
+        headers={"Location": f"{request.url}/{result['model_id']}"},
+    )

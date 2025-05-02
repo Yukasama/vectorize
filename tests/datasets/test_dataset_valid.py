@@ -13,7 +13,6 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.config.config import prefix
 from txt2vec.datasets.repository import get_dataset
 
 from .utils import get_test_file
@@ -50,11 +49,7 @@ class TestValidDatasets:
         """Upload a file and verify the dataset is created."""
         files = get_test_file(file_path)
 
-        response = client.post(
-            f"{prefix}/datasets",
-            files=files,
-            data=extra_data or {},
-        )
+        response = client.post("/datasets", files=files, data=extra_data or {})
         assert response.status_code == status.HTTP_201_CREATED
 
         dataset_id = response.headers["Location"].split("/")[-1]
@@ -72,7 +67,7 @@ class TestValidDatasets:
                 await asyncio.sleep(0.5)
 
         # This shouldn't be reached, but satisfies type checker
-        raise AssertionError("Failed to verify dataset")
+        raise AssertionError
 
     @pytest.mark.parametrize("ext", ["csv", "json", "xml", "xlsx"])
     async def test_dataset_formats_upload(
@@ -107,10 +102,7 @@ class TestValidDatasets:
 
     @pytest.mark.parametrize("file_name", [_NULL_BYTE_INJECTION, _COMMAND_INJECTION])
     async def test_malicious_files(
-        self,
-        client: TestClient,
-        session: AsyncSession,
-        file_name: str,
+        self, client: TestClient, session: AsyncSession, file_name: str
     ) -> None:
         """Test uploading a file with no name."""
         test_file_path = self.malicious_dir / file_name

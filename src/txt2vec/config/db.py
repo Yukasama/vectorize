@@ -7,15 +7,17 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.config.config import db_logging, db_url
+from .config import settings
 
 __all__ = ["engine", "get_session"]
 
 engine: Final = create_async_engine(
-    db_url,
-    poolclass=StaticPool if db_url.endswith(":memory:") else None,
-    connect_args={"check_same_thread": False} if db_url.endswith(":memory:") else {},
-    echo=db_logging,
+    settings.db_url,
+    poolclass=StaticPool if settings.db_url.endswith(":memory:") else None,
+    connect_args={"check_same_thread": False}
+    if settings.db_url.endswith(":memory:")
+    else {},
+    echo=settings.db_logging,
     future=True,
 )
 

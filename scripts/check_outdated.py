@@ -22,7 +22,7 @@ def load_prod_deps(pyproject: Path) -> set[str]:
             for dep in data["project"]["dependencies"]
         }
     except (FileNotFoundError, KeyError, tomllib.TOMLDecodeError):
-        print("::error ::Cannot read production dependencies from pyproject.toml")
+        print("::error ::Cannot read production dependencies from pyproject.toml")  # noqa: T201
         sys.exit(2)
 
 
@@ -37,10 +37,10 @@ def uv_outdated() -> list[dict[str, str]]:
         )
         return json.loads(cp.stdout or "[]")
     except FileNotFoundError:
-        print("::error ::`uv` executable not found on PATH")
+        print("::error ::`uv` executable not found on PATH")  # noqa: T201
         sys.exit(2)
     except subprocess.CalledProcessError as exc:
-        print(f"::error ::uv pip list failed: {exc.stderr.strip()}")
+        print(f"::error ::uv pip list failed: {exc.stderr.strip()}")  # noqa: T201
         sys.exit(exc.returncode)
 
 
@@ -52,9 +52,9 @@ def main() -> None:
     if not outdated_prod:
         sys.exit(0)
 
-    print("Outdated production dependencies:")
+    print("Outdated production dependencies:")  # noqa: T201
     for pkg in sorted(outdated_prod, key=lambda d: d["name"].lower()):
-        print(f"- {pkg['name']} {pkg['version']} → {pkg['latest_version']}")
+        print(f"- {pkg['name']} {pkg['version']} → {pkg['latest_version']}")  # noqa: T201
     sys.exit(1)
 
 

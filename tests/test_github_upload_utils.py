@@ -1,6 +1,4 @@
-"""
-Unit tests for GitHubUtils URL validation.
-"""
+"""Unit tests for GitHubUtils URL validation."""
 
 import pytest
 
@@ -18,9 +16,8 @@ from txt2vec.upload.utils import GitHubUtils
         "https://github.com/owner/repo/",
     ],
 )
-def test_is_github_url_valid(url):
-    """
-    Ensure that valid GitHub repository URLs are recognized as such.
+def test_is_github_url_valid(url: str) -> None:
+    """Ensure that valid GitHub repository URLs are recognized as such.
 
     Valid formats covered:
       - HTTP or HTTPS schemes
@@ -30,7 +27,7 @@ def test_is_github_url_valid(url):
       - Optional '.git' suffix
       - Optional trailing slash
     """
-    assert GitHubUtils.is_github_url(url), f"Expected valid: {url}"
+    assert GitHubUtils.is_github_url(url), f"Expected valid: {url}"  # noqa: S101
 
 
 @pytest.mark.parametrize(
@@ -46,9 +43,8 @@ def test_is_github_url_valid(url):
         "https://notgithub.com/owner/repo",  # wrong domain
     ],
 )
-def test_is_github_url_invalid(url):
-    """
-    Ensure that non‑GitHub or malformed URLs are correctly rejected.
+def test_is_github_url_invalid(url: str) -> None:
+    """Ensure that non GitHub or malformed URLs are correctly rejected.
 
     Invalid cases include:
       - Wrong domains (e.g., gitlab.com or notgithub.com)
@@ -57,4 +53,4 @@ def test_is_github_url_invalid(url):
       - Unsupported schemes (e.g., FTP)
       - URLs without HTTP/HTTPS scheme
     """
-    assert not GitHubUtils.is_github_url(url), f"Expected invalid: {url}"
+    assert not GitHubUtils.is_github_url(url), f"Expected invalid: {url}"  # noqa: S101

@@ -1,6 +1,7 @@
 """Dataset router."""
 
 from typing import Annotated, Final
+from uuid import UUID
 
 from fastapi import (
     APIRouter,
@@ -12,12 +13,13 @@ from fastapi import (
     status,
 )
 from loguru import logger
-from pydantic import BaseModel, Field
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.db import get_session
 
-from .service import upload_file
+from .models import DatasetAll, DatasetPublic
+from .service import read_all_datasets, read_dataset, upload_file
+from .upload_options_model import DatasetUploadOptions
 
 __all__ = ["router"]
 
@@ -25,19 +27,63 @@ __all__ = ["router"]
 router = APIRouter(tags=["Dataset", "Upload"])
 
 
-class DatasetUploadOptions(BaseModel):
-    """Options for dataset upload."""
+@router.get("")
+async def get_datasets(
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> list[DatasetAll]:
+    """Retrieve all datasets with limited fields.
 
-    question_name: str | None = Field(
-        default=None, description="Column name for the question"
-    )
-    positive_name: str | None = Field(
-        default=None, description="Column name for the positive example"
-    )
-    negative_name: str | None = Field(
-        default=None, description="Column name for the negative example"
-    )
-    sheet_index: int = Field(default=0, description="Sheet index for Excel files")
+    Args:
+        db: Database session for persistence operations
+
+    Returns:
+        List of datasets with limited fields (DatasetAll model)
+    """
+    datasets = await read_all_datasets(db)
+    logger.debug("Datasets retrieved", length=len(datasets))
+    return datasets
+
+
+@router.get("/{dataset_id}")
+async def get_dataset_by_id(
+    dataset_id: UUID,
+    request: Request,
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> DatasetPublic | None:
+    """Retrieve a single dataset by its ID.
+
+    Args:
+        dataset_id: The UUID of the dataset to retrieve
+        request: The HTTP request object
+        response: FastAPI response object for setting headers
+        db: Database session for persistence operations
+
+    Returns:
+        The dataset object
+
+    Raises:
+        DatasetNotFoundError: If the dataset with the specified ID doesn't exist
+    """
+    dataset, version = await read_dataset(db, dataset_id)
+    response.headers["ETAG"] = f'"{version}"'
+
+    e_tag = request.headers.get("If-None-Match")
+    if e_tag:
+        clean_etag = e_tag.strip().strip('"')
+        if clean_etag == str(version):
+            logger.debug(
+                "Dataset not modified",
+                datasetId=dataset_id,
+                etag=clean_etag,
+                version=version,
+            )
+            response.status_code = status.HTTP_304_NOT_MODIFIED
+            return None
+
+    logger.debug("Dataset retrieved", datasetId=dataset_id, version=version)
+
+    return dataset
 
 
 @router.post("")
@@ -58,13 +104,7 @@ async def upload_dataset(
     Returns:
         Response with status code 201 and the dataset ID in the Location header
     """
-    column_mapping = {
-        "question": options.question_name,
-        "positive": options.positive_name,
-        "negative": options.negative_name,
-    }
-
-    dataset_id: Final = await upload_file(db, file, column_mapping, options.sheet_index)
+    dataset_id: Final = await upload_file(db, file, options)
     logger.debug("Dataset uploaded", datasetId=dataset_id)
 
     return Response(
