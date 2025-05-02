@@ -95,6 +95,7 @@ async def upload_embedding_model(
             await file.seek(0)
 
     # Get the relative path from UPLOAD_DIR
+
     relative_path = model_dir.relative_to(settings.model_upload_dir)
 
     # In a future version, we'll add database persistence here
@@ -109,7 +110,7 @@ async def upload_embedding_model(
 
 def _extract_zip_file(zip_path: str, extract_to: Path) -> int:
     """Extract a ZIP file to the specified directory.
-    
+
     :param zip_path: Path to the ZIP file
     :param extract_to: Directory to extract contents to
     :return: Number of files extracted

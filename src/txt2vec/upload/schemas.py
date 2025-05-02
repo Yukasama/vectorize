@@ -9,7 +9,6 @@ class HuggingFaceModelRequest(BaseModel):
     Attributes:
         model_id (str): The ID of the model to load.
         tag (str): The specific tag or version of the model to load.
-
     """
 
     model_id: str
@@ -20,7 +19,7 @@ class GitHubModelRequest(BaseModel):
     """Request param for loading a model from GitHub.
 
     Attributes:
-        github_url (HttpUrl): The url to the model to be loaded.
+        github_url (HttpUrl): The URL to the model to be loaded.
     """
 
     github_url: HttpUrl

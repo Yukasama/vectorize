@@ -11,6 +11,7 @@ from urllib.parse import quote
 
 from fastapi import (
     APIRouter,
+    Depends,
     HTTPException,
     Query,
     Request,
@@ -19,45 +20,54 @@ from fastapi import (
     status,
 )
 from loguru import logger
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from txt2vec.config.db import get_session
 from txt2vec.upload.github_service import handle_model_download
+from txt2vec.upload.huggingface_service import load_model_and_save_to_db
 from txt2vec.upload.local_service import upload_embedding_model
-from txt2vec.upload.model_service import load_model_with_tag
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
+from txt2vec.upload.exceptions import ServiceUnavailableError
 
 router = APIRouter(tags=["Model Upload"])
 
 
-@router.post("/load")
-def load_model_huggingface(request: HuggingFaceModelRequest, http_request: Request):
-    """Load a model from Hugging Face using the specified model ID and tag.
+@router.post("/load", status_code=status.HTTP_201_CREATED)
+async def load_model_huggingface(
+    data: HuggingFaceModelRequest,
+    http_request: Request,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    """Load a Hugging Face model and return a Location header.
 
-    This endpoint loads a model based on the provided Hugging Face model ID and an optional tag.
-    On success, returns a 201 Created response with a Location header pointing to the model.
+    This endpoint loads a Hugging Face model using the provided model ID and
+    tag, caches it locally, and stores it in the database. If successful, it
+    returns a 201 Created response with a Location header pointing to the
+    model.
 
     Args:
-        request (HuggingFaceModelRequest): Contains the model ID and tag.
-        http_request (Request): The HTTP request object used to build the Location header.
+        data (HuggingFaceModelRequest): Contains the model ID and tag.
+        http_request (Request): The HTTP request object.
+        db (AsyncSession): The database session.
 
     Returns:
         Response: A 201 Created response with a Location header.
 
     Raises:
-        HTTPException: If an unexpected error occurs during model loading.
+        HTTPException: If an error occurs during model loading or processing.
     """
     try:
-        logger.debug(
-            "Loading model: model_id={}, tag={}", request.model_id, request.tag
-        )
-        load_model_with_tag(request.model_id, request.tag)
+        logger.debug(f"Ladeanfrage: {data.model_id}@{data.tag}")
+        await load_model_and_save_to_db(data.model_id, data.tag, db)
 
-        safe_model_id = quote(request.model_id, safe="")
+        key = f"{data.model_id}@{data.tag}"
         return Response(
             status_code=status.HTTP_201_CREATED,
-            headers={"Location": f"{http_request.url}/{safe_model_id}"},
+            headers={"Location": f"{http_request.url}/{key}"},
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        logger.exception("Fehler beim Laden:")
+        raise ServiceUnavailableError from e
 
 
 @router.post("/add_model")
