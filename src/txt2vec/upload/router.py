@@ -25,6 +25,7 @@ from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.huggingface_service import load_model_and_save_to_db
 from txt2vec.upload.local_service import upload_embedding_model
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
+from txt2vec.upload.exceptions import ServiceUnavailableError
 
 router = APIRouter(tags=["Model Upload"])
 
@@ -64,7 +65,7 @@ async def load_model_huggingface(
         )
     except Exception as e:
         logger.exception("Fehler beim Laden:")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise ServiceUnavailableError from e
 
 
 @router.post("/add_model")

@@ -24,3 +24,11 @@ class DatabaseError(AppError):
     error_code = ErrorCode.DATABASE_ERROR
     message = "Datenbankfehler. Bitte überprüfe die Verbindung."
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+class ServiceUnavailableError(AppError):
+    """Fehler beim Zugriff auf den Dienst."""
+
+    error_code = ErrorCode.SERVICE_UNAVAILABLE
+    message = "Der Dienst ist derzeit nicht verfügbar."
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
