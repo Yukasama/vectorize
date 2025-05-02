@@ -12,7 +12,7 @@ import torch
 from fastapi import UploadFile
 from loguru import logger
 
-from txt2vec.config.config import max_upload_size, model_upload_dir
+from txt2vec.config.config import settings
 from txt2vec.upload.exceptions import (
     EmptyModelError,
     InvalidModelError,
@@ -63,7 +63,7 @@ async def upload_embedding_model(
     safe_model_name = re.sub(r"[^a-zA-Z0-9_-]", "_", model_name)
 
     model_id = uuid.uuid4()
-    model_dir = Path(model_upload_dir) / f"{safe_model_name}_{model_id}"
+    model_dir = Path(settings.model_upload_dir) / f"{safe_model_name}_{model_id}"
     model_dir.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -190,11 +190,15 @@ async def _process_single_file(file: UploadFile) -> tuple[int, str]:
             while chunk := await file.read(chunk_size):
                 file_size += len(chunk)
                 logger.debug(
-                    "Read chunk, total size now: {}/{}", file_size, max_upload_size
+                    "Read chunk, total size now: {}/{}",
+                    file_size,
+                    settings.max_upload_size,
                 )
-                if file_size > max_upload_size:
+                if file_size > settings.max_upload_size:
                     logger.warning(
-                        "File size ({}) exceeds limit ({})", file_size, max_upload_size
+                        "File size ({}) exceeds limit ({})",
+                        file_size,
+                        settings.max_upload_size,
                     )
                     raise ModelTooLargeError(file_size)
                 temp.write(chunk)
