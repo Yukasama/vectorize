@@ -5,14 +5,19 @@ from datetime import datetime
 
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
+__all__ = ["ErrorInfo"]
+
 
 class ErrorInfo(SQLModel, table=True):
     """ErrorInfo model."""
 
     __tablename__ = "errorinfo"
 
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    """Unique identifier for the error info."""
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="Unique identifier for the error info.",
+    )
 
     created_at: datetime | None = Field(
         default=None,
@@ -20,11 +25,11 @@ class ErrorInfo(SQLModel, table=True):
             DateTime(timezone=True),
             insert_default=func.now(),
         ),
+        description="Timestamp when the error was recorded.",
     )
-    """Timestamp when the error was recorded."""
 
-    status_code: int = Field(ge=100, lt=1000)
-    """HTTP-like status code representing the error."""
+    status_code: int = Field(
+        ge=100, lt=1000, description="HTTP-like status code representing the error."
+    )
 
-    path: str
-    """Request path or resource where the error occurred."""
+    path: str = Field(description="Request path or resource where the error occurred.")

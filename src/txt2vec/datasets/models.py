@@ -17,7 +17,7 @@ __all__ = [
     "Dataset",
     "DatasetAll",
     "DatasetCreate",
-    "DatasetDetail",
+    "DatasetPublic",
     "DatasetUpdate",
 ]
 
@@ -25,67 +25,55 @@ __all__ = [
 class _DatasetBase(SQLModel):
     """Base Dataset model."""
 
-    name: str = Field(..., description="Name of the dataset")
-    """Name of the dataset."""
+    name: str = Field(description="Name of the dataset")
 
     classification: Classification = Field(
-        ..., description="Classification type of the dataset"
+        description="Classification type of the dataset"
     )
-    """Classification type of the dataset."""
 
 
 class DatasetCreate(_DatasetBase):
     """Dataset creation model."""
 
     file_name: str = Field(
-        ...,
         description="Filename of the dataset file on the storage unit",
     )
-    """Filename of the dataset file on the storage unit."""
 
-    rows: int = Field(..., description="Number of rows in the dataset")
-    """Number of rows in the dataset."""
+    rows: int = Field(description="Number of rows in the dataset")
 
     synthesis_id: uuid.UUID | None = Field(
         None, description="Optional ID linking to a synthetic dataset"
     )
-    """Optional ID linking to a synthetic dataset."""
 
 
 class DatasetUpdate(SQLModel):
     """Dataset update model with optional fields."""
 
     name: str | None = Field(None, description="Name of the dataset")
-    """Name of the dataset."""
 
 
 class DatasetAll(_DatasetBase):
     """Dataset model for listing datasets with limited fields."""
 
-    id: uuid.UUID = Field(..., description="Unique identifier for the dataset")
-    """Unique identifier for the dataset."""
+    id: uuid.UUID = Field(description="Unique identifier for the dataset")
 
-    rows: int = Field(..., description="Number of rows in the dataset")
-    """Number of rows in the dataset."""
+    rows: int = Field(description="Number of rows in the dataset")
 
     created_at: datetime | None = Field(
         None, description="Timestamp when the dataset was created"
     )
-    """Timestamp when the dataset was created."""
 
 
-class DatasetDetail(DatasetAll):
+class DatasetPublic(DatasetAll):
     """Dataset model for detailed view with all fields."""
 
     updated_at: datetime | None = Field(
         None, description="Timestamp when the dataset was last updated"
     )
-    """Timestamp when the dataset was last updated."""
 
     synthesis_id: uuid.UUID | None = Field(
         None, description="Optional ID linking to a synthetic dataset"
     )
-    """Optional ID linking to a synthetic dataset."""
 
 
 class Dataset(SQLModel, table=True):
@@ -98,29 +86,22 @@ class Dataset(SQLModel, table=True):
         primary_key=True,
         description="Unique identifier for the dataset",
     )
-    """Unique identifier for the dataset."""
 
     version: int = Field(default=0, description="Version number of the dataset")
-    """Version number of the dataset."""
 
     file_name: str = Field(
-        ...,
         index=True,
         unique=True,
         description="Filename of the dataset file on the storage unit",
     )
-    """Filename of the dataset file on the storage unit."""
 
-    name: str = Field(..., description="Name of the dataset")
-    """Name of the dataset."""
+    name: str = Field(description="Name of the dataset")
 
     classification: Classification = Field(
-        ..., description="Classification type of the dataset"
+        description="Classification type of the dataset"
     )
-    """Classification type of the dataset."""
 
-    rows: int = Field(..., description="Number of rows in the dataset")
-    """Number of rows in the dataset."""
+    rows: int = Field(description="Number of rows in the dataset")
 
     created_at: datetime | None = Field(
         default=None,
@@ -130,7 +111,6 @@ class Dataset(SQLModel, table=True):
         ),
         description="Timestamp when the dataset was created",
     )
-    """Timestamp when the dataset was created."""
 
     updated_at: datetime | None = Field(
         default=None,
@@ -141,14 +121,11 @@ class Dataset(SQLModel, table=True):
         ),
         description="Timestamp when the dataset was last updated",
     )
-    """Timestamp when the dataset was last updated."""
 
     synthesis_id: uuid.UUID | None = Field(
         default=None,
         foreign_key="synthesis.id",
         description="Optional ID linking to a synthetic dataset",
     )
-    """Optional ID linking to a synthetic dataset."""
 
     synthesis: Optional["Synthesis"] = Relationship(back_populates="generated_dataset")
-    """Relationship to the associated synthetic dataset."""

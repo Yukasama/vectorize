@@ -67,7 +67,7 @@ class TestValidDatasets:
                 await asyncio.sleep(0.5)
 
         # This shouldn't be reached, but satisfies type checker
-        raise AssertionError("Failed to verify dataset")
+        raise AssertionError
 
     @pytest.mark.parametrize("ext", ["csv", "json", "xml", "xlsx"])
     async def test_dataset_formats_upload(
@@ -102,10 +102,7 @@ class TestValidDatasets:
 
     @pytest.mark.parametrize("file_name", [_NULL_BYTE_INJECTION, _COMMAND_INJECTION])
     async def test_malicious_files(
-        self,
-        client: TestClient,
-        session: AsyncSession,
-        file_name: str,
+        self, client: TestClient, session: AsyncSession, file_name: str
     ) -> None:
         """Test uploading a file with no name."""
         test_file_path = self.malicious_dir / file_name

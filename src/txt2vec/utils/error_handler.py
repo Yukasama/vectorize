@@ -7,9 +7,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from txt2vec.config.config import app_env
-from txt2vec.errors import AppError, ErrorCode
-from txt2vec.utils.error_path import get_error_path
+from txt2vec.common.app_error import AppError
+from txt2vec.config import settings
+from txt2vec.config.errors import ErrorCode
+
+from .error_path import get_error_path
 
 __all__ = ["register_exception_handlers"]
 
@@ -17,12 +19,17 @@ __all__ = ["register_exception_handlers"]
 def register_exception_handlers(app: FastAPI) -> None:
     """Attach all global exception handlers to the FastAPI application.
 
+    Registers handlers for:
+    - Application errors (AppError)
+    - Validation errors (RequestValidationError)
+    - Unexpected exceptions (ServerError)
+
     Args:
         app: The FastAPI application instance to register handlers with.
     """
 
     @app.exception_handler(AppError)
-    def _handle_app_error(request: Request, exc: AppError) -> JSONResponse:
+    def _handle_app_error(_request: Request, exc: AppError) -> JSONResponse:
         """Handle application-specific errors.
 
         Args:
@@ -56,7 +63,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    def _handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
+    def _handle_unexpected(_request: Request, exc: Exception) -> JSONResponse:
         """Handle any uncaught exceptions as 500 server errors.
 
         Args:
@@ -70,10 +77,15 @@ def register_exception_handlers(app: FastAPI) -> None:
             asyncio.CancelledError: Re-raised in non-development environments.
         """
         # Pass through cancellations in dev
-        if isinstance(exc, asyncio.CancelledError) and app_env != "development":
+        if (
+            isinstance(exc, asyncio.CancelledError)
+            and settings.app_env != "development"
+        ):
             raise exc
 
-        logger.exception("Unhandled server exception")
+        logger.exception(
+            "{}: {}", exc.error_code, exc.message, path=get_error_path(exc)
+        )
         return _make_response(
             status.HTTP_500_INTERNAL_SERVER_ERROR,
             ErrorCode.SERVER_ERROR,

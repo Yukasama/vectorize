@@ -62,6 +62,7 @@ dependencies = [
     "torch>=2.6.0",
     "defusedxml>=0.7.1",
     "openpyxl>=3.1.5",
+    "pydantic-settings>=2.9.1",
 ]
 
 [project.scripts]
@@ -137,6 +138,13 @@ select = [
     "SLF",    # flake8-self
     "TD",     # flake8-todos
     "ANN",    # flake8-annotations (enforce type hints)
+    "T",      # flake8-print https://github.com/jbkahn/flake8-print
+    "G",      # flake8-logging-format https://github.com/globality-corp/flake8-logging-format
+    # "EM",     # flake8-errmsg https://github.com/best-doctor/flake8-errmsg
+    "SLOT", # flake8-slots https://github.com/python-discord/flake8-slots
+    "ARG",  # flake8-unused-arguments https://github.com/nhoad/flake8-unused-arguments
+    "DTZ",  # flake8-datetimez https://github.com/pjknkda/flake8-datetimez
+    "S",    # flake8-bandit https://github.com/tylerwince/flake8-bandit
 ]
 pydocstyle.convention = "google"
 ignore = [

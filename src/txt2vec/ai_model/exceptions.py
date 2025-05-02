@@ -2,9 +2,10 @@
 
 from fastapi import status
 
-from txt2vec.errors import AppError, ErrorCode
+from txt2vec.common.app_error import AppError
+from txt2vec.config.errors import ErrorCode
 
-__all__ = ["ModelNotFoundError"]
+__all__ = ["ModelLoadError", "ModelNotFoundError", "UnsupportedModelError"]
 
 
 class ModelNotFoundError(AppError):
@@ -14,8 +15,8 @@ class ModelNotFoundError(AppError):
     status_code = status.HTTP_404_NOT_FOUND
 
     def __init__(self, model_id: str) -> None:
-        """Initialize with the model ID."""
-        super().__init__(f"Model with Model Tag {model_id} not found")
+        """Initialize with the model tag."""
+        super().__init__(f"Model with tag {model_id} not found")
 
 
 class ModelLoadError(AppError):
@@ -25,5 +26,16 @@ class ModelLoadError(AppError):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
     def __init__(self, model_id: str) -> None:
-        """Initialize with the model ID."""
-        super().__init__(f"Model with Model Tag {model_id} failed to load")
+        """Initialize with the model tag."""
+        super().__init__(f"Model with tag {model_id} failed to load")
+
+
+class UnsupportedModelError(AppError):
+    """Exception raised when the model is not supported."""
+
+    error_code = ErrorCode.UNSUPPORTED_FORMAT
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, model: str) -> None:
+        """Initialize with the model format."""
+        super().__init__(f"Model format {model} not supported")

@@ -71,3 +71,4 @@ report.html
 data/
 models/
 checkpoints/
+hf_cache/

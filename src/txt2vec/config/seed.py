@@ -7,9 +7,14 @@ from txt2vec.ai_model.models import AIModel
 from txt2vec.datasets.classification import Classification
 from txt2vec.datasets.models import Dataset
 
+__all__ = ["seed_db"]
+
 
 async def seed_db(session: AsyncSession) -> None:
-    """Seed the database with initial data.
+    """Seed the database with initial test data.
+
+    Populates the database with example records for development and testing,
+    including a sample dataset and AI model.
 
     Args:
         session: The SQLModel async database session.
@@ -27,6 +32,20 @@ async def seed_db(session: AsyncSession) -> None:
             name="example_model",
             source=ModelSource.LOCAL,
             model_tag="pytorch_model",
+        ),
+    )
+    session.add(
+        AIModel(
+            name="Big Model",
+            source=ModelSource.LOCAL,
+            model_tag="big_model",
+        ),
+    )
+    session.add(
+        AIModel(
+            name="Huge Model",
+            source=ModelSource.LOCAL,
+            model_tag="huge_model",
         ),
     )
     await session.commit()
