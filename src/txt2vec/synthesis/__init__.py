@@ -1,5 +1,5 @@
 """Synthesis module."""
 
-from .models import Synthesis
+from .models import SynthesisTask
 
-__all__ = ["Synthesis"]
+__all__ = ["SynthesisTask"]

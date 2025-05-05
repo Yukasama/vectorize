@@ -1,34 +1,38 @@
-"""Synthesis Task model."""
+"""UploadTask model."""
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import Literal
 
-from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
+from sqlmodel import Column, DateTime, Field, SQLModel, func
 
+from txt2vec.ai_model.model_source import ModelSource
 from txt2vec.common.status import TaskStatus
 
-if TYPE_CHECKING:
-    from txt2vec.datasets.models import Dataset
-
-__all__ = ["SynthesisTask"]
+__all__ = ["UploadTask"]
 
 
-class SynthesisTask(SQLModel, table=True):
-    """Synthetic generation model."""
+class UploadTask(SQLModel, table=True):
+    """UploadTask model."""
 
-    __tablename__ = "synthesis_task"
+    __tablename__ = "upload_task"
 
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         primary_key=True,
-        description="Unique identifier for the synthetic generation.",
+        description="Unique identifier for the upload task.",
     )
+
+    model_tag: str = Field(description="Tag of the model file being uploaded.")
 
     task_status: TaskStatus = Field(
         default=TaskStatus.PENDING,
         index=True,
-        description="Current status of the synthetic generation.",
+        description="Status of the upload task.",
+    )
+
+    source: Literal[ModelSource.GITHUB, ModelSource.HUGGINGFACE] = Field(
+        description="Source of the model (github or huggingface)."
     )
 
     end_date: datetime | None = Field(
@@ -38,10 +42,6 @@ class SynthesisTask(SQLModel, table=True):
     error_msg: str | None = Field(
         default=None,
         description="Optional error message encountered during generation.",
-    )
-
-    generated_dataset: Optional["Dataset"] = Relationship(
-        back_populates="synthesis_task"
     )
 
     created_at: datetime | None = Field(

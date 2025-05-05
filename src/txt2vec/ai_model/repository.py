@@ -8,7 +8,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .exceptions import ModelNotFoundError
 from .models import AIModel
-from .utils.tag_helpers import next_available_tag
 
 __all__ = ["get_ai_model", "save_ai_model"]
 
@@ -33,7 +32,7 @@ async def get_ai_model(db: AsyncSession, model_tag: str) -> AIModel:
     if model is None:
         raise ModelNotFoundError(str(model_tag))
 
-    logger.debug("AI model loaded from DB", model=model)
+    logger.debug("AI Model loaded from DB", model=model)
 
     return model
 
@@ -50,11 +49,9 @@ async def save_ai_model(db: AsyncSession, model: AIModel) -> UUID:
     Returns:
         UUID: The ID of the saved AI model.
     """
-    model.model_tag = await next_available_tag(db, model.model_tag)
-
     db.add(model)
     await db.commit()
     await db.refresh(model)
 
-    logger.debug("AI model saved to DB: {}", model.id)
+    logger.debug("AI Model saved to DB: {}", model.id)
     return model.id

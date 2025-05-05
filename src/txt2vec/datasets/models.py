@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
-from txt2vec.synthesis.models import Synthesis
+from txt2vec.synthesis.models import SynthesisTask
 
 from .classification import Classification
 
 if TYPE_CHECKING:
-    from txt2vec.synthesis.models import Synthesis
+    from txt2vec.synthesis.models import SynthesisTask
 
 __all__ = [
     "Dataset",
@@ -124,8 +124,10 @@ class Dataset(SQLModel, table=True):
 
     synthesis_id: uuid.UUID | None = Field(
         default=None,
-        foreign_key="synthesis.id",
+        foreign_key="synthesis_task.id",
         description="Optional ID linking to a synthetic dataset",
     )
 
-    synthesis: Optional["Synthesis"] = Relationship(back_populates="generated_dataset")
+    synthesis_task: Optional["SynthesisTask"] = Relationship(
+        back_populates="generated_dataset"
+    )
