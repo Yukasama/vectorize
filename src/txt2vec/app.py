@@ -31,16 +31,12 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     await makedirs(settings.dataset_upload_dir, exist_ok=True)
     await makedirs(settings.model_upload_dir, exist_ok=True)
 
-    if settings.app_env != "production":
-        async with engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.drop_all)
-            await conn.run_sync(SQLModel.metadata.create_all)
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
 
+    if settings.app_env != "production":
         async with AsyncSession(engine) as session:
             await seed_db(session)
-    else:
-        async with engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
 
     yield
     await engine.dispose()

@@ -1,14 +1,14 @@
-"""Status model for task or upload."""
+"""TaskStatus model for task or upload."""
 
 from enum import StrEnum
 
-__all__ = ["Status"]
+__all__ = ["TaskStatus"]
 
 
-class Status(StrEnum):
+class TaskStatus(StrEnum):
     """Status of a process."""
 
-    COMPLETED = "C"
+    PENDING = "P"
+    DONE = "D"
     FAILED = "F"
-    RUNNING = "R"
     CANCELED = "CA"

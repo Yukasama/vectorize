@@ -23,6 +23,8 @@ class AIModel(SQLModel, table=True):
 
     version: int = Field(default=0, description="Version number of the AI model.")
 
+    name: str = Field(description="Name of the AI model.")
+
     model_tag: str = Field(
         index=True, unique=True, description="Tag of the AI model file."
     )
@@ -30,8 +32,6 @@ class AIModel(SQLModel, table=True):
     source: ModelSource = Field(
         description="Source of the model (github, huggingface, or local)."
     )
-
-    name: str = Field(description="Name of the AI model.")
 
     created_at: datetime | None = Field(
         default=None,

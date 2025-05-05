@@ -1,12 +1,10 @@
 """Common module."""
 
 from .exceptions import InternalServerError, NotFoundError
-from .models import ErrorInfo
-from .status import Status
+from .status import TaskStatus
 
 __all__ = [
-    "ErrorInfo",
     "InternalServerError",
     "NotFoundError",
-    "Status",
+    "TaskStatus",
 ]
