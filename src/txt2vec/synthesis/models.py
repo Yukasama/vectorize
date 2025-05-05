@@ -50,7 +50,7 @@ class SynthesisTask(SQLModel, table=True):
             DateTime(timezone=True),
             insert_default=func.now(),
         ),
-        description="Timestamp when the upload task was created.",
+        description="Timestamp when the synthesis generation was created.",
     )
 
     updated_at: datetime | None = Field(
@@ -60,5 +60,5 @@ class SynthesisTask(SQLModel, table=True):
             onupdate=func.now(),
             insert_default=func.now(),
         ),
-        description="Timestamp when the upload task was last updated.",
+        description="Timestamp when the synthesis generation was last updated.",
     )
