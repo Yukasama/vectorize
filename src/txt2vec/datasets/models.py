@@ -49,7 +49,7 @@ class DatasetCreate(_DatasetBase):
 class DatasetUpdate(SQLModel):
     """Dataset update model with optional fields."""
 
-    name: str | None = Field(None, description="Name of the dataset to update")
+    name: str = Field(description="Name of the dataset to update")
 
 
 class DatasetAll(_DatasetBase):

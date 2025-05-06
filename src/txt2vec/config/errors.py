@@ -13,6 +13,8 @@ class ErrorCode(StrEnum):
     VALIDATION_ERROR = "VALIDATION_ERROR"
     NOT_FOUND = "NOT_FOUND"
     SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
+    VERSION_MISMATCH = "VERSION_MISMATCH"
+    VERSION_MISSING = "VERSION_MISSING"
 
     # Dataset errors
     INVALID_FILE = "INVALID_FILE"
@@ -25,6 +27,8 @@ class ErrorCode(StrEnum):
 
 class ErrorNames(StrEnum):
     """Error names for standardized error handling."""
+
+    INTERNAL_SERVER_ERROR = "Internal server error"
 
     # File validation errors
     FILE_MISSING_ERROR = "No file provided"

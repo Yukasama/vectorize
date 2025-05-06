@@ -3,24 +3,25 @@
 import uuid
 from pathlib import Path
 
-from fastapi import UploadFile
+from fastapi import Request, UploadFile
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from txt2vec.common.exceptions import VersionMismatchError, VersionMissingError
 from txt2vec.config import settings
 from txt2vec.config.errors import ErrorNames
 from txt2vec.utils import sanitize_filename
 
 from .exceptions import InvalidFileError
-from .models import Dataset, DatasetAll, DatasetPublic
-from .repository import get_all_datasets, get_dataset, save_dataset
+from .models import Dataset, DatasetAll, DatasetPublic, DatasetUpdate
+from .repository import get_all_datasets, get_dataset, save_dataset, update_dataset
 from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import escape_csv_formulas
 from .utils.dataset_classifier import classify_dataset
 from .utils.file_df_converter import convert_file_to_df
 from .utils.save_dataset import save_dataframe
 
-__all__ = ["read_all_datasets", "read_dataset", "upload_file"]
+__all__ = ["read_all_datasets", "read_dataset", "update_dataset_srv", "upload_file"]
 
 
 async def read_all_datasets(db: AsyncSession) -> list[DatasetAll]:
@@ -56,6 +57,56 @@ async def read_dataset(
     dataset = await get_dataset(db, dataset_id)
 
     return DatasetPublic.model_validate(dataset), dataset.version
+
+
+async def update_dataset_srv(
+    db: AsyncSession,
+    request: Request,
+    dataset_id: uuid.UUID,
+    dataset: DatasetUpdate,
+) -> int:
+    """Update a dataset in the database.
+
+    This function updates an existing dataset in the database with the provided
+    data. It returns the updated dataset.
+
+    Args:
+        db: Database session for persistence operations
+        request: The HTTP request object
+        dataset_id: The UUID of the dataset to update
+        dataset: The updated dataset data
+
+    Returns:
+        The updated dataset.
+    """
+    _, current_version = await read_dataset(db, dataset_id)
+
+    if_match = request.headers.get("If-Match")
+    if if_match:
+        clean_etag = if_match.strip().strip('"')
+        if clean_etag != str(current_version):
+            logger.debug(
+                "ETag mismatch on dataset update",
+                datasetId=dataset_id,
+                provided=clean_etag,
+                current=current_version,
+            )
+            raise VersionMismatchError(
+                dataset_id=str(dataset_id), version=current_version
+            )
+    else:
+        logger.debug(
+            "ETag not provided for dataset update",
+            datasetId=dataset_id,
+            current=current_version,
+        )
+        raise VersionMissingError(dataset_id=str(dataset_id), version=current_version)
+
+    updated_dataset = await update_dataset(
+        db=db, dataset_id=dataset_id, update_data=dataset.model_dump()
+    )
+
+    return updated_dataset.version
 
 
 async def upload_file(

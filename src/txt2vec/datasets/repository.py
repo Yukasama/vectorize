@@ -7,7 +7,7 @@ from sqlmodel import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .exceptions import DatasetNotFoundError
-from .models import Dataset
+from .models import Dataset, DatasetUpdate
 
 __all__ = ["get_all_datasets", "get_dataset", "save_dataset", "update_dataset"]
 
@@ -70,7 +70,7 @@ async def get_all_datasets(db: AsyncSession) -> list[Dataset]:
 
 
 async def update_dataset(
-    db: AsyncSession, dataset_id: UUID, update_data: dict
+    db: AsyncSession, dataset_id: UUID, update_data: DatasetUpdate
 ) -> Dataset:
     """Update an existing dataset.
 
@@ -92,13 +92,12 @@ async def update_dataset(
     if dataset is None:
         raise DatasetNotFoundError(str(dataset_id))
 
+    update_data["version"] = dataset.version + 1
+
     statement = update(Dataset).where(Dataset.id == dataset_id).values(**update_data)
     await db.exec(statement)
     await db.commit()
-
-    statement = select(Dataset).where(Dataset.id == dataset_id)
-    result = await db.exec(statement)
-    updated_dataset = result.first()
+    await db.refresh(dataset)
 
     logger.debug("Dataset updated", datasetId=dataset_id)
-    return updated_dataset
+    return dataset
