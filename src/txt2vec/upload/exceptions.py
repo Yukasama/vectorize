@@ -60,16 +60,16 @@ class NoValidModelsFoundError(AppError):
 
 
 class DatabaseError(AppError):
-    """Fehler beim Zugriff auf die Datenbank."""
+    """Exception raised when there is a database error."""
 
     error_code = ErrorCode.DATABASE_ERROR
-    message = "Datenbankfehler. Bitte überprüfe die Verbindung."
+    message = "Database connection was lost"
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
 class ServiceUnavailableError(AppError):
-    """Fehler beim Zugriff auf den Dienst."""
+    """Exception raised when the service is unavailable."""
 
     error_code = ErrorCode.SERVICE_UNAVAILABLE
-    message = "Der Dienst ist derzeit nicht verfügbar."
+    message = "Service is temporarily unavailable"
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE

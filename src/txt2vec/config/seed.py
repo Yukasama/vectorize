@@ -1,13 +1,21 @@
 """Seed the database with initial data."""
 
+import uuid
+
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.ai_model.model_source import ModelSource
 from txt2vec.ai_model.models import AIModel
+from txt2vec.config.config import settings
 from txt2vec.datasets.classification import Classification
 from txt2vec.datasets.models import Dataset
 
 __all__ = ["seed_db"]
+
+
+DATASET_READ_ID = uuid.UUID("8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b")
+DATASET_FAIL_ID = uuid.UUID("5d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 
 
 async def seed_db(session: AsyncSession) -> None:
@@ -19,10 +27,27 @@ async def seed_db(session: AsyncSession) -> None:
     Args:
         session: The SQLModel async database session.
     """
+    if not settings.clear_db_on_restart:
+        statement = select(Dataset)
+        result = await session.exec(statement)
+        datasets = result.all()
+        if datasets:
+            return
+
     session.add(
         Dataset(
-            name="example_dataset",
-            file_name="example_dataset.csv",
+            id=DATASET_READ_ID,
+            name="read_dataset",
+            file_name="read_dataset.csv",
+            classification=Classification.SENTENCE_DUPLES,
+            rows=5,
+        ),
+    )
+    session.add(
+        Dataset(
+            id=DATASET_FAIL_ID,
+            name="fail_dataset",
+            file_name="fail_dataset.csv",
             classification=Classification.SENTENCE_DUPLES,
             rows=5,
         ),
