@@ -1,6 +1,6 @@
 """Dataset router."""
 
-from typing import Annotated, Final
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import (
@@ -17,9 +17,11 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.db import get_session
 
+from .exceptions import InvalidFileError
 from .models import DatasetAll, DatasetPublic, DatasetUpdate
 from .service import read_all_datasets, read_dataset, update_dataset_srv, upload_file
 from .upload_options_model import DatasetUploadOptions
+from .utils.validate_zip import handle_zip_upload
 
 __all__ = ["router"]
 
@@ -124,7 +126,7 @@ async def put_dataset(
 
 @router.post("")
 async def upload_dataset(
-    file: Annotated[UploadFile, File()],
+    files: Annotated[list[UploadFile], File(description="One or many files")],
     request: Request,
     db: Annotated[AsyncSession, Depends(get_session)],
     options: Annotated[DatasetUploadOptions, Depends()],
@@ -132,7 +134,7 @@ async def upload_dataset(
     """Upload a dataset file and convert it to CSV format.
 
     Args:
-        file: The file to upload (CSV, JSON, XML, or Excel)
+        files: The files to upload (CSV, JSON, XML, Excel, or ZIP)
         request: The HTTP request object
         db: Database session for persistence operations
         options: Options for dataset upload, including column names and sheet index
@@ -140,37 +142,22 @@ async def upload_dataset(
     Returns:
         Response with status code 201 and the dataset ID in the Location header
     """
-    dataset_id: Final = await upload_file(db, file, options)
-    logger.debug("Dataset uploaded", datasetId=dataset_id)
+    if not files:
+        raise InvalidFileError
 
+    first = files[0]
+
+    if len(files) == 1 and first.filename.lower().endswith(".zip"):
+        dataset_ids = await handle_zip_upload(first, db, options)
+
+    else:
+        if any(f.filename.lower().endswith(".zip") for f in files):
+            raise InvalidFileError("Cannot mix ZIP and individual files")
+
+        dataset_ids = [await upload_file(db, file, options) for file in files]
+
+    last_id = dataset_ids[-1]
     return Response(
+        headers={"Location": f"{request.url}/{last_id}"},
         status_code=status.HTTP_201_CREATED,
-        headers={"Location": f"{request.url}/{dataset_id}"},
     )
-
-
-# @router.post("")
-# async def upload_dataset(
-#     files: Annotated[list[UploadFile], list[File()]],
-#     request: Request,
-#     db: Annotated[AsyncSession, Depends(get_session)],
-#     options: Annotated[DatasetUploadOptions, Depends()],
-# ) -> Response:
-#     """Upload a dataset file and convert it to CSV format.
-
-#     Args:
-#         files: Files to upload (CSV, JSON, XML, or Excel) or .zip
-#         request: The HTTP request object
-#         db: Database session for persistence operations
-#         options: Options for dataset upload, including column names and sheet index
-
-#     Returns:
-#         Response with status code 201 and the dataset ID in the Location header
-#     """
-#     dataset_id: Final = await upload_file(db, files, options)
-#     logger.debug("Dataset uploaded", datasetId=dataset_id)
-
-#     return Response(
-#         status_code=status.HTTP_201_CREATED,
-#         headers={"Location": f"{request.url}/{dataset_id}"},
-#     )

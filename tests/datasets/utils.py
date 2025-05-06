@@ -2,20 +2,20 @@
 
 from pathlib import Path
 
-__all__ = ["get_test_file"]
+__all__ = ["build_files"]
 
 
-def get_test_file(file_path: Path) -> dict[str, tuple[str, bytes, str]]:
-    """Read file content and determine MIME type based on extension."""
-    content = file_path.read_bytes()
-    ext = file_path.suffix.lower()
+def build_files(path: Path) -> list[tuple[str, tuple[str, bytes, str]]]:
+    """Create file upload format for API tests.
 
-    mime_types = {
-        ".csv": "text/csv",
-        ".json": "application/json",
-        ".xml": "application/xml",
-        ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    }
-    mime_type = mime_types.get(ext, "application/octet-stream")
+    Prepares a file for upload by creating the tuple structure expected
+    by the FastAPI TestClient for file uploads.
 
-    return {"file": (file_path.name, content, mime_type)}
+    Args:
+        path: Path object to the file to upload
+
+    Returns:
+        List containing a tuple with form field name and file details
+        in the format expected by TestClient
+    """
+    return [("files", (path.name, path.read_bytes(), "application/octet-stream"))]

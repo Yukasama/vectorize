@@ -10,6 +10,7 @@ from .exceptions import (
     InvalidCSVFormatError,
     InvalidFileError,
     MissingColumnError,
+    TooManyFilesError,
     UnsupportedFormatError,
 )
 from .file_format import FileFormat
@@ -43,6 +44,7 @@ __all__ = [
     "InvalidCSVFormatError",
     "InvalidFileError",
     "MissingColumnError",
+    "TooManyFilesError",
     "UnsupportedFormatError",
     "classify_dataset",
     "convert_file_to_df",
