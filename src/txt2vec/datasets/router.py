@@ -17,8 +17,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.db import get_session
 
-from .models import DatasetAll, DatasetPublic
-from .service import read_all_datasets, read_dataset, upload_file
+from .models import DatasetAll, DatasetPublic, DatasetUpdate
+from .service import read_all_datasets, read_dataset, update_dataset_srv, upload_file
 from .upload_options_model import DatasetUploadOptions
 
 __all__ = ["router"]
@@ -86,6 +86,42 @@ async def get_dataset_by_id(
     return dataset
 
 
+@router.put("/{dataset_id}")
+async def put_dataset(
+    dataset_id: UUID,
+    request: Request,
+    dataset: DatasetUpdate,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    """Update a dataset with version control using ETags.
+
+    Updates a dataset by its ID, requiring an If-Match header with the current
+    version to prevent concurrent modification issues.
+
+    Args:
+        dataset_id: The UUID of the dataset to update
+        request: The HTTP request object containing If-Match header
+        response: FastAPI response object for setting headers
+        dataset: The updated dataset object
+        db: Database session for persistence operations
+
+    Returns:
+        204 No Content response with Location header
+
+    Raises:
+        VersionMismatchError: If the ETag doesn't match current version
+        VersionMissingError: If the If-Match header is missing
+        DatasetNotFoundError: If the dataset doesn't exist
+    """
+    new_version = await update_dataset_srv(db, request, dataset_id, dataset)
+    logger.debug("Dataset updated", datasetId=dataset_id)
+
+    return Response(
+        status_code=status.HTTP_204_NO_CONTENT,
+        headers={"Location": f"{request.url.path}", "ETag": f'"{new_version}"'},
+    )
+
+
 @router.post("")
 async def upload_dataset(
     file: Annotated[UploadFile, File()],
@@ -111,3 +147,30 @@ async def upload_dataset(
         status_code=status.HTTP_201_CREATED,
         headers={"Location": f"{request.url}/{dataset_id}"},
     )
+
+
+# @router.post("")
+# async def upload_dataset(
+#     files: Annotated[list[UploadFile], list[File()]],
+#     request: Request,
+#     db: Annotated[AsyncSession, Depends(get_session)],
+#     options: Annotated[DatasetUploadOptions, Depends()],
+# ) -> Response:
+#     """Upload a dataset file and convert it to CSV format.
+
+#     Args:
+#         files: Files to upload (CSV, JSON, XML, or Excel) or .zip
+#         request: The HTTP request object
+#         db: Database session for persistence operations
+#         options: Options for dataset upload, including column names and sheet index
+
+#     Returns:
+#         Response with status code 201 and the dataset ID in the Location header
+#     """
+#     dataset_id: Final = await upload_file(db, files, options)
+#     logger.debug("Dataset uploaded", datasetId=dataset_id)
+
+#     return Response(
+#         status_code=status.HTTP_201_CREATED,
+#         headers={"Location": f"{request.url}/{dataset_id}"},
+#     )
