@@ -36,12 +36,12 @@ class UploadTask(SQLModel, table=True):
     )
 
     end_date: datetime | None = Field(
-        default=None, description="Optional end time of the synthetic generation."
+        default=None, description="Optional end time of the upload task."
     )
 
     error_msg: str | None = Field(
         default=None,
-        description="Optional error message encountered during generation.",
+        description="Optional error message encountered during upload.",
     )
 
     created_at: datetime | None = Field(

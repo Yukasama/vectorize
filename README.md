@@ -78,6 +78,7 @@ uv run -- pwsh -NoExit
 ```bash
 # .env
 DATABASE_URL=sqlite+aiosqlite:///./app.db
+CLEAR_DB_ON_RESTART=1
 ```
 
 #### Fix lock file

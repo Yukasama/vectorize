@@ -84,6 +84,11 @@ class Settings(BaseSettings):
         description="Default delimiter used for CSV processing.",
     )
 
+    clear_db_on_restart: bool = Field(
+        validation_alias="CLEAR_DB_ON_RESTART",
+        description="Whether to clear the database on application restart.",
+    )
+
     # Model configuration
     dataset_max_upload_size: int = Field(
         default=_dataset_config.get("max_upload_size"),
