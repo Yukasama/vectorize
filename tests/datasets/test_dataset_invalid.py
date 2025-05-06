@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from txt2vec.config.errors import ErrorCode
 
-from .utils import get_test_file
+from .utils import build_files
 
 _TRAINING_FOLDER = "test_data"
 _INVALID_FOLDER = "invalid"
@@ -45,9 +45,10 @@ class TestInvalidDatasets:
         expected_code: ErrorCode,
         extra_data: dict[str, Any] | None = None,
     ) -> UUID:
-        """Upload a file and verify the dataset is created."""
-        files = get_test_file(file_path)
-        response = client.post("/datasets", files=files, data=extra_data or {})
+        """Upload a file and verify the status code."""
+        response = client.post(
+            "/datasets", files=build_files(file_path), data=extra_data or {}
+        )
 
         assert response.status_code == expected_status
         assert response.json()["code"] == expected_code

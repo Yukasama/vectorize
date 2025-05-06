@@ -2,7 +2,6 @@
 
 """Tests for valid datasets."""
 
-import asyncio
 import json
 from pathlib import Path
 from typing import Any
@@ -11,11 +10,8 @@ from uuid import UUID
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.datasets.repository import get_dataset
-
-from .utils import get_test_file
+from tests.datasets.utils import build_files
 
 _TRAINING_FOLDER = "test_data"
 _VALID_FOLDER = "valid"
@@ -42,68 +38,65 @@ class TestValidDatasets:
     @staticmethod
     async def _upload_and_verify(
         client: TestClient,
-        session: AsyncSession,
         file_path: Path,
         extra_data: dict[str, Any] | None = None,
     ) -> UUID:
         """Upload a file and verify the dataset is created."""
-        files = get_test_file(file_path)
-
-        response = client.post("/datasets", files=files, data=extra_data or {})
+        response = client.post(
+            "/datasets", files=build_files(file_path), data=extra_data or {}
+        )
         assert response.status_code == status.HTTP_201_CREATED
 
         dataset_id = response.headers["Location"].split("/")[-1]
-        assert dataset_id is not None
+        assert dataset_id, "Location header must contain dataset id"
 
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                dataset = await get_dataset(db=session, dataset_id=UUID(dataset_id))
-                assert dataset.id == UUID(dataset_id)
-                return dataset.id
-            except Exception:
-                if attempt == max_retries - 1:
-                    raise
-                await asyncio.sleep(0.5)
+        response = client.get(f"/datasets/{dataset_id}")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["id"] == dataset_id
 
-        # This shouldn't be reached, but satisfies type checker
-        raise AssertionError
+        return UUID(dataset_id)
 
     @pytest.mark.parametrize("ext", ["csv", "json", "xml", "xlsx"])
-    async def test_dataset_formats_upload(
-        self, ext: str, session: AsyncSession, client: TestClient
-    ) -> None:
-        """Parametrized test for uploading multiple file formats."""
-        test_file_path = self.valid_dir / f"{_DEFAULT}.{ext}"
-        await self._upload_and_verify(client, session, test_file_path)
+    async def test_dataset_formats_upload(self, ext: str, client: TestClient) -> None:
+        """Uploading single-file datasets in multiple formats succeeds."""
+        file_path = self.valid_dir / f"{_DEFAULT}.{ext}"
+        await self._upload_and_verify(client, file_path)
 
-    async def test_dataset_custom_fields(
-        self, client: TestClient, session: AsyncSession
-    ) -> None:
-        """Test uploading a dataset with custom fields."""
-        test_file_path = self.valid_dir / _CUSTOM_FORMAT
+    async def test_dataset_zip_upload(self, client: TestClient) -> None:
+        """Uploading a ZIP archive succeeds and returns 201."""
+        file_path = self.valid_dir / f"{_DEFAULT}.zip"
+
+        response = client.post("/datasets", files=build_files(file_path))
+        assert response.status_code == status.HTTP_201_CREATED
+
+        dataset_id = response.headers["Location"].split("/")[-1]
+        assert dataset_id
+
+        response = client.get(f"/datasets/{dataset_id}")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["id"] == dataset_id
+
+    async def test_dataset_custom_fields(self, client: TestClient) -> None:
+        """Uploading a CSV with custom field mapping succeeds."""
+        file_path = self.valid_dir / _CUSTOM_FORMAT
 
         column_mapping = {
-            "question": "q",
+            "question": "anchor",
             "positive": "answer",
             "negative": "no_context",
         }
 
         await self._upload_and_verify(
-            client, session, test_file_path, {"options": json.dumps(column_mapping)}
+            client, file_path, {"options": json.dumps(column_mapping)}
         )
 
-    async def test_dataset_infer_fields(
-        self, client: TestClient, session: AsyncSession
-    ) -> None:
-        """Test uploading a dataset with inferred fields."""
-        test_file_path = self.valid_dir / _INFER_FORMAT
-        await self._upload_and_verify(client, session, test_file_path)
+    async def test_dataset_infer_fields(self, client: TestClient) -> None:
+        """Uploading a CSV where the API infers the fields succeeds."""
+        file_path = self.valid_dir / _INFER_FORMAT
+        await self._upload_and_verify(client, file_path)
 
     @pytest.mark.parametrize("file_name", [_NULL_BYTE_INJECTION, _COMMAND_INJECTION])
-    async def test_malicious_files(
-        self, client: TestClient, session: AsyncSession, file_name: str
-    ) -> None:
-        """Test uploading a file with no name."""
-        test_file_path = self.malicious_dir / file_name
-        await self._upload_and_verify(client, session, test_file_path)
+    async def test_malicious_files(self, client: TestClient, file_name: str) -> None:
+        """Test that URL-encoded files with suspicious names are handled safely."""
+        file_path = self.malicious_dir / file_name
+        await self._upload_and_verify(client, file_path)

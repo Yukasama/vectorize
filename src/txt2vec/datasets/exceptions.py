@@ -16,6 +16,7 @@ __all__ = [
     "InvalidCSVFormatError",
     "InvalidFileError",
     "MissingColumnError",
+    "TooManyFilesError",
     "UnsupportedFormatError",
 ]
 
@@ -98,3 +99,17 @@ class DatasetNotFoundError(AppError):
     def __init__(self, dataset_id: str) -> None:
         """Initialize with the dataset ID."""
         super().__init__(f"Dataset with ID {dataset_id} not found")
+
+
+class TooManyFilesError(AppError):
+    """Exception raised when the zip file is too long."""
+
+    _MAX_LENGTH = 200
+    status_code = status.HTTP_400_BAD_REQUEST
+
+    def __init__(self, size: int) -> None:
+        """Initialize with the size of the file."""
+        formatted_size = format_file_size(size)
+        super().__init__(
+            f"Zip file is too large: {formatted_size}. Max: {self._MAX_LENGTH} files"
+        )
