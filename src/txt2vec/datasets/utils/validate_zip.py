@@ -4,33 +4,27 @@ import io
 import zipfile
 from collections.abc import Sequence
 from typing import Final
-from uuid import UUID
 
 from fastapi import UploadFile
 from loguru import logger
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from ..exceptions import (
     FileTooLargeError,
     InvalidFileError,
     TooManyFilesError,
 )
-from ..service import upload_file
-from ..upload_options_model import DatasetUploadOptions
 
 __all__ = ["handle_zip_upload", "validate_zip_file"]
 
 
-_MAX_ZIP_MEMBERS: Final[int] = 200
+_MAX_ZIP_MEMBERS: Final[int] = 3000
 _MAX_ZIP_UNCOMPRESSED: Final[int] = 500 * 2**20
 _MAX_ZIP_RATIO: Final[float] = 100.0
 
 
 async def handle_zip_upload(
     zip_file: UploadFile,
-    db: AsyncSession,
-    options: DatasetUploadOptions,
-) -> list[UUID]:
+) -> list[UploadFile]:
     """Process and validate each file in a ZIP archive.
 
     Extracts and validates all files from the uploaded ZIP archive, then processes
@@ -38,11 +32,9 @@ async def handle_zip_upload(
 
     Args:
         zip_file: The uploaded ZIP file to process
-        db: Database session for persistence operations
-        options: Configuration options for dataset processing
 
     Returns:
-        list[UUID]: List of dataset IDs created from the ZIP contents
+        list[UploadFile]: List of files extracted from the ZIP archive
 
     Raises:
         InvalidFileError: If the ZIP file is corrupt or contains invalid data
@@ -53,13 +45,12 @@ async def handle_zip_upload(
     content = await zip_file.read()
 
     members = validate_zip_file(content)
-    dataset_ids: list[UUID] = []
+    files = []
 
     for name, raw in members:
-        temp = UploadFile(filename=name, file=io.BytesIO(raw))
-        dataset_ids.append(await upload_file(db, temp, options))
+        files.append(UploadFile(filename=name, file=io.BytesIO(raw)))
 
-    return dataset_ids
+    return files
 
 
 def validate_zip_file(zip_bytes: bytes) -> Sequence[tuple[str, bytes]]:
@@ -83,41 +74,36 @@ def validate_zip_file(zip_bytes: bytes) -> Sequence[tuple[str, bytes]]:
         InvalidFileError: If the ZIP contains empty files, has suspicious compression
                          ratios, or is otherwise invalid
     """
-    try:
-        with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-            members = [m for m in zf.infolist() if not m.is_dir()]
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+        members = [m for m in zf.infolist() if not m.is_dir()]
 
-            if len(members) > _MAX_ZIP_MEMBERS:
-                raise TooManyFilesError(len(members))
+        if len(members) > _MAX_ZIP_MEMBERS:
+            raise TooManyFilesError(len(members))
 
-            total_uncompressed = sum(m.file_size for m in members)
-            if total_uncompressed > _MAX_ZIP_UNCOMPRESSED:
-                raise FileTooLargeError(size=total_uncompressed)
+        total_uncompressed = sum(m.file_size for m in members)
+        if total_uncompressed > _MAX_ZIP_UNCOMPRESSED:
+            raise FileTooLargeError(size=total_uncompressed)
 
-            safe_files: list[tuple[str, bytes]] = []
+        safe_files: list[tuple[str, bytes]] = []
 
-            for m in members:
-                if m.filename.startswith(("__", ".")):
-                    continue
+        for m in members:
+            if m.filename.startswith(("__", ".")):
+                continue
 
-                if m.file_size == 0:
+            if m.file_size == 0:
+                safe_files.append((m.filename, b""))
+                continue
+
+            ratio = m.compress_size / m.file_size
+            if ratio > _MAX_ZIP_RATIO:
+                raise InvalidFileError(f"{m.filename}: suspicious ratio {ratio:0.1f}")
+
+            with zf.open(m) as f:
+                data = f.read()
+                if not data.strip():
                     raise InvalidFileError(f"{m.filename} is empty")
+                safe_files.append((m.filename, data))
 
-                ratio = m.compress_size / m.file_size
-                if ratio > _MAX_ZIP_RATIO:
-                    raise InvalidFileError(
-                        f"{m.filename}: suspicious ratio {ratio:0.1f}"
-                    )
-
-                with zf.open(m) as f:
-                    data = f.read()
-                    if not data.strip():
-                        raise InvalidFileError(f"{m.filename} is empty")
-                    safe_files.append((m.filename, data))
-
-            if not safe_files:
-                raise InvalidFileError("ZIP contains no valid files")
-            return safe_files
-
-    except zipfile.BadZipFile as exc:
-        raise InvalidFileError("Bad ZIP file") from exc
+        if not safe_files:
+            raise InvalidFileError("ZIP contains no valid files")
+        return safe_files

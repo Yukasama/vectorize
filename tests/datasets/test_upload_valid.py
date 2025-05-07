@@ -57,26 +57,43 @@ class TestValidDatasets:
         return UUID(dataset_id)
 
     @pytest.mark.parametrize("ext", ["csv", "json", "xml", "xlsx"])
-    async def test_dataset_formats_upload(self, ext: str, client: TestClient) -> None:
+    async def test_formats_upload(self, ext: str, client: TestClient) -> None:
         """Uploading single-file datasets in multiple formats succeeds."""
         file_path = self.valid_dir / f"{_DEFAULT}.{ext}"
         await self._upload_and_verify(client, file_path)
 
-    async def test_dataset_zip_upload(self, client: TestClient) -> None:
+    @pytest.mark.parametrize(
+        "file_name,file_length", [("default.zip", 4), ("big.zip", 300)]
+    )
+    async def test_zip_upload(
+        self, file_name: str, file_length: int, client: TestClient
+    ) -> None:
         """Uploading a ZIP archive succeeds and returns 201."""
-        file_path = self.valid_dir / f"{_DEFAULT}.zip"
+        file_path = self.valid_dir / file_name
+
+        response = client.get("/datasets")
+        assert response.status_code == status.HTTP_200_OK
+        datasets_length = len(response.json())
 
         response = client.post("/datasets", files=build_files(file_path))
         assert response.status_code == status.HTTP_201_CREATED
+        assert response.json()["successful_uploads"] == file_length
 
-        dataset_id = response.headers["Location"].split("/")[-1]
-        assert dataset_id
-
-        response = client.get(f"/datasets/{dataset_id}")
+        response = client.get("/datasets")
         assert response.status_code == status.HTTP_200_OK
-        assert response.json()["id"] == dataset_id
+        assert len(response.json()) == datasets_length + file_length
 
-    async def test_dataset_custom_fields(self, client: TestClient) -> None:
+    async def test_zip_partial_invalid_upload(self, client: TestClient) -> None:
+        """Uploading a ZIP archive succeeds and returns 201."""
+        file_path = self.valid_dir / "partial.zip"
+
+        valid_files = 3
+        response = client.post("/datasets", files=build_files(file_path))
+        assert response.status_code == status.HTTP_201_CREATED
+        assert len(response.json()["failed"]) == valid_files
+        assert response.json()["successful_uploads"] == valid_files
+
+    async def test_custom_fields(self, client: TestClient) -> None:
         """Uploading a CSV with custom field mapping succeeds."""
         file_path = self.valid_dir / _CUSTOM_FORMAT
 
@@ -90,7 +107,7 @@ class TestValidDatasets:
             client, file_path, {"options": json.dumps(column_mapping)}
         )
 
-    async def test_dataset_infer_fields(self, client: TestClient) -> None:
+    async def test_infer_fields(self, client: TestClient) -> None:
         """Uploading a CSV where the API infers the fields succeeds."""
         file_path = self.valid_dir / _INFER_FORMAT
         await self._upload_and_verify(client, file_path)

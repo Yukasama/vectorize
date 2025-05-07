@@ -21,6 +21,9 @@ __all__ = [
 ]
 
 
+_ALLOWED_EXTENSIONS = ", ".join(settings.allowed_extensions)
+
+
 class InvalidFileError(AppError):
     """Exception raised when the file is invalid."""
 
@@ -45,11 +48,14 @@ class UnsupportedFormatError(AppError):
     """Exception raised when the file format is not supported."""
 
     error_code = ErrorCode.UNSUPPORTED_FORMAT
-    message = (
-        "This format is not supported. Supported formats: "
-        f"{', '.join(settings.allowed_extensions)}"
-    )
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, file_format: str) -> None:
+        """Initialize with the size of the file."""
+        super().__init__(
+            f"Format '{file_format}' is not supported. Supported formats: "
+            f"{_ALLOWED_EXTENSIONS}"
+        )
 
 
 class InvalidCSVFormatError(AppError):
@@ -68,7 +74,7 @@ class MissingColumnError(AppError):
 
     def __init__(self, missing_column: str) -> None:
         """Initialize with the column name."""
-        super().__init__(f"Column {missing_column} is missing in the dataset")
+        super().__init__(f"Column '{missing_column}' is missing in the dataset")
 
 
 class InvalidCSVColumnError(AppError):
@@ -79,7 +85,7 @@ class InvalidCSVColumnError(AppError):
 
     def __init__(self, column_name: str) -> None:
         """Initialize with the column name."""
-        super().__init__(f"Column with name {column_name} not found in the dataset")
+        super().__init__(f"Column with name '{column_name}' not found in the dataset")
 
 
 class EmptyFileError(AppError):
@@ -104,7 +110,7 @@ class DatasetNotFoundError(AppError):
 class TooManyFilesError(AppError):
     """Exception raised when the zip file is too long."""
 
-    _MAX_LENGTH = 200
+    _MAX_LENGTH = 5000
     status_code = status.HTTP_400_BAD_REQUEST
 
     def __init__(self, size: int) -> None:
