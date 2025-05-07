@@ -153,6 +153,7 @@ uv run scripts/sonar_scan.py
 uv run pytest
 
 # Run loadtest with locust
+# It's recommended to put LOG_LEVEL=INFO in your .env
 uvx locust -f scripts/locust.py
 ```
 
@@ -206,6 +207,16 @@ act --artifact-server-path $PWD/.artifacts.
 ```bash
 # This is an example showing how to run the Main CI
 act -s GITHUB_TOKEN="$(gh auth token)" --artifact-server-path $PWD/.artifacts. -W '.github/workflows/main.yaml'
+```
+
+#### Analyze server start with startup.prof
+
+```bash
+# Create startup.prof file
+python -m cProfile -o startup.prof src/txt2vec/app.py
+
+# Start a snakeviz server and look into it
+uv run snakeviz startup.prof
 ```
 
 ## Project structure

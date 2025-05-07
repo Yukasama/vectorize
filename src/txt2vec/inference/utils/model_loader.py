@@ -1,6 +1,6 @@
 """Model loader for saved AI-Models."""
 
-from functools import cache
+from functools import lru_cache
 from pathlib import Path
 
 import torch
@@ -32,7 +32,7 @@ _COMMON_KWARGS = {
 }
 
 
-@cache
+@lru_cache(maxsize=10)
 def load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
     """Load a Hugging Face model and its tokenizer from a checkpoint directory.
 
@@ -77,7 +77,7 @@ def load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
     except Exception as exc:
         raise ModelLoadError(model_tag) from exc
 
-    model = model.to(_DEVICE).eval()
+    model = model.to(_DEVICE).eval().requires_grad_(False)
 
     try:
         tok = AutoTokenizer.from_pretrained(folder, trust_remote_code=True)
