@@ -6,6 +6,13 @@ from pathlib import Path
 import httpx
 from fastapi import HTTPException
 from loguru import logger
+from txt2vec.upload.exceptions import (
+    NoValidModelsFoundError,
+    InvalidGitHubUrlError,
+    MissingDownloadUrlError,
+    ModelDownloadError,
+    GitHubApiError,
+)
 
 from txt2vec.upload.utils import GitHubUtils
 
@@ -25,9 +32,7 @@ async def handle_model_download(github_url: str) -> dict:
 
     """
     if not GitHubUtils.is_github_url(github_url):
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="Invalid GitHub URL."
-        )
+        raise InvalidGitHubUrlError()
 
     owner, repo = GitHubUtils.parse_github_url(github_url)
     file_path = "pytorch_model.bin"
@@ -39,10 +44,7 @@ async def handle_model_download(github_url: str) -> dict:
         if meta_resp.status_code == HTTPStatus.OK:
             download_url = meta_resp.json().get("download_url")
             if not download_url:
-                raise HTTPException(
-                    status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-                    detail="GitHub API did not return a download URL.",
-                )
+                raise MissingDownloadUrlError()
 
             file_resp = await client.get(download_url)
             if file_resp.status_code != HTTPStatus.OK:
@@ -54,11 +56,7 @@ async def handle_model_download(github_url: str) -> dict:
                     file_resp.status_code,
                     file_resp.text,
                 )
-                raise HTTPException(
-                    status_code=HTTPStatus.BAD_GATEWAY,
-                    detail="Error downloading the model from GitHub.",
-                )
-
+            raise ModelDownloadError()
             save_dir = Path("models") / f"{owner}_{repo}"
             save_dir.mkdir(parents=True, exist_ok=True)
             save_path = save_dir / file_path
@@ -71,10 +69,7 @@ async def handle_model_download(github_url: str) -> dict:
                 repo,
                 file_path,
             )
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND,
-                detail="Model file not found in the specified repository.",
-            )
+            raise NoValidModelsFoundError()
         else:
             logger.error(
                 "Unexpected GitHub API error: repo={}/{} file={} status={} message={}",
@@ -84,9 +79,6 @@ async def handle_model_download(github_url: str) -> dict:
                 meta_resp.status_code,
                 meta_resp.text,
             )
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_GATEWAY,
-                detail="Unexpected error calling the GitHub API.",
-            )
+            raise GitHubApiError()
 
     return {"message": f"Model downloaded and saved to `{save_path}`"}
