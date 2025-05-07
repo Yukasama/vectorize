@@ -85,6 +85,7 @@ class Settings(BaseSettings):
     )
 
     clear_db_on_restart: bool = Field(
+        default=True,
         validation_alias="CLEAR_DB_ON_RESTART",
         description="Whether to clear the database on application restart.",
     )

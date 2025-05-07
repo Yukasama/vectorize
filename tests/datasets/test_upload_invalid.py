@@ -45,7 +45,7 @@ class TestInvalidDatasets:
         expected_code: ErrorCode,
         extra_data: dict[str, Any] | None = None,
     ) -> UUID:
-        """Upload a file and verify the status code."""
+        """Upload a file and verify the dataset is created."""
         response = client.post(
             "/datasets", files=build_files(file_path), data=extra_data or {}
         )
@@ -54,7 +54,7 @@ class TestInvalidDatasets:
         assert response.json()["code"] == expected_code
 
     @pytest.mark.parametrize("ext", ["csv", "json", "xml", "xlsx"])
-    async def test_dataset_invalid_format(self, client: TestClient, ext: str) -> None:
+    async def test_invalid_format(self, client: TestClient, ext: str) -> None:
         """Test uploading an invalid file format."""
         test_file_path = self.invalid_dir / f"{_INVALID_FORMAT}.{ext}"
 
@@ -65,7 +65,17 @@ class TestInvalidDatasets:
             expected_code=ErrorCode.INVALID_CSV_FORMAT,
         )
 
-    async def test_dataset_empty(self, client: TestClient) -> None:
+    async def test_zip_all_invalid_upload(self, client: TestClient) -> None:
+        """Uploading a ZIP archive succeeds and returns 201."""
+        file_path = self.invalid_dir / "invalid.zip"
+
+        invalid_files = 6
+        response = client.post("/datasets", files=build_files(file_path))
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert len(response.json()["failed"]) == invalid_files
+        assert response.json()["successful_uploads"] == 0
+
+    async def test_empty(self, client: TestClient) -> None:
         """Test uploading an empty file."""
         test_file_path = self.invalid_dir / _EMPTY_FILE
 
@@ -76,7 +86,7 @@ class TestInvalidDatasets:
             expected_code=ErrorCode.EMPTY_FILE,
         )
 
-    async def test_dataset_unsupported_format(self, client: TestClient) -> None:
+    async def test_unsupported_format(self, client: TestClient) -> None:
         """Test uploading an unsupported format."""
         test_file_path = self.invalid_dir / _UNSUPPORTED
 

@@ -12,6 +12,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -131,7 +132,11 @@ async def upload_dataset(
     db: Annotated[AsyncSession, Depends(get_session)],
     options: Annotated[DatasetUploadOptions, Depends()],
 ) -> Response:
-    """Upload a dataset file and convert it to CSV format.
+    """Upload one or more dataset files and convert them to CSV format.
+
+    Processes each file individually, allowing partial success when uploading
+    multiple files. Any files that fail to upload will be listed in the response
+    but won't cause the entire request to fail.
 
     Args:
         files: The files to upload (CSV, JSON, XML, Excel, or ZIP)
@@ -140,24 +145,55 @@ async def upload_dataset(
         options: Options for dataset upload, including column names and sheet index
 
     Returns:
-        Response with status code 201 and the dataset ID in the Location header
+        Response with status code 201 Created and the dataset ID in the Location header.
+        If any files failed to upload, they will be listed in the response body.
     """
     if not files:
-        raise InvalidFileError
+        raise InvalidFileError("No files provided")
 
     first = files[0]
+    zip_files = None
+    dataset_ids = []
+    failed_uploads = []
 
     if len(files) == 1 and first.filename.lower().endswith(".zip"):
-        dataset_ids = await handle_zip_upload(first, db, options)
+        zip_files = await handle_zip_upload(first)
+    elif any(f.filename.lower().endswith(".zip") for f in files):
+        raise InvalidFileError("Cannot mix ZIP and individual files")
 
-    else:
-        if any(f.filename.lower().endswith(".zip") for f in files):
-            raise InvalidFileError("Cannot mix ZIP and individual files")
+    files_for_upload = (
+        zip_files if zip_files is not None and len(zip_files) > 1 else files
+    )
+    for file in files_for_upload:
+        try:
+            dataset_id = await upload_file(db, file, options)
+            dataset_ids.append(dataset_id)
+        except Exception as e:
+            if len(files_for_upload) == 1:
+                raise e
 
-        dataset_ids = [await upload_file(db, file, options) for file in files]
+            logger.debug(f"Failed to upload file {file.filename}: {e!s}")
+            failed_uploads.append({"filename": file.filename, "error": str(e.message)})
+
+    if not dataset_ids:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"successful_uploads": 0, "failed": failed_uploads},
+        )
+
+    response_body = {}
+    response_body["successful_uploads"] = len(dataset_ids)
+    if failed_uploads:
+        response_body["failed"] = failed_uploads
 
     last_id = dataset_ids[-1]
+
+    if failed_uploads or len(files_for_upload) > 1:
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content=response_body,
+        )
     return Response(
-        headers={"Location": f"{request.url}/{last_id}"},
         status_code=status.HTTP_201_CREATED,
+        headers={"Location": f"{request.url}/{last_id}"},
     )
