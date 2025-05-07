@@ -17,7 +17,7 @@ from ..exceptions import (
 __all__ = ["handle_zip_upload", "validate_zip_file"]
 
 
-_MAX_ZIP_MEMBERS: Final[int] = 3000
+_MAX_ZIP_MEMBERS: Final[int] = 1000
 _MAX_ZIP_UNCOMPRESSED: Final[int] = 500 * 2**20
 _MAX_ZIP_RATIO: Final[float] = 100.0
 

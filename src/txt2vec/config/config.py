@@ -102,7 +102,7 @@ class Settings(BaseSettings):
     )
 
     # Inference configuration
-    inference_device: str = Field(
+    inference_device: Literal["cpu", "cuda"] = Field(
         default=_inference_config.get("device"),
         description="Device to use for model inference (CPU/GPU).",
     )
@@ -125,6 +125,12 @@ class Settings(BaseSettings):
 
     log_file: str = Field(
         default=_log_config.get("log_file"), description="Name of the log file."
+    )
+
+    log_level: str = Field(
+        default="DEBUG",
+        validation_alias="LOG_LEVEL",
+        description="Logging level (e.g., DEBUG, INFO, WARNING, ERROR).",
     )
 
     rotation: str = Field(

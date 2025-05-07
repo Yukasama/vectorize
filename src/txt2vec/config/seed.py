@@ -16,6 +16,10 @@ __all__ = ["seed_db"]
 
 DATASET_READ_ID = uuid.UUID("8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b")
 DATASET_FAIL_ID = uuid.UUID("5d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+DATASET_PUT_ID = uuid.UUID("6d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+DATASET_DELETE_ID = uuid.UUID("7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+DATASET_BACKUP_ID = uuid.UUID("8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+DATASET_BACKUP2_ID = uuid.UUID("9d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 
 
 async def seed_db(session: AsyncSession) -> None:
@@ -39,6 +43,42 @@ async def seed_db(session: AsyncSession) -> None:
             id=DATASET_READ_ID,
             name="read_dataset",
             file_name="read_dataset.csv",
+            classification=Classification.SENTENCE_DUPLES,
+            rows=5,
+        ),
+    )
+    session.add(
+        Dataset(
+            id=DATASET_PUT_ID,
+            name="put_dataset",
+            file_name="put_dataset.csv",
+            classification=Classification.SENTENCE_DUPLES,
+            rows=5,
+        ),
+    )
+    session.add(
+        Dataset(
+            id=DATASET_DELETE_ID,
+            name="delete_dataset",
+            file_name="delete_dataset.csv",
+            classification=Classification.SENTENCE_DUPLES,
+            rows=5,
+        ),
+    )
+    session.add(
+        Dataset(
+            id=DATASET_BACKUP_ID,
+            name="backup_dataset",
+            file_name="backup_dataset.csv",
+            classification=Classification.SENTENCE_DUPLES,
+            rows=5,
+        ),
+    )
+    session.add(
+        Dataset(
+            id=DATASET_BACKUP2_ID,
+            name="backup2_dataset",
+            file_name="backup2_dataset.csv",
             classification=Classification.SENTENCE_DUPLES,
             rows=5,
         ),
