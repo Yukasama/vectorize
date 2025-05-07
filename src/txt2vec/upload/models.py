@@ -46,19 +46,14 @@ class UploadTask(SQLModel, table=True):
 
     created_at: datetime | None = Field(
         default=None,
-        sa_column=Column(
-            DateTime(timezone=True),
-            insert_default=func.now(),
-        ),
+        sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
         description="Timestamp when the upload task was created.",
     )
 
     updated_at: datetime | None = Field(
         default=None,
         sa_column=Column(
-            DateTime(timezone=True),
-            onupdate=func.now(),
-            insert_default=func.now(),
+            DateTime(timezone=True), onupdate=func.now(), insert_default=func.now()
         ),
         description="Timestamp when the upload task was last updated.",
     )
