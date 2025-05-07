@@ -73,3 +73,6 @@ data/
 models/
 checkpoints/
 hf_cache/
+
+# === Additional files ===
+startup.prof

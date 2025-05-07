@@ -17,6 +17,7 @@ _DATASET_IDS = [
     "8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b",
     "9d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b",
 ]
+_DATASET_PATH = "/datasets"
 
 
 class Txt2VecLoadTests(HttpUser):
@@ -43,7 +44,7 @@ class Txt2VecLoadTests(HttpUser):
         """Update a dataset on the server."""
         for dataset_id in _DATASET_IDS:
             self.client.put(
-                f"/datasets/{dataset_id}",
+                f"{_DATASET_PATH}/{dataset_id}",
                 json={"name": "Updated Dataset Name"},
             )
 
@@ -63,7 +64,7 @@ class Txt2VecLoadTests(HttpUser):
         ]
         for file in files_to_upload:
             file_path = self.base_path / "valid" / file
-            self.client.post("/datasets", files=build_files(file_path))
+            self.client.post(_DATASET_PATH, files=build_files(file_path))
 
     @task
     def upload_invalid_dataset(self) -> None:
@@ -71,7 +72,7 @@ class Txt2VecLoadTests(HttpUser):
         files_to_upload = ["empty.csv", "invalid.zip"]
         for file in files_to_upload:
             file_path = self.base_path / "invalid" / file
-            self.client.post("/datasets", files=build_files(file_path))
+            self.client.post(_DATASET_PATH, files=build_files(file_path))
 
     @task
     def get_embeddings(self) -> None:
