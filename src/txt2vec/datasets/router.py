@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from txt2vec.common.app_error import AppError
 from txt2vec.config.db import get_session
 
 from .exceptions import InvalidFileError
@@ -168,12 +169,17 @@ async def upload_dataset(
         try:
             dataset_id = await upload_file(db, file, options)
             dataset_ids.append(dataset_id)
-        except Exception as e:
+        except AppError as e:
             if len(files_for_upload) == 1:
                 raise e
-
             logger.debug(f"Failed to upload file {file.filename}: {e!s}")
-            failed_uploads.append({"filename": file.filename, "error": str(e)})
+            failed_uploads.append({"filename": file.filename, "error": str(e.message)})
+        except Exception as e:
+            logger.debug(f"Unknown error during file upload {file.filename}: {e!s}")
+            failed_uploads.append({
+                "filename": file.filename,
+                "error": "An unknown error occurred",
+            })
 
     if not dataset_ids:
         return JSONResponse(
