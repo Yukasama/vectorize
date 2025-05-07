@@ -36,7 +36,7 @@ class DatasetCreate(_DatasetBase):
     """Dataset creation model."""
 
     file_name: str = Field(
-        description="Filename of the dataset file on the storage unit",
+        description="Filename of the dataset file on the storage unit"
     )
 
     rows: int = Field(description="Number of rows in the new dataset")
@@ -105,19 +105,14 @@ class Dataset(SQLModel, table=True):
 
     created_at: datetime | None = Field(
         default=None,
-        sa_column=Column(
-            DateTime(timezone=True),
-            insert_default=func.now(),
-        ),
+        sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
         description="Timestamp when the dataset was created",
     )
 
     updated_at: datetime | None = Field(
         default=None,
         sa_column=Column(
-            DateTime(timezone=True),
-            onupdate=func.now(),
-            insert_default=func.now(),
+            DateTime(timezone=True), onupdate=func.now(), insert_default=func.now()
         ),
         description="Timestamp when the dataset was last updated",
     )

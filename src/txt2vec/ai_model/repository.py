@@ -30,7 +30,7 @@ async def get_ai_model(db: AsyncSession, model_tag: str) -> AIModel:
     model = result.first()
 
     if model is None:
-        raise ModelNotFoundError(str(model_tag))
+        raise ModelNotFoundError(model_tag)
 
     logger.debug("AI Model loaded from DB", model=model)
 

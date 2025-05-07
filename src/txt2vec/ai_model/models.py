@@ -2,10 +2,14 @@
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlmodel import Column, DateTime, Field, SQLModel, func
+from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
 from .model_source import ModelSource
+
+if TYPE_CHECKING:
+    from txt2vec.inference.models import InferenceCounter
 
 __all__ = ["AIModel"]
 
@@ -31,6 +35,11 @@ class AIModel(SQLModel, table=True):
 
     source: ModelSource = Field(
         description="Source of the model (github, huggingface, or local)."
+    )
+
+    inference_counters: list["InferenceCounter"] = Relationship(
+        back_populates="ai_model",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
 
     created_at: datetime | None = Field(
