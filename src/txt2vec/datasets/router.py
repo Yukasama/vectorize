@@ -173,7 +173,7 @@ async def upload_dataset(
                 raise e
 
             logger.debug(f"Failed to upload file {file.filename}: {e!s}")
-            failed_uploads.append({"filename": file.filename, "error": str(e.message)})
+            failed_uploads.append({"filename": file.filename, "error": str(e)})
 
     if not dataset_ids:
         return JSONResponse(
