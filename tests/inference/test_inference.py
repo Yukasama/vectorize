@@ -49,6 +49,12 @@ class TestEmbeddings:
         """Test basic embedding generation with a simple input."""
         payload = {"model": _MODEL_NAME, "input": "This is a test sentence."}
 
+        # Check inference counter
+        counter_response = client.get(f"/embeddings/counter/{_MODEL_NAME}")
+        assert counter_response.status_code == status.HTTP_200_OK
+        first_key = next(iter(counter_response.json()))
+        current_count = counter_response.json()[first_key]
+
         response = await self._get_embeddings(client, payload)
 
         # Verify core response structure
@@ -69,6 +75,12 @@ class TestEmbeddings:
         assert "prompt_tokens" in response["usage"]
         assert "total_tokens" in response["usage"]
         assert response["usage"]["prompt_tokens"] > 0
+
+        # Check inference counter
+        counter_response = client.get(f"/embeddings/counter/{_MODEL_NAME}")
+        assert counter_response.status_code == status.HTTP_200_OK
+        first_key = next(iter(counter_response.json()))
+        assert counter_response.json()[first_key] == current_count + 1
 
     @pytest.mark.parametrize("input_text", VALID_INPUTS)
     async def test_various_inputs(self, client: TestClient, input_text: str) -> None:
