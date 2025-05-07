@@ -23,7 +23,11 @@ def config_logger() -> None:
     )
 
     logger.add(
-        sys.stdout, format=_format_record, level="DEBUG", colorize=True, enqueue=True
+        sys.stdout,
+        format=_format_record,
+        level=settings.log_level,
+        colorize=True,
+        enqueue=True,
     )
 
 

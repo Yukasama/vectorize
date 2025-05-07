@@ -1,36 +1,81 @@
-"""Load testing with Locust."""
+"""Load testing with Locust.
+
+Run with: uvx locust -f scripts/locust.py
+"""
 
 from pathlib import Path
 
 from locust import HttpUser, constant_throughput, task
 
-from tests.datasets.utils import get_test_file
+from tests.datasets.utils import build_files
+
+_DATASET_IDS = [
+    "8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b",
+    "5d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b",
+    "6d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b",
+    "7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b",
+    "8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b",
+    "9d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b",
+]
 
 
-class GetUser(HttpUser):
-    """Load tests for Dataset requests."""
+class Txt2VecLoadTests(HttpUser):
+    """Load tests for the API."""
 
-    host = "http://localhost:8000"
+    host = "http://localhost:8000/v1"
     wait_time = constant_throughput(0.1)
 
-    @task(100)
+    base_path = Path(__file__).parent.parent / "test_data" / "datasets"
+
+    @task
+    def get_all_datasets(self) -> None:
+        """Get all datasets from the server."""
+        self.client.get("/datasets")
+
+    @task
+    def get_single_dataset(self) -> None:
+        """Get a single dataset from the server."""
+        for dataset_id in _DATASET_IDS:
+            self.client.get(f"/datasets/{dataset_id}")
+
+    @task
+    def put_dataset(self) -> None:
+        """Update a dataset on the server."""
+        for dataset_id in _DATASET_IDS:
+            self.client.put(
+                f"/datasets/{dataset_id}",
+                json={"name": "Updated Dataset Name"},
+            )
+
+    @task
     def upload_dataset(self) -> None:
-        """Upload a dataset."""
-        for dataset_file in [
+        """Upload a dataset to the server."""
+        files_to_upload = [
             "default.csv",
             "default.json",
             "default.xml",
             "default.xlsx",
             "infer_fields.csv",
             "custom_fields.csv",
-        ]:
-            file_path = (
-                Path(__file__).parent.parent
-                / "test_data"
-                / "datasets"
-                / "valid"
-                / dataset_file
-            )
-            files = get_test_file(file_path)
-            response = self.client.post("/v1/datasets", files=files)
-            print(f"{response.headers['Location'].split('/')[-1]}")  # noqa: T201
+            "default.zip",
+            "partial.zip",
+            "big.zip",
+        ]
+        for file in files_to_upload:
+            file_path = self.base_path / "valid" / file
+            self.client.post("/datasets", files=build_files(file_path))
+
+    @task
+    def upload_invalid_dataset(self) -> None:
+        """Upload a dataset to the server."""
+        files_to_upload = ["empty.csv", "invalid.zip"]
+        for file in files_to_upload:
+            file_path = self.base_path / "invalid" / file
+            self.client.post("/datasets", files=build_files(file_path))
+
+    @task
+    def get_embeddings(self) -> None:
+        """Test the embeddings endpoint with different models."""
+        for model_tag in ["pytorch_model", "big_model", "huge_model"]:
+            payload = {"model": model_tag, "input": "This is a test sentence."}
+            self.client.post("/embeddings", json=payload)
