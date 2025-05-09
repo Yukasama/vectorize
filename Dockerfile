@@ -35,7 +35,7 @@ ENV PYTHONUNBUFFERED=1
 
 # Define directory environment variables
 ENV DATA_DIR=/app/data \
-    UPLOAD_DIR=/app/data/uploads \
+    UPLOAD_DIR=/app/data/datasets \
     LOG_DIR=/app/log \
     DB_DIR=/app/db
 

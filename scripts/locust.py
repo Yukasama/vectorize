@@ -5,6 +5,7 @@ Run with: uvx locust -f scripts/locust.py
 
 from pathlib import Path
 
+from fastapi import status
 from locust import HttpUser, constant_throughput, task
 
 from tests.datasets.utils import build_files
@@ -43,10 +44,15 @@ class Txt2VecLoadTests(HttpUser):
     def put_dataset(self) -> None:
         """Update a dataset on the server."""
         for dataset_id in _DATASET_IDS:
-            self.client.put(
+            response = self.client.get(f"/datasets/{dataset_id}")
+            etag = response.headers.get("ETag")
+            with self.client.put(
                 f"{_DATASET_PATH}/{dataset_id}",
                 json={"name": "Updated Dataset Name"},
-            )
+                headers={"If-Match": etag},
+            ) as response:
+                if response.status_code == status.HTTP_412_PRECONDITION_FAILED:
+                    response.success()
 
     @task
     def upload_dataset(self) -> None:
@@ -60,7 +66,6 @@ class Txt2VecLoadTests(HttpUser):
             "custom_fields.csv",
             "default.zip",
             "partial.zip",
-            "big.zip",
         ]
         for file in files_to_upload:
             file_path = self.base_path / "valid" / file
@@ -72,7 +77,14 @@ class Txt2VecLoadTests(HttpUser):
         files_to_upload = ["empty.csv", "invalid.zip"]
         for file in files_to_upload:
             file_path = self.base_path / "invalid" / file
-            self.client.post(_DATASET_PATH, files=build_files(file_path))
+            with self.client.post(
+                _DATASET_PATH, files=build_files(file_path), catch_response=True
+            ) as response:
+                if response.status_code in {
+                    status.HTTP_400_BAD_REQUEST,
+                    status.HTTP_422_UNPROCESSABLE_ENTITY,
+                }:
+                    response.success()
 
     @task
     def get_embeddings(self) -> None:

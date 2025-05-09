@@ -12,7 +12,7 @@ def run() -> None:
     uvicorn.run(
         "txt2vec:app",
         port=settings.port,
-        reload=True if settings.app_env == "production" else settings.reload,
-        reload_dirs=["src"],
+        reload=settings.reload,
+        reload_dirs=["src/txt2vec"],
         server_header=settings.server_header,
     )

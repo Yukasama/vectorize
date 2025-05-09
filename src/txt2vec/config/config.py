@@ -48,11 +48,6 @@ class Settings(BaseSettings):
         description="API URL prefix for all endpoints.",
     )
 
-    reload: bool = Field(
-        default=_server_config.get("reload", False),
-        description="Whether to enable auto-reload on code changes.",
-    )
-
     server_header: bool = Field(
         default=_server_config.get("server_header", False),
         description="Whether to include server information in headers.",
@@ -84,10 +79,9 @@ class Settings(BaseSettings):
         description="Default delimiter used for CSV processing.",
     )
 
-    clear_db_on_restart: bool = Field(
-        default=True,
-        validation_alias="CLEAR_DB_ON_RESTART",
-        description="Whether to clear the database on application restart.",
+    dataset_max_zip_members: int = Field(
+        default=_dataset_config.get("max_zip_members"),
+        description="Maximum number of files allowed in a zip archive for datasets.",
     )
 
     # Model configuration
@@ -117,6 +111,47 @@ class Settings(BaseSettings):
         description="Whether to enable SQL query logging.",
     )
 
+    db_future: bool = Field(
+        default=_db_config.get("future", True),
+        description="Whether to use future SQLAlchemy features.",
+    )
+
+    db_timeout: int = Field(
+        default=_db_config.get("timeout", 30),
+        description="Timeout for database operations in seconds.",
+    )
+
+    db_pool_size: int = Field(
+        default=_db_config.get("pool_size", 5),
+        description="Size of the database connection pool.",
+    )
+
+    db_max_overflow: int = Field(
+        default=_db_config.get("max_overflow", 10),
+        description="Maximum number of connections to create beyond the pool size.",
+    )
+
+    db_pool_timeout: int = Field(
+        default=_db_config.get("pool_timeout", 30),
+        description="Timeout for acquiring a connection from the pool.",
+    )
+
+    db_pool_recycle: int = Field(
+        default=_db_config.get("pool_recycle", 300),
+        description="Time in seconds to recycle a connection.",
+    )
+
+    db_pool_pre_ping: bool = Field(
+        default=_db_config.get("pool_pre_ping", True),
+        description="Whether to check if a connection is alive before using it.",
+    )
+
+    clear_db_on_restart: bool = Field(
+        default=True,
+        validation_alias="CLEAR_DB_ON_RESTART",
+        description="Whether to clear the database on application restart.",
+    )
+
     # Log configuration
     log_dir: str = Field(
         default=_log_config.get("log_dir"),
@@ -139,6 +174,7 @@ class Settings(BaseSettings):
     )
 
     @computed_field
+    @property
     def model_upload_dir(self) -> Path:
         """Directory for storing model files."""
         if self.app_env == "testing":
@@ -146,9 +182,16 @@ class Settings(BaseSettings):
         return Path(_model_config.get("model_upload_dir"))
 
     @computed_field
+    @property
     def log_path(self) -> Path:
         """Path where application logs are stored."""
         return Path(self.log_dir) / self.log_file
+
+    @computed_field
+    @property
+    def reload(self) -> bool:
+        """Whether to enable auto-reload on code changes."""
+        return _server_config.get("reload") and (self.app_env == "development")
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"

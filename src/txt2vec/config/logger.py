@@ -15,20 +15,27 @@ def config_logger() -> None:
     """Logger configuration."""
     logger.remove()
 
+    is_production = settings.app_env == "production"
+
     logger.add(
         settings.log_path,
         rotation=settings.rotation,
         format=_format_record,
-        enqueue=True,
+        enqueue=not is_production,
+        backtrace=not is_production,
+        diagnose=not is_production,
+        compression="zip",
+        colorize=False,
     )
 
-    logger.add(
-        sys.stdout,
-        format=_format_record,
-        level=settings.log_level,
-        colorize=True,
-        enqueue=True,
-    )
+    if not is_production:
+        logger.add(
+            sys.stdout,
+            format=_format_record,
+            level=settings.log_level,
+            colorize=True,
+            enqueue=True,
+        )
 
 
 def _format_record(record: Mapping[str, Any]) -> str:
