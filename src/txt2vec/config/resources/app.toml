@@ -6,14 +6,23 @@ reload = true
 server_header = false
 
 [app.db]
-db_logging = true
+logging = false
+timeout = 30
+future = true
+max_overflow = 10
+pool_size = 5
+pool_pre_ping = true
+pool_recycle = 300
+pool_timeout = 30
+
 
 [app.dataset]
-dataset_upload_dir = "data/uploads"
+dataset_upload_dir = "data/datasets"
 allowed_extensions = ["csv", "json", "xml", "xlsx", "xls"]
 max_upload_size = 52428800                                 # 50 MB
 max_filename_length = 255
 default_delimiter = ";"
+max_zip_members = 1000
 
 [app.model]
 model_upload_dir = "data/models"
@@ -23,6 +32,6 @@ max_upload_size = 524288000      # 500 MB
 device = "cpu"
 
 [app.logging]
-rotation = "1 MB"
+rotation = "10 MB"
 log_dir = "log"
 log_file = "app.log"

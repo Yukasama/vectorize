@@ -4,8 +4,9 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - ENV=production
       - DATABASE_URL=sqlite+aiosqlite:///./db/app.db
-      - UPLOAD_DIR=/app/data/uploads
+      - UPLOAD_DIR=/app/data/datasets
       - LOG_DIR=/app/log
       - DB_DIR=/app/db
     volumes:

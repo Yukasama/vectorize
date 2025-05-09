@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator
 from typing import Final
 
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlmodel import StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .config import settings
@@ -13,12 +12,14 @@ __all__ = ["engine", "get_session"]
 
 engine: Final = create_async_engine(
     settings.db_url,
-    poolclass=StaticPool if settings.db_url.endswith(":memory:") else None,
-    connect_args={"check_same_thread": False}
-    if settings.db_url.endswith(":memory:")
-    else {},
+    connect_args={"check_same_thread": False, "timeout": settings.db_timeout},
     echo=settings.db_logging,
-    future=True,
+    future=settings.db_future,
+    pool_timeout=settings.db_pool_timeout,
+    pool_size=settings.db_pool_size,
+    pool_pre_ping=settings.db_pool_pre_ping,
+    max_overflow=settings.db_max_overflow,
+    pool_recycle=settings.db_pool_recycle,
 )
 
 

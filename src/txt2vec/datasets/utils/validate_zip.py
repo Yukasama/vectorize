@@ -8,6 +8,8 @@ from typing import Final
 from fastapi import UploadFile
 from loguru import logger
 
+from txt2vec.config.config import settings
+
 from ..exceptions import (
     FileTooLargeError,
     InvalidFileError,
@@ -17,7 +19,6 @@ from ..exceptions import (
 __all__ = ["handle_zip_upload", "validate_zip_file"]
 
 
-_MAX_ZIP_MEMBERS: Final[int] = 1000
 _MAX_ZIP_UNCOMPRESSED: Final[int] = 500 * 2**20
 _MAX_ZIP_RATIO: Final[float] = 100.0
 
@@ -77,7 +78,7 @@ def validate_zip_file(zip_bytes: bytes) -> Sequence[tuple[str, bytes]]:
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
         members = [m for m in zf.infolist() if not m.is_dir()]
 
-        if len(members) > _MAX_ZIP_MEMBERS:
+        if len(members) > settings.dataset_max_zip_members:
             raise TooManyFilesError(len(members))
 
         total_uncompressed = sum(m.file_size for m in members)

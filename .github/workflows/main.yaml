@@ -87,7 +87,7 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          mkdir -p data/uploads
+          mkdir -p data/datasets
           .venv/bin/pytest \
             --html=pytest-report.html \
             --self-contained-html \
