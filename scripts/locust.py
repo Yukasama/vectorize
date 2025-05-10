@@ -5,7 +5,6 @@ Run with: uvx locust -f scripts/locust.py
 
 from pathlib import Path
 
-from fastapi import status
 from locust import HttpUser, constant_throughput, task
 
 from tests.datasets.utils import build_files
@@ -19,6 +18,7 @@ _DATASET_IDS = [
     "9d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b",
 ]
 _DATASET_PATH = "/datasets"
+_PRECONDITION_FAILED = 412
 
 
 class Txt2VecLoadTests(HttpUser):
@@ -51,7 +51,7 @@ class Txt2VecLoadTests(HttpUser):
                 json={"name": "Updated Dataset Name"},
                 headers={"If-Match": etag},
             ) as response:
-                if response.status_code == status.HTTP_412_PRECONDITION_FAILED:
+                if response.status_code == _PRECONDITION_FAILED:
                     response.success()
 
     @task
@@ -80,10 +80,7 @@ class Txt2VecLoadTests(HttpUser):
             with self.client.post(
                 _DATASET_PATH, files=build_files(file_path), catch_response=True
             ) as response:
-                if response.status_code in {
-                    status.HTTP_400_BAD_REQUEST,
-                    status.HTTP_422_UNPROCESSABLE_ENTITY,
-                }:
+                if response.status_code in {400, 422}:
                     response.success()
 
     @task

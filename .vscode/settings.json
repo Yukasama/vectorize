@@ -10,5 +10,8 @@
     "source.fixAll.ruff": "always",
     "source.organizeImports.ruff": "always"
   },
-  "postman.settings.dotenv-detection-notification-visibility": false
+  "postman.settings.dotenv-detection-notification-visibility": false,
+  "editor.folding": true,
+  "editor.foldingStrategy": "auto",
+  "editor.foldingImportsByDefault": true
 }
