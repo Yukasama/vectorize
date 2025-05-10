@@ -14,12 +14,14 @@ from fastapi import (
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from txt2vec.common.status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
 from txt2vec.upload.exceptions import ServiceUnavailableError
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.huggingface_service import load_model_and_save_to_db
 from txt2vec.upload.local_service import upload_embedding_model
+from txt2vec.upload.models import UploadTask
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
 
 router = APIRouter(tags=["Model Upload"])
@@ -63,36 +65,40 @@ async def load_model_huggingface(
         raise ServiceUnavailableError from e
 
 
-@router.post("/add_model")
-async def load_model_github(request: GitHubModelRequest) -> Response:
-    """Download and register a model from a specified GitHub repository.
+@router.post("/add_model", status_code=status.HTTP_201_CREATED)
+async def load_model_github(
+    request: GitHubModelRequest,
+    db: Annotated[AsyncSession, Depends(get_session)]
+) -> dict:
+    """Create an upload task and register a model from a specified GitHub repository.
 
-    This endpoint accepts a GitHub repository URL and attempts to download
-    and prepare the model files for use. If successful, a JSON response is returned.
+    This endpoint stores a new UploadTask in the database using the given
+    GitHub URL and metadata. It then begins the model download process.
 
     Args:
-        request: Contains the GitHub repository URL.
+        request (GitHubModelRequest): Includes the GitHub URL and model tag.
+        db (AsyncSession): Async database session.
 
     Returns:
-        A response indicating success or error details.
-
-    Raises:
-        HTTPException:
-            - 400 if the GitHub URL is invalid.
-            - 500 if an unexpected error occurs during model processing.
-
+        dict: JSON response containing the UploadTask ID.
     """
-    logger.info(
-        "Received request to add model from GitHub URL: {}",
-        request.github_url,
+    logger.info("Received request to add model from GitHub URL: {}", request.github_url)
+
+    upload_task = UploadTask(
+        model_tag=request.model_tag,
+        source=request.source,
+        task_status=TaskStatus.PENDING
     )
 
-    result = await handle_model_download(request.github_url)
-    logger.info(
-        "Model handled successfully for: {}",
-        request.github_url,
-    )
-    return result
+    db.add(upload_task)
+    await db.commit()
+    await db.refresh(upload_task)
+
+    await handle_model_download(request.github_url)
+
+    logger.info("Model handled successfully for: {}", request.github_url)
+
+    return {"id": str(upload_task.id)}
 
 
 @router.post("/models")

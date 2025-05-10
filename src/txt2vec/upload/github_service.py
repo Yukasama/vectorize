@@ -4,16 +4,15 @@ from http import HTTPStatus
 from pathlib import Path
 
 import httpx
-from fastapi import HTTPException
 from loguru import logger
+
 from txt2vec.upload.exceptions import (
-    NoValidModelsFoundError,
+    GitHubApiError,
     InvalidGitHubUrlError,
     MissingDownloadUrlError,
     ModelDownloadError,
-    GitHubApiError,
+    NoValidModelsFoundError,
 )
-
 from txt2vec.upload.utils import GitHubUtils
 
 
@@ -62,7 +61,7 @@ async def handle_model_download(github_url: str) -> dict:
             save_path = save_dir / file_path
             save_path.write_bytes(file_resp.content)
 
-        elif meta_resp.status_code == HTTPStatus.NOT_FOUND:
+        if meta_resp.status_code == HTTPStatus.NOT_FOUND:
             logger.error(
                 "Model file not found on GitHub: repo={}/{} file={}",
                 owner,
@@ -70,15 +69,14 @@ async def handle_model_download(github_url: str) -> dict:
                 file_path,
             )
             raise NoValidModelsFoundError()
-        else:
-            logger.error(
-                "Unexpected GitHub API error: repo={}/{} file={} status={} message={}",
-                owner,
-                repo,
-                file_path,
-                meta_resp.status_code,
-                meta_resp.text,
-            )
-            raise GitHubApiError()
+        logger.error(
+            "Unexpected GitHub API error: repo={}/{} file={} status={} message={}",
+            owner,
+            repo,
+            file_path,
+            meta_resp.status_code,
+            meta_resp.text,
+        )
+        raise GitHubApiError()
 
     return {"message": f"Model downloaded and saved to `{save_path}`"}
