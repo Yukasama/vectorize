@@ -17,6 +17,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from txt2vec.common.status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
+from txt2vec.upload.background_service import write_to_database
 from txt2vec.upload.exceptions import ServiceUnavailableError
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.huggingface_service import load_model_and_save_to_db
@@ -67,8 +68,7 @@ async def load_model_huggingface(
 
 @router.post("/add_model", status_code=status.HTTP_201_CREATED)
 async def load_model_github(
-    request: GitHubModelRequest,
-    db: Annotated[AsyncSession, Depends(get_session)]
+    request: GitHubModelRequest, db: Annotated[AsyncSession, Depends(get_session)]
 ) -> dict:
     """Create an upload task and register a model from a specified GitHub repository.
 
@@ -87,12 +87,10 @@ async def load_model_github(
     upload_task = UploadTask(
         model_tag=request.model_tag,
         source=request.source,
-        task_status=TaskStatus.PENDING
+        task_status=TaskStatus.PENDING,
     )
 
-    db.add(upload_task)
-    await db.commit()
-    await db.refresh(upload_task)
+    await write_to_database(db, upload_task)
 
     await handle_model_download(request.github_url)
 
