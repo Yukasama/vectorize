@@ -6,7 +6,6 @@ from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
-    HTTPException,
     Query,
     Request,
     Response,
@@ -20,6 +19,7 @@ from loguru import logger
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from txt2vec.ai_model.exceptions import ModelNotFoundError
 from txt2vec.ai_model.model_source import ModelSource
 from txt2vec.ai_model.models import AIModel
 from txt2vec.common.exceptions import InternalServerError
@@ -31,7 +31,6 @@ from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.huggingface_service import load_model_and_save_to_db
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
 from txt2vec.upload.tasks import process_huggingface_model_background
-from txt2vec.ai_model.exceptions import ModelNotFoundError
 
 router = APIRouter(tags=["Model Upload"])
 

@@ -74,6 +74,7 @@ class ServiceUnavailableError(AppError):
     message = "Service is temporarily unavailable"
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
+
 class ModelAlreadyExistsError(AppError):
     """Exception raised when the model already exists in the database."""
 

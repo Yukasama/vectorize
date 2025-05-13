@@ -19,9 +19,7 @@ from txt2vec.upload.exceptions import (
 _models = {}
 
 
-async def load_model_and_cache_only(model_id: str, tag: str | None = None) -> None:
-    """Loads a Hugging Face model and caches it locally with validation."""
-    tag = tag or "main"
+async def load_model_and_cache_only(model_id: str, tag: str) -> None: 
     key = f"{model_id}@{tag}"
     if key in _models:
         logger.info(f"Model '{key}' is already in Cache.")
@@ -32,7 +30,7 @@ async def load_model_and_cache_only(model_id: str, tag: str | None = None) -> No
             repo_id=model_id,
             revision=tag,
             cache_dir="./hf_cache",
-            allow_patterns=["*.safetensors", "*.json"],  # ✅ Punkt 5
+            allow_patterns=["*.safetensors", "*.json"],
         )
 
         safetensors_files = [
@@ -40,7 +38,7 @@ async def load_model_and_cache_only(model_id: str, tag: str | None = None) -> No
         ]
 
         if len(safetensors_files) != 1:
-            raise NoValidModelsFoundError  # ✅ Punkt 4
+            raise NoValidModelsFoundError
 
         tokenizer = AutoTokenizer.from_pretrained(snapshot_path)
         model = AutoModelForSequenceClassification.from_pretrained(snapshot_path)
@@ -48,7 +46,7 @@ async def load_model_and_cache_only(model_id: str, tag: str | None = None) -> No
         _models[key] = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
         logger.info(f"Model '{key}' successfully loaded and cached.")
     except EntryNotFoundError:
-        raise FileNotFoundError(f"Model '{model_id}' with tag '{tag}' not found.")  # ✅ Punkt 1
+        raise FileNotFoundError(f"Model '{model_id}' with tag '{tag}' not found.")
     except Exception as e:
         logger.exception(f"Error loading the model '{key}'")
         raise InvalidModelError from e
