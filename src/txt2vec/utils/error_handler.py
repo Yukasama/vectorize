@@ -3,7 +3,6 @@
 from asyncio import CancelledError
 
 from fastapi import FastAPI, Request, status
-from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from loguru import logger
 
@@ -56,26 +55,6 @@ def register_exception_handlers(app: FastAPI) -> None:
         """
         logger.debug("{}: {}", exc.error_code, exc.message, path=get_error_path(exc))
         return _make_response(exc.status_code, exc.error_code, exc.message, exc.version)
-
-    @app.exception_handler(RequestValidationError)
-    def _handle_validation(
-        request: Request, exc: RequestValidationError
-    ) -> JSONResponse:
-        """Handle request validation errors from Pydantic models.
-
-        Args:
-            request: The incoming HTTP request.
-            exc: The validation error that was raised.
-
-        Returns:
-            JSONResponse: A 422 response with validation error details.
-        """
-        logger.debug("Validation error on {}: {}", request.url, exc.errors())
-        return _make_response(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            ErrorCode.VALIDATION_ERROR,
-            "Arguments did not pass the endpoint format",
-        )
 
     @app.exception_handler(Exception)
     def _handle_unexpected(_request: Request, exc: Exception) -> JSONResponse:

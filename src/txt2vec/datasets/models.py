@@ -36,10 +36,12 @@ class DatasetCreate(_DatasetBase):
     """Dataset creation model."""
 
     file_name: str = Field(
-        description="Filename of the dataset file on the storage unit"
+        description="Filename of the dataset file on the storage unit",
+        min_length=1,
+        max_length=255,
     )
 
-    rows: int = Field(description="Number of rows in the new dataset")
+    rows: int = Field(description="Number of rows in the new dataset", gt=0)
 
     synthesis_id: uuid.UUID | None = Field(
         None, description="Optional ID linking to a synthetic dataset when created"
@@ -49,7 +51,9 @@ class DatasetCreate(_DatasetBase):
 class DatasetUpdate(SQLModel):
     """Dataset update model with optional fields."""
 
-    name: str = Field(description="Name of the dataset to update")
+    name: str = Field(
+        description="Name of the dataset to update", min_length=1, max_length=128
+    )
 
 
 class DatasetAll(_DatasetBase):
@@ -93,15 +97,19 @@ class Dataset(SQLModel, table=True):
         index=True,
         unique=True,
         description="Filename of the dataset file on the storage unit",
+        min_length=1,
+        max_length=255,
     )
 
-    name: str = Field(description="Name of the dataset")
+    name: str = Field(
+        description="Name of the dataset", index=True, min_length=1, max_length=128
+    )
 
     classification: Classification = Field(
         description="Classification type of the dataset"
     )
 
-    rows: int = Field(description="Number of rows in the dataset")
+    rows: int = Field(description="Number of rows in the dataset", gt=0)
 
     created_at: datetime | None = Field(
         default=None,
@@ -119,6 +127,7 @@ class Dataset(SQLModel, table=True):
 
     synthesis_id: uuid.UUID | None = Field(
         default=None,
+        index=True,
         foreign_key="synthesis_task.id",
         description="Optional ID linking to a synthetic dataset",
     )

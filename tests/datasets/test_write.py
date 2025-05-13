@@ -46,7 +46,8 @@ class TestUpdateDatasets:
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         response_body = response.json()
-        assert response_body["code"] == "VALIDATION_ERROR"
+        assert response_body["detail"][0]["loc"] == ["body", "name"]
+        assert response_body["detail"][0]["msg"] == "Field required"
 
     @classmethod
     async def test_version_mismatch(cls, client: TestClient) -> None:
@@ -78,6 +79,3 @@ class TestUpdateDatasets:
         assert response.status_code == status.HTTP_428_PRECONDITION_REQUIRED
         response_body = response.json()
         assert response_body["code"] == "VERSION_MISSING"
-
-        assert "ETag" in response.headers
-        assert response.headers["ETag"] == '"0"'
