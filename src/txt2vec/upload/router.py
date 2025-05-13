@@ -14,19 +14,24 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
+from huggingface_hub import model_info
+from huggingface_hub.utils import EntryNotFoundError, HfHubHTTPError
 from loguru import logger
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.ai_model.model_source import ModelSource
 from txt2vec.ai_model.models import AIModel
+from txt2vec.common.exceptions import InternalServerError
 from txt2vec.common.status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
+from txt2vec.upload.exceptions import ModelAlreadyExistsError
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.huggingface_service import load_model_and_save_to_db
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
-from txt2vec.upload.zip_service import upload_zip_model
+from txt2vec.upload.tasks import process_huggingface_model_background
+from txt2vec.ai_model.exceptions import ModelNotFoundError
 
 router = APIRouter(tags=["Model Upload"])
 
@@ -41,23 +46,19 @@ async def load_model_huggingface(
     tag = data.tag or "main"
     key = f"{data.model_id}@{tag}"
 
-    # ✅ Punkt 2 – bereits in DB?
     model_exists = await db.exec(select(AIModel).where(AIModel.model_tag == key))
     if model_exists.first():
-        raise HTTPException(
-            status_code=422,
-            detail=f"Model '{key}' already exists.",
-        )
+        raise ModelAlreadyExistsError(key)
 
     try:
         model_info(repo_id=data.model_id, revision=tag)
-    except EntryNotFoundError:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Model '{data.model_id}' with tag '{tag}' not found on Hugging Face.",
-        )
+    except (EntryNotFoundError, HfHubHTTPError) as e:
+        raise ModelNotFoundError(data.model_id, tag) from e
+    except Exception as e:
+        raise InternalServerError(
+            "Internal server error while checking model on Hugging Face.",
+        ) from e
 
-    # ✅ Upload Task
     upload_task = UploadTask(
         model_tag=key,
         task_status=TaskStatus.PENDING,

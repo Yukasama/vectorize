@@ -1,6 +1,6 @@
 """Schemas for importing models."""
 
-from typing import Optional
+
 from pydantic import BaseModel, HttpUrl
 
 
@@ -13,7 +13,7 @@ class HuggingFaceModelRequest(BaseModel):
     """
 
     model_id: str
-    tag: Optional[str] = None
+    tag: str | None = None
 
 
 class GitHubModelRequest(BaseModel):
