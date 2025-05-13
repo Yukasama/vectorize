@@ -103,10 +103,10 @@ uv run app
 
 ```bash
 # Run ruff over everything
-uv run ruff check .
+ruff check .
 
 # Run ruff over specific folder
-uv run ruff check src/txt2vec/datasets
+ruff check src/txt2vec/datasets
 ```
 
 #### Run SonarQube
@@ -229,13 +229,13 @@ Thanks to everyone who’s helped this project!
 
 <!-- markdownlint-disable MD033 MD045 -->
 
-| Contributor                                       | GitHub                                                                     |
-| ------------------------------------------------- | -------------------------------------------------------------------------- |
-| [@Anselm Böhm](https://github.com/Dosto1ewski)    | <img src="https://avatars.githubusercontent.com/Dosto1ewski" width="32" /> |
-| [@Botan Coban](https://github.com/BtnCbn)         | <img src="https://avatars.githubusercontent.com/BtnCbn" width="32" />      |
-| [@Yukasama](https://github.com/yukasama) | <img src="https://avatars.githubusercontent.com/yukasama" width="32" />    |
-| [@Manuel Dausmann](https://github.com/domoar)     | <img src="https://avatars.githubusercontent.com/domoar" width="32" />      |
-| [@Yannic Jahnke](https://github.com/Yannjc)       | <img src="https://avatars.githubusercontent.com/Yannjc" width="32" />      |
+| Contributor                                    | GitHub                                                                     |
+| ---------------------------------------------- | -------------------------------------------------------------------------- |
+| [@Anselm Böhm](https://github.com/Dosto1ewski) | <img src="https://avatars.githubusercontent.com/Dosto1ewski" width="32" /> |
+| [@Botan Coban](https://github.com/BtnCbn)      | <img src="https://avatars.githubusercontent.com/BtnCbn" width="32" />      |
+| [@Yukasama](https://github.com/yukasama)       | <img src="https://avatars.githubusercontent.com/yukasama" width="32" />    |
+| [@Manuel Dausmann](https://github.com/domoar)  | <img src="https://avatars.githubusercontent.com/domoar" width="32" />      |
+| [@Yannic Jahnke](https://github.com/Yannjc)    | <img src="https://avatars.githubusercontent.com/Yannjc" width="32" />      |
 
 <!-- markdownlint-enable MD033 MD045 -->
 
