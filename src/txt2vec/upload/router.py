@@ -6,7 +6,7 @@ from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
-    File,
+    HTTPException,
     Query,
     Request,
     Response,
@@ -15,9 +15,11 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from loguru import logger
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.ai_model.model_source import ModelSource
+from txt2vec.ai_model.models import AIModel
 from txt2vec.common.status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
@@ -29,34 +31,33 @@ from txt2vec.upload.zip_service import upload_zip_model
 router = APIRouter(tags=["Model Upload"])
 
 
-@router.post("/load", status_code=status.HTTP_201_CREATED)
+@router.post("/huggingface", status_code=status.HTTP_201_CREATED)
 async def load_model_huggingface(
     data: HuggingFaceModelRequest,
     request: Request,
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Initiates the loading of a Hugging Face model.
+    tag = data.tag or "main"
+    key = f"{data.model_id}@{tag}"
 
-    This endpoint creates a new upload task for a Hugging Face model, saves it
-    to the database, and starts a background process to handle the model loading.
+    # ✅ Punkt 2 – bereits in DB?
+    model_exists = await db.exec(select(AIModel).where(AIModel.model_tag == key))
+    if model_exists.first():
+        raise HTTPException(
+            status_code=422,
+            detail=f"Model '{key}' already exists.",
+        )
 
-    Args:
-        data (HuggingFaceModelRequest): The request payload containing the model ID
-        and tag.
-        request (Request): The HTTP request object.
-        background_tasks (BackgroundTasks): FastAPI's background task manager.
-        db (AsyncSession): The asynchronous database session.
+    try:
+        model_info(repo_id=data.model_id, revision=tag)
+    except EntryNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Model '{data.model_id}' with tag '{tag}' not found on Hugging Face.",
+        )
 
-    Returns:
-        Response: A 201 Created response with a Location header pointing to the task.
-
-    Raises:
-        HTTPException: If an error occurs during task creation or background processing.
-    """
-    key = f"{data.model_id}@{data.tag}"
-
-    # Task anlegen
+    # ✅ Upload Task
     upload_task = UploadTask(
         model_tag=key,
         task_status=TaskStatus.PENDING,
@@ -64,9 +65,8 @@ async def load_model_huggingface(
     )
     await save_upload_task(db, upload_task)
 
-    # Hintergrundprozess starten
     background_tasks.add_task(
-        process_huggingface_model_background, data.model_id, data.tag, upload_task.id
+        process_huggingface_model_background, data.model_id, tag, upload_task.id
     )
 
     return Response(
