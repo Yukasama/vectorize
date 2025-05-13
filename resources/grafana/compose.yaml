@@ -9,6 +9,12 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yaml"
     cap_drop: [ALL]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   grafana:
     image: grafana/grafana:latest
@@ -17,17 +23,22 @@ services:
       - "3001:3000"
     volumes:
       - ~/volumes/txt2vec/grafana:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+    env_file:
+      - .env
     cap_drop: [ALL]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./config:/etc/loki
-    command: -config.file=/etc/loki/loki-config.yaml
-    cap_drop: [ALL]
+  # loki:
+  #   image: grafana/loki:latest
+  #   container_name: loki
+  #   ports:
+  #     - "3100:3100"
+  #   volumes:
+  #     - ./config:/etc/loki
+  #   command: -config.file=/etc/loki/loki-config.yaml
+  #   cap_drop: [ALL]
