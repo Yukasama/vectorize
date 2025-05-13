@@ -24,6 +24,9 @@ from .utils.save_dataset import save_dataframe
 __all__ = ["read_all_datasets", "read_dataset", "update_dataset_srv", "upload_file"]
 
 
+_MIN_LENGTH_ETAG = 3
+
+
 async def read_all_datasets(db: AsyncSession) -> list[DatasetAll]:
     """Read all datasets from the database.
 
@@ -79,28 +82,32 @@ async def update_dataset_srv(
     Returns:
         The updated dataset.
     """
+    if_match = request.headers.get("If-Match")
+
+    if (
+        not if_match
+        or not if_match.startswith('"')
+        or not if_match.endswith('"')
+        or len(if_match) < _MIN_LENGTH_ETAG
+    ):
+        logger.debug(
+            "ETag format error",
+            datasetId=dataset_id,
+            provided=if_match,
+        )
+        raise VersionMissingError(dataset_id=str(dataset_id))
+
     _, current_version = await read_dataset(db, dataset_id)
 
-    if_match = request.headers.get("If-Match")
-    if if_match:
-        clean_etag = if_match.strip().strip('"')
-        if clean_etag != str(current_version):
-            logger.debug(
-                "ETag mismatch on dataset update",
-                datasetId=dataset_id,
-                provided=clean_etag,
-                current=current_version,
-            )
-            raise VersionMismatchError(
-                dataset_id=str(dataset_id), version=current_version
-            )
-    else:
+    clean_etag = if_match.strip().strip('"')
+    if clean_etag != str(current_version):
         logger.debug(
-            "ETag not provided for dataset update",
+            "ETag mismatch on dataset update",
             datasetId=dataset_id,
+            provided=clean_etag,
             current=current_version,
         )
-        raise VersionMissingError(dataset_id=str(dataset_id), version=current_version)
+        raise VersionMismatchError(dataset_id=str(dataset_id), version=current_version)
 
     updated_dataset = await update_dataset(
         db=db, dataset_id=dataset_id, update_data=dataset.model_dump()

@@ -23,7 +23,12 @@ class UploadTask(SQLModel, table=True):
         description="Unique identifier for the upload task.",
     )
 
-    model_tag: str = Field(description="Tag of the model file being uploaded.")
+    model_tag: str = Field(
+        description="Tag of the model file being uploaded.",
+        index=True,
+        min_length=1,
+        max_length=128,
+    )
 
     task_status: TaskStatus = Field(
         default=TaskStatus.PENDING,
