@@ -43,17 +43,16 @@ async def load_model_huggingface(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    tag = data.tag or "main"
-    key = f"{data.model_id}@{tag}"
+    key = f"{data.model_id}@{data.tag}"
 
     model_exists = await db.exec(select(AIModel).where(AIModel.model_tag == key))
     if model_exists.first():
         raise ModelAlreadyExistsError(key)
 
     try:
-        model_info(repo_id=data.model_id, revision=tag)
+        model_info(repo_id=data.model_id, revision=data.tag)
     except (EntryNotFoundError, HfHubHTTPError) as e:
-        raise ModelNotFoundError(data.model_id, tag) from e
+        raise ModelNotFoundError(data.model_id, data.tag) from e
     except Exception as e:
         raise InternalServerError(
             "Internal server error while checking model on Hugging Face.",
@@ -67,7 +66,7 @@ async def load_model_huggingface(
     await save_upload_task(db, upload_task)
 
     background_tasks.add_task(
-        process_huggingface_model_background, data.model_id, tag, upload_task.id
+        process_huggingface_model_background, data.model_id, data.tag, upload_task.id
     )
 
     return Response(

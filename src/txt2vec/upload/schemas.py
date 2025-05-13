@@ -13,7 +13,7 @@ class HuggingFaceModelRequest(BaseModel):
     """
 
     model_id: str
-    tag: str | None = None
+    tag: str = "main"
 
 
 class GitHubModelRequest(BaseModel):
