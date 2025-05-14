@@ -42,6 +42,21 @@ async def load_model_huggingface(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
+    """Upload a Hugging Face model by model_id and tag.
+
+    Checks if the model already exists, verifies its presence on
+    Hugging Face, creates an upload task, and starts background
+    processing. Returns a 201 response with a Location header.
+
+    Args:
+        data: Model id and tag for Hugging Face.
+        request: FastAPI request object.
+        background_tasks: FastAPI background task manager.
+        db: Async database session.
+
+    Returns:
+        Response with 201 status and Location header.
+    """
     key = f"{data.model_id}@{data.tag}"
 
     model_exists = await db.exec(select(AIModel).where(AIModel.model_tag == key))

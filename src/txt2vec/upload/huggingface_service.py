@@ -4,7 +4,7 @@ Dieses Modul lädt Modelle von Hugging Face, cached sie lokal und speichert sie
 in der Datenbank, falls sie noch nicht vorhanden sind.
 """
 
-import os
+from pathlib import Path
 
 from huggingface_hub import snapshot_download
 from huggingface_hub.utils import EntryNotFoundError
@@ -19,10 +19,21 @@ from txt2vec.upload.exceptions import (
 _models = {}
 
 
-async def load_model_and_cache_only(model_id: str, tag: str) -> None: 
+async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: RUF029
+    """Load a Hugging Face model and cache it locally if not already cached.
+
+    Downloads the model and tokenizer from Hugging Face using the given
+    model_id and tag, checks for valid safetensors, and stores the pipeline
+    in a local cache. Raises if the model is not found or invalid.
+
+    Args:
+        model_id: The Hugging Face model repository ID.
+        tag: The revision or tag to download.
+    """
     key = f"{model_id}@{tag}"
+
     if key in _models:
-        logger.info(f"Model '{key}' is already in Cache.")
+        logger.info("Model is already in Cache.", modelKey=key)
         return
 
     try:
@@ -34,7 +45,8 @@ async def load_model_and_cache_only(model_id: str, tag: str) -> None:
         )
 
         safetensors_files = [
-            f for f in os.listdir(snapshot_path) if f.endswith(".safetensors")
+            f.name for f in Path(snapshot_path).iterdir()
+            if f.name.endswith(".safetensors")
         ]
 
         if len(safetensors_files) != 1:
@@ -44,9 +56,20 @@ async def load_model_and_cache_only(model_id: str, tag: str) -> None:
         model = AutoModelForSequenceClassification.from_pretrained(snapshot_path)
 
         _models[key] = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
-        logger.info(f"Model '{key}' successfully loaded and cached.")
-    except EntryNotFoundError:
-        raise FileNotFoundError(f"Model '{model_id}' with tag '{tag}' not found.")
+        logger.info("Model successfully loaded and cached.", modelKey=key)
+
+    except EntryNotFoundError as e:
+        logger.debug(
+            "Model not found on Hugging Face.",
+            modelId=model_id,
+            tag=tag,
+            error=str(e),
+        )
+        raise FileNotFoundError(
+            "Model not found on Hugging Face.",
+            {"modelId": model_id, "tag": tag, "error": str(e)},
+        ) from e
+
     except Exception as e:
-        logger.exception(f"Error loading the model '{key}'")
+        logger.exception("Error loading model.", modelKey=key)
         raise InvalidModelError from e

@@ -40,7 +40,7 @@ async def process_huggingface_model_background(
     async for db in get_session():
         key = f"{model_id}@{tag}"
         try:
-            logger.info(f"[BG] Starting model upload for task {task_id}")
+            logger.info("[BG] Starting model upload for task", taskId=task_id)
             await load_model_and_cache_only(model_id, tag)
 
             ai_model = AIModel(
@@ -51,7 +51,7 @@ async def process_huggingface_model_background(
             await save_ai_model(db, ai_model)
             await update_upload_task_status(db, task_id, TaskStatus.DONE)
 
-            logger.info(f"[BG] Task {task_id} completed successfully.")
+            logger.info("[BG] Task completed successfully", taskId=task_id)
 
         except Exception as e:
             logger.error(f"[BG] Error in task {task_id}: {e}")

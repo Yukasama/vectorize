@@ -9,7 +9,8 @@ class HuggingFaceModelRequest(BaseModel):
 
     Attributes:
         model_id (str): The ID of the model to load.
-        tag (Optional[str]): The specific tag or version of the model to load. Defaults to "main".
+        tag (Optional[str]): The specific tag or version of the model to load.
+        Defaults to "main".
     """
 
     model_id: str
