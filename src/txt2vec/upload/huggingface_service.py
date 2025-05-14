@@ -13,6 +13,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipe
 
 from txt2vec.upload.exceptions import (
     InvalidModelError,
+    ModelAlreadyExistsError,
     NoValidModelsFoundError,
 )
 
@@ -34,7 +35,7 @@ async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: R
 
     if key in _models:
         logger.info("Model is already in Cache.", modelKey=key)
-        return
+        raise ModelAlreadyExistsError(key)  # Hier wird der Fehler geworfen!
 
     try:
         snapshot_path = snapshot_download(
