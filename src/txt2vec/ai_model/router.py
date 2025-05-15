@@ -1,16 +1,17 @@
+"""Test für das Hochladen eines Huggingface-Modells."""
 from uuid import UUID
-from fastapi import APIRouter, Depends, status
-from fastapi.responses import Response
 from typing import Annotated
 
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import Response
+from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from .service import delete_model_srv
-from .exceptions import ModelNotFoundError
 from txt2vec.config.db import get_session
-from loguru import logger
+from .service import delete_model_srv
 
 router = APIRouter()
+
 
 @router.delete("/{model_id}")
 async def delete_model(
