@@ -16,10 +16,10 @@ from .exceptions import InvalidFileError
 from .models import Dataset, DatasetAll, DatasetPublic, DatasetUpdate
 from .repository import (
     delete_dataset_db,
-    get_all_datasets,
-    get_dataset,
-    save_dataset,
-    update_dataset,
+    get_all_datasets_db,
+    get_dataset_db,
+    save_dataset_db,
+    update_dataset_db,
 )
 from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import escape_csv_formulas
@@ -27,13 +27,18 @@ from .utils.dataset_classifier import classify_dataset
 from .utils.file_df_converter import convert_file_to_df
 from .utils.save_dataset import save_dataframe
 
-__all__ = ["read_all_datasets", "read_dataset", "update_dataset_srv", "upload_file"]
+__all__ = [
+    "get_dataset_srv",
+    "get_datasets_srv",
+    "update_dataset_srv",
+    "upload_file_srv",
+]
 
 
 _MIN_LENGTH_ETAG = 3
 
 
-async def read_all_datasets(db: AsyncSession) -> list[DatasetAll]:
+async def get_datasets_srv(db: AsyncSession) -> list[DatasetAll]:
     """Read all datasets from the database.
 
     This function retrieves all datasets from the database and returns them as a
@@ -43,12 +48,12 @@ async def read_all_datasets(db: AsyncSession) -> list[DatasetAll]:
     Returns:
         List of dictionaries representing datasets with limited fields.
     """
-    datasets = await get_all_datasets(db)
+    datasets = await get_all_datasets_db(db)
 
     return [DatasetAll.model_validate(dataset) for dataset in datasets]
 
 
-async def read_dataset(
+async def get_dataset_srv(
     db: AsyncSession, dataset_id: uuid.UUID
 ) -> tuple[DatasetPublic, int]:
     """Read a single dataset from the database.
@@ -63,7 +68,7 @@ async def read_dataset(
     Returns:
         Dictionary representing the dataset with all fields.
     """
-    dataset = await get_dataset(db, dataset_id)
+    dataset = await get_dataset_db(db, dataset_id)
 
     return DatasetPublic.model_validate(dataset), dataset.version
 
@@ -103,7 +108,7 @@ async def update_dataset_srv(
         )
         raise VersionMissingError(dataset_id=str(dataset_id))
 
-    _, current_version = await read_dataset(db, dataset_id)
+    _, current_version = await get_dataset_srv(db, dataset_id)
 
     clean_etag = if_match.strip().strip('"')
     if clean_etag != str(current_version):
@@ -115,7 +120,7 @@ async def update_dataset_srv(
         )
         raise VersionMismatchError(dataset_id=str(dataset_id), version=current_version)
 
-    updated_dataset = await update_dataset(
+    updated_dataset = await update_dataset_db(
         db=db, dataset_id=dataset_id, update_data=dataset.model_dump()
     )
 
@@ -138,7 +143,7 @@ async def delete_dataset_srv(db: AsyncSession, dataset_id: uuid.UUID) -> None:
     logger.debug("Dataset deleted", datasetId=dataset_id)
 
 
-async def upload_file(
+async def upload_file_srv(
     db: AsyncSession, file: UploadFile, options: DatasetUploadOptions | None = None
 ) -> uuid.UUID:
     """Stream upload, parse file to DataFrame, save as CSV, and return dataset ID.
@@ -186,7 +191,7 @@ async def upload_file(
             rows=len(df),
         )
         logger.debug("Dataset DTO created", dataset=dataset)
-        dataset_id = await save_dataset(db, dataset)
+        dataset_id = await save_dataset_db(db, dataset)
         logger.debug("Dataset saved", datasetId=dataset_id)
         return dataset_id
     except Exception:

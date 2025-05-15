@@ -9,10 +9,15 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from .exceptions import DatasetNotFoundError
 from .models import Dataset, DatasetUpdate
 
-__all__ = ["get_all_datasets", "get_dataset", "save_dataset", "update_dataset"]
+__all__ = [
+    "get_all_datasets_db",
+    "get_dataset_db",
+    "save_dataset_db",
+    "update_dataset_db",
+]
 
 
-async def save_dataset(db: AsyncSession, dataset: Dataset) -> UUID:
+async def save_dataset_db(db: AsyncSession, dataset: Dataset) -> UUID:
     """Save a new dataset to the database.
 
     Args:
@@ -29,7 +34,7 @@ async def save_dataset(db: AsyncSession, dataset: Dataset) -> UUID:
     return dataset.id
 
 
-async def get_dataset(db: AsyncSession, dataset_id: UUID) -> Dataset:
+async def get_dataset_db(db: AsyncSession, dataset_id: UUID) -> Dataset:
     """Retrieve a dataset by its ID.
 
     Args:
@@ -52,7 +57,7 @@ async def get_dataset(db: AsyncSession, dataset_id: UUID) -> Dataset:
     return dataset
 
 
-async def get_all_datasets(db: AsyncSession) -> list[Dataset]:
+async def get_all_datasets_db(db: AsyncSession) -> list[Dataset]:
     """Retrieve all datasets from the database.
 
     Args:
@@ -69,7 +74,7 @@ async def get_all_datasets(db: AsyncSession) -> list[Dataset]:
     return datasets
 
 
-async def update_dataset(
+async def update_dataset_db(
     db: AsyncSession, dataset_id: UUID, update_data: DatasetUpdate
 ) -> Dataset:
     """Update an existing dataset.

@@ -23,10 +23,10 @@ from .exceptions import InvalidFileError
 from .models import DatasetAll, DatasetPublic, DatasetUpdate
 from .service import (
     delete_dataset_srv,
-    read_all_datasets,
-    read_dataset,
+    get_dataset_srv,
+    get_datasets_srv,
     update_dataset_srv,
-    upload_file,
+    upload_file_srv,
 )
 from .upload_options_model import DatasetUploadOptions
 from .utils.validate_zip import handle_zip_upload
@@ -49,13 +49,13 @@ async def get_datasets(
     Returns:
         List of datasets with limited fields (DatasetAll model)
     """
-    datasets = await read_all_datasets(db)
+    datasets = await get_datasets_srv(db)
     logger.debug("Datasets retrieved", length=len(datasets))
     return datasets
 
 
 @router.get("/{dataset_id}")
-async def get_dataset_by_id(
+async def get_dataset(
     dataset_id: UUID,
     request: Request,
     response: Response,
@@ -70,12 +70,12 @@ async def get_dataset_by_id(
         db: Database session for persistence operations
 
     Returns:
-        The dataset object
+        The dataset object, or 304 Not Modified if the ETag matches the current version
 
     Raises:
         DatasetNotFoundError: If the dataset with the specified ID doesn't exist
     """
-    dataset, version = await read_dataset(db, dataset_id)
+    dataset, version = await get_dataset_srv(db, dataset_id)
     response.headers["ETAG"] = f'"{version}"'
 
     e_tag = request.headers.get("If-None-Match")
@@ -97,7 +97,7 @@ async def get_dataset_by_id(
 
 
 @router.put("/{dataset_id}")
-async def put_dataset(
+async def update_dataset(
     dataset_id: UUID,
     request: Request,
     dataset: DatasetUpdate,
@@ -138,6 +138,9 @@ async def delete_dataset(
 ) -> Response:
     """Delete a dataset by its ID.
 
+    Permanently removes the dataset and any related records (if cascading deletes
+    are configured) from the database.
+
     Args:
         dataset_id: The UUID of the dataset to delete
         request: The HTTP request object
@@ -145,6 +148,9 @@ async def delete_dataset(
 
     Returns:
         204 No Content response
+
+    Raises:
+        DatasetNotFoundError: If the dataset with the specified ID doesn't exist
     """
     await delete_dataset_srv(db, dataset_id)
     logger.debug("Dataset deleted", datasetId=dataset_id)
@@ -193,7 +199,7 @@ async def upload_dataset(
     )
     for file in files_for_upload:
         try:
-            dataset_id = await upload_file(db, file, options)
+            dataset_id = await upload_file_srv(db, file, options)
             dataset_ids.append(dataset_id)
         except AppError as e:
             if len(files_for_upload) == 1:
