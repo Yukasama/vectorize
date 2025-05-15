@@ -21,7 +21,13 @@ from txt2vec.config.db import get_session
 
 from .exceptions import InvalidFileError
 from .models import DatasetAll, DatasetPublic, DatasetUpdate
-from .service import read_all_datasets, read_dataset, update_dataset_srv, upload_file
+from .service import (
+    delete_dataset_srv,
+    read_all_datasets,
+    read_dataset,
+    update_dataset_srv,
+    upload_file,
+)
 from .upload_options_model import DatasetUploadOptions
 from .utils.validate_zip import handle_zip_upload
 
@@ -124,6 +130,26 @@ async def put_dataset(
         status_code=status.HTTP_204_NO_CONTENT,
         headers={"Location": f"{request.url.path}", "ETag": f'"{new_version}"'},
     )
+
+
+@router.delete("/{dataset_id}")
+async def delete_dataset(
+    dataset_id: UUID, db: Annotated[AsyncSession, Depends(get_session)]
+) -> Response:
+    """Delete a dataset by its ID.
+
+    Args:
+        dataset_id: The UUID of the dataset to delete
+        request: The HTTP request object
+        db: Database session for persistence operations
+
+    Returns:
+        204 No Content response
+    """
+    await delete_dataset_srv(db, dataset_id)
+    logger.debug("Dataset deleted", datasetId=dataset_id)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("")

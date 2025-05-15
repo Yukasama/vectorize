@@ -14,7 +14,13 @@ from txt2vec.utils import sanitize_filename
 
 from .exceptions import InvalidFileError
 from .models import Dataset, DatasetAll, DatasetPublic, DatasetUpdate
-from .repository import get_all_datasets, get_dataset, save_dataset, update_dataset
+from .repository import (
+    delete_dataset_db,
+    get_all_datasets,
+    get_dataset,
+    save_dataset,
+    update_dataset,
+)
 from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import escape_csv_formulas
 from .utils.dataset_classifier import classify_dataset
@@ -116,10 +122,24 @@ async def update_dataset_srv(
     return updated_dataset.version
 
 
+async def delete_dataset_srv(db: AsyncSession, dataset_id: uuid.UUID) -> None:
+    """Delete a dataset from the database.
+
+    This function deletes a dataset by its ID from the database.
+
+    Args:
+        db: Database session for persistence operations
+        dataset_id: The UUID of the dataset to delete
+
+    Returns:
+        None
+    """
+    await delete_dataset_db(db, dataset_id)
+    logger.debug("Dataset deleted", datasetId=dataset_id)
+
+
 async def upload_file(
-    db: AsyncSession,
-    file: UploadFile,
-    options: DatasetUploadOptions | None = None,
+    db: AsyncSession, file: UploadFile, options: DatasetUploadOptions | None = None
 ) -> uuid.UUID:
     """Stream upload, parse file to DataFrame, save as CSV, and return dataset ID.
 

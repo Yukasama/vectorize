@@ -101,3 +101,25 @@ async def update_dataset(
 
     logger.debug("Dataset updated", datasetId=dataset_id)
     return dataset
+
+
+async def delete_dataset_db(db: AsyncSession, dataset_id: UUID) -> None:
+    """Delete a dataset from the database.
+
+    Args:
+        db: Database session instance.
+        dataset_id: The UUID of the dataset to delete.
+
+    Raises:
+        DatasetNotFoundError: If the dataset is not found.
+    """
+    statement = select(Dataset).where(Dataset.id == dataset_id)
+    result = await db.exec(statement)
+    dataset = result.first()
+
+    if dataset is None:
+        raise DatasetNotFoundError(str(dataset_id))
+
+    await db.delete(dataset)
+    await db.commit()
+    logger.debug("Dataset deleted", datasetId=dataset_id)
