@@ -1,23 +1,19 @@
-"""Test für das Hochladen eines Huggingface-Modells."""
+"""Test für das Laden eines bereits vorhandenen Huggingface-Modells."""
 import pytest
 
 from txt2vec.upload.exceptions import ModelAlreadyExistsError
 from txt2vec.upload.huggingface_service import load_model_and_cache_only
 
-"""Test für das Laden und Cachen eines Huggingface-Modells."""
-
 
 @pytest.mark.asyncio
 async def test_load_distilbert_model() -> None:
-    """Testet das Laden des distilbert-base-uncased Modells von Huggingface."""
+    """Testet das Laden eines bereits vorhandenen distilbert-base-uncased Modells."""
     model_id = "distilbert-base-uncased"
     tag = "main"
 
     try:
         await load_model_and_cache_only(model_id, tag)
     except ModelAlreadyExistsError:
-        # Das ist okay - der Test gilt als bestanden
         pass
     except Exception as e:
-        # Alle anderen Fehler schlagen den Test fehl
         pytest.fail(f"Model loading failed with error: {e}")
