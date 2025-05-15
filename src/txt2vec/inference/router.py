@@ -12,7 +12,7 @@ from txt2vec.config.db import get_session
 
 from .embedding_model import Embeddings
 from .request_model import EmbeddingRequest
-from .service import create_embeddings, get_daily_inference_stats
+from .service import get_embeddings_srv, get_model_stats_srv
 
 __all__ = ["router"]
 
@@ -40,11 +40,11 @@ async def get_embeddings(
         ModelNotFoundError: If the requested model cannot be found.
         ModelLoadError: If there's an error loading the AI model.
     """
-    return await create_embeddings(db, data)
+    return await get_embeddings_srv(db, data)
 
 
 @router.get("/counter/{model_tag}")
-async def get_model_inference_stats(
+async def get_model_stats(
     model_tag: str,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> dict[str, int]:
@@ -61,4 +61,4 @@ async def get_model_inference_stats(
     Returns:
         Dictionary with dates (format: YYYY-MM-DD) and inference counts.
     """
-    return await get_daily_inference_stats(db, model_tag)
+    return await get_model_stats_srv(db, model_tag)

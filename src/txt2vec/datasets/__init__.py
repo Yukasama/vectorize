@@ -15,9 +15,19 @@ from .exceptions import (
 )
 from .file_format import FileFormat
 from .models import Dataset, DatasetAll, DatasetCreate, DatasetPublic, DatasetUpdate
-from .repository import get_all_datasets, get_dataset, save_dataset, update_dataset
+from .repository import (
+    get_all_datasets_db,
+    get_dataset_db,
+    save_dataset_db,
+    update_dataset_db,
+)
 from .router import router
-from .service import read_all_datasets, read_dataset, update_dataset_srv, upload_file
+from .service import (
+    get_dataset_srv,
+    get_datasets_srv,
+    update_dataset_srv,
+    upload_file_srv,
+)
 from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import escape_csv_formulas
 from .utils.dataset_classifier import classify_dataset
@@ -50,16 +60,16 @@ __all__ = [
     "convert_file_to_df",
     "escape_csv_formulas",
     "format_file_size",
-    "get_all_datasets",
-    "get_dataset",
+    "get_all_datasets_db",
+    "get_dataset_db",
+    "get_dataset_srv",
+    "get_datasets_srv",
     "load_file",
-    "read_all_datasets",
-    "read_dataset",
     "router",
     "save_dataframe",
-    "save_dataset",
-    "update_dataset",
+    "save_dataset_db",
+    "update_dataset_db",
     "update_dataset_srv",
-    "upload_file",
+    "upload_file_srv",
     "validate_zip_file",
 ]

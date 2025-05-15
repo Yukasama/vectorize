@@ -13,10 +13,10 @@ from .request_model import EmbeddingRequest
 from .utils.generator import generate_embeddings
 from .utils.model_loader import load_model
 
-__all__ = ["create_embeddings"]
+__all__ = ["get_embeddings_srv", "get_model_stats_srv"]
 
 
-async def create_embeddings(db: AsyncSession, data: EmbeddingRequest) -> Embeddings:
+async def get_embeddings_srv(db: AsyncSession, data: EmbeddingRequest) -> Embeddings:
     """Generate embeddings for input text using the specified model.
 
     Loads the AI model specified by the client, processes the input data,
@@ -49,7 +49,7 @@ async def create_embeddings(db: AsyncSession, data: EmbeddingRequest) -> Embeddi
     )
 
 
-async def get_daily_inference_stats(db: AsyncSession, model_tag: str) -> dict[str, int]:
+async def get_model_stats_srv(db: AsyncSession, model_tag: str) -> dict[str, int]:
     """Get daily inference statistics for an AI model.
 
     Retrieves all inference counters for a model and groups them by date,
