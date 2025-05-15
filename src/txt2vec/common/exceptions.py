@@ -45,5 +45,5 @@ class VersionMissingError(AppError):
     status_code = status.HTTP_428_PRECONDITION_REQUIRED
 
     def __init__(self, dataset_id: str) -> None:
-        """Initialize with the dataset ID and version."""
+        """Initialize with the dataset ID."""
         super().__init__(f"If-Match header required for updating dataset {dataset_id}")
