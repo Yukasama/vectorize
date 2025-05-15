@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 _VALID_ID = "8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b"
 _INVALID_ID = "5d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
+_NON_EXISTENT_ID = "12345678-1234-5678-1234-567812345678"
 
 
 @pytest.mark.asyncio
@@ -79,3 +80,34 @@ class TestUpdateDatasets:
         assert response.status_code == status.HTTP_428_PRECONDITION_REQUIRED
         response_body = response.json()
         assert response_body["code"] == "VERSION_MISSING"
+
+    @classmethod
+    async def test_delete(cls, client: TestClient) -> None:
+        """Test successful deletion of a dataset."""
+        response = client.get("/datasets")
+        assert response.status_code == status.HTTP_200_OK
+        datasets_length = len(response.json())
+
+        response = client.delete(f"/datasets/{_VALID_ID}")
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+        dataset = client.get(f"/datasets/{_VALID_ID}")
+        assert dataset.status_code == status.HTTP_404_NOT_FOUND
+
+        response = client.get("/datasets")
+        assert len(response.json()) == datasets_length - 1
+
+    @classmethod
+    async def test_delete_not_exist(cls, client: TestClient) -> None:
+        """Test deletion of a non-existent dataset."""
+        response = client.get("/datasets")
+        assert response.status_code == status.HTTP_200_OK
+        datasets_length = len(response.json())
+
+        response = client.delete(f"/datasets/{_NON_EXISTENT_ID}")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        response_body = response.json()
+        assert response_body["code"] == "NOT_FOUND"
+
+        response = client.get("/datasets")
+        assert len(response.json()) == datasets_length
