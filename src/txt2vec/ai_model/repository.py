@@ -55,3 +55,23 @@ async def save_ai_model(db: AsyncSession, model: AIModel) -> UUID:
 
     logger.debug("AI Model saved to DB: {}", model.id)
     return model.id
+
+async def delete_model_db(db: AsyncSession, model_id: UUID) -> None:
+    """Delete an AI model from the database by ID.
+
+    Args:
+        db: Database session instance.
+        model_id: The UUID of the AI model to delete.
+
+    Raises:
+        ModelNotFoundError: If the model with the given ID does not exist.
+    """
+    statement = select(AIModel).where(AIModel.id == model_id)
+    result = await db.exec(statement)
+    model = result.first()
+
+    if model is None:
+        raise ModelNotFoundError(str(model_id))
+
+    await db.delete(model)
+    await db.commit()
