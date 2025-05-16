@@ -45,8 +45,6 @@ async def session() -> AsyncGenerator[AsyncSession]:
         except Exception:
             await session.rollback()
             raise
-        finally:
-            await session.close()
 
 
 @pytest.fixture(name="client")
