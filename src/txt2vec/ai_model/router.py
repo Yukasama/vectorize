@@ -1,6 +1,6 @@
 """Test für das Hochladen eines Huggingface-Modells."""
-from uuid import UUID
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import Response
@@ -8,6 +8,7 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.db import get_session
+
 from .service import delete_model_srv
 
 router = APIRouter()
