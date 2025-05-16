@@ -6,6 +6,7 @@ using SQLModel and asynchronous database sessions.
 
 from datetime import UTC, datetime
 from uuid import UUID
+from loguru import logger
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -51,7 +52,4 @@ async def update_upload_task_status(
         task.error_msg = error_msg
         await db.commit()
     except NoResultFound:
-        # Logge den Fehler, aber wirf keine Exception, damit der BackgroundTask nicht crasht
-        import logging
-
-        logging.error(f"[update_upload_task_status] Task mit ID {task_id} nicht gefunden!")
+        logger.exception("[update_upload_task_status] Task mit ID nicht gefunden!", task_id=task_id)
