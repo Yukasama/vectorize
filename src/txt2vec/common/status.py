@@ -1,14 +1,12 @@
 """TaskStatus model for task or upload."""
 
-from enum import StrEnum
+from enum import Enum
 
 __all__ = ["TaskStatus"]
 
 
-class TaskStatus(StrEnum):
+class TaskStatus(str, Enum):
     """Status of a process."""
-
-    PENDING = "P"
-    DONE = "D"
-    FAILED = "F"
-    CANCELED = "CA"
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"

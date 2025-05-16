@@ -1,7 +1,6 @@
 """Service for importing models."""
 
 from http import HTTPStatus
-from pathlib import Path
 
 import httpx
 from loguru import logger
@@ -56,11 +55,6 @@ async def handle_model_download(github_url: str) -> dict:
                     file_resp.text,
                 )
             raise ModelDownloadError()
-            save_dir = Path("models") / f"{owner}_{repo}"
-            save_dir.mkdir(parents=True, exist_ok=True)
-            save_path = save_dir / file_path
-            save_path.write_bytes(file_resp.content)
-
         if meta_resp.status_code == HTTPStatus.NOT_FOUND:
             logger.error(
                 "Model file not found on GitHub: repo={}/{} file={}",
@@ -79,4 +73,4 @@ async def handle_model_download(github_url: str) -> dict:
         )
         raise GitHubApiError()
 
-    return {"message": f"Model downloaded and saved to `{save_path}`"}
+    return {}

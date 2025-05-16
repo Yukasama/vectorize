@@ -26,6 +26,9 @@ class ErrorCode(StrEnum):
     # Upload errors
     DUPLICATE_ENTRY = "DUPLICATE_ENTRY"
 
+    # URL
+    INVALID_GITHUB_URL = "INVALID URL"
+
 
 class ErrorNames(StrEnum):
     """Error names for standardized error handling."""

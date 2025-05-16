@@ -89,7 +89,7 @@ class ModelAlreadyExistsError(AppError):
 class InvalidGitHubUrlError(AppError):
     """Fehler beim Zugriff auf die GitHub URL."""
 
-    error_code = ErrorCode.INVALID_URL
+    error_code = ErrorCode.INVALID_GITHUB_URL
     message = "Invalid GitHub URL."
     status_code = status.HTTP_400_BAD_REQUEST
 
