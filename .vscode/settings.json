@@ -13,5 +13,15 @@
   "postman.settings.dotenv-detection-notification-visibility": false,
   "editor.folding": true,
   "editor.foldingStrategy": "auto",
-  "editor.foldingImportsByDefault": true
+  "editor.foldingImportsByDefault": true,
+  "git.pullRebase": true,
+  "git.autofetch": true,
+
+  "files.watcherExclude": {
+    "**/node_modules/*": true,
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/tmp/**": true
+  },
+  "files.maxMemoryForLargeFilesMB": 4096
 }

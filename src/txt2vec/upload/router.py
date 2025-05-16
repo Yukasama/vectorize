@@ -5,12 +5,14 @@ from typing import Annotated
 from fastapi import (
     APIRouter,
     Depends,
+    File,
     Query,
     Request,
     Response,
     UploadFile,
     status,
 )
+from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -21,9 +23,9 @@ from txt2vec.upload.background_service import write_to_database
 from txt2vec.upload.exceptions import ServiceUnavailableError
 from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.huggingface_service import load_model_and_save_to_db
-from txt2vec.upload.local_service import upload_embedding_model
 from txt2vec.upload.models import UploadTask
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
+from txt2vec.upload.zip_service import upload_zip_model
 
 router = APIRouter(tags=["Model Upload"])
 
@@ -99,47 +101,70 @@ async def load_model_github(
     return {"id": str(upload_task.id)}
 
 
-@router.post("/models")
-async def load_model_local(
-    files: list[UploadFile],
+@router.post("/local_models", summary="Upload multiple models from a ZIP archive")
+async def load_multiple_models(
+    file: Annotated[UploadFile, File()],
     request: Request,
-    model_name: Annotated[str, Query(description="Name for the uploaded model")],
-    extract_zip: Annotated[
-        bool,
-        Query(description="Whether to extract ZIP files"),
-    ] = True,
-) -> Response:
-    """Upload PyTorch model files to the server.
+    db: Annotated[AsyncSession, Depends(get_session)],
+    model_name: Annotated[
+        str | None, Query(description="Base name for models (optional)")
+    ] = None,
+) -> JSONResponse:
+    """Upload a ZIP archive containing multiple model directories.
+
+    Each top-level directory in the ZIP will be treated as a separate model.
+    All extracted models will be registered in the database.
 
     Args:
-        request: The HTTP request object.
-        model_name: Name to assign to the uploaded model.
-        extract_zip: Whether to extract ZIP files (default: True).
-        files: The uploaded model files.
+        file: ZIP archive containing model directories
+        request: HTTP request object
+        model_name: Optional base name for models (used as fallback)
+        db: Database session
 
     Returns:
-        A 201 Created response with a Location header.
+        JSON response with metadata about uploaded models
 
     Raises:
-        HTTPException: If an error occurs during file upload or processing.
-
+        InvalidFileError: If no file is provided or format is invalid
+        HTTPException: If an error occurs during processing
     """
-    if not files:
-        raise InvalidFileError
+    if not file:
+        raise InvalidFileError("No file uploaded")
+
+    if not file.filename or not file.filename.lower().endswith(".zip"):
+        raise InvalidFileError("Only ZIP archives are supported")
 
     logger.debug(
-        "Uploading model '{}' with {} files",
-        model_name,
-        len(files),
+        "Multi-model ZIP upload: '{}' with {} bytes",
+        file.filename,
+        file.size if hasattr(file, "size") else "unknown size",
     )
 
-    result = await upload_embedding_model(files, model_name, extract_zip)
-    logger.info(
-        "Successfully uploaded model: {}",
-        result["model_dir"],
-    )
+    result = await upload_zip_model(file, model_name, db, multi_model=True)
 
-    return Response(
+    model_count = result["total_models"]
+    logger.info(f"Successfully uploaded {model_count} models from ZIP archive")
+
+    models_info = [
+        {
+            "id": model["model_id"],
+            "name": model["model_name"],
+            "directory": model["model_dir"],
+            "url": f"{request.url.scheme}://{request.url.netloc}{request.url.path}/{model['model_id']}",
+        }
+        for model in result["models"]
+    ]
+
+    headers = {}
+    if result["models"]:
+        first_model = result["models"][0]
+        headers["Location"] = f"{request.url}/{first_model['model_id']}"
+
+    return JSONResponse(
+        content={
+            "message": f"Successfully uploaded {model_count} models",
+            "models": models_info,
+        },
         status_code=status.HTTP_201_CREATED,
-        headers={"Location": f"{request.url}/{result['model_id']}"},
+        headers=headers,
     )

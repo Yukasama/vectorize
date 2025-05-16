@@ -10,7 +10,6 @@ class ErrorCode(StrEnum):
 
     # General errors
     SERVER_ERROR = "SERVER_ERROR"
-    VALIDATION_ERROR = "VALIDATION_ERROR"
     NOT_FOUND = "NOT_FOUND"
     SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
     VERSION_MISMATCH = "VERSION_MISMATCH"
@@ -23,6 +22,9 @@ class ErrorCode(StrEnum):
     EMPTY_FILE = "EMPTY_FILE"
 
     DATABASE_ERROR = "DATABASE_ERROR"
+
+    # Upload errors
+    DUPLICATE_ENTRY = "DUPLICATE_ENTRY"
 
 
 class ErrorNames(StrEnum):

@@ -38,15 +38,12 @@ class VersionMismatchError(ETagError):
         super().__init__(version, f"Dataset with ID {dataset_id} has version {version}")
 
 
-class VersionMissingError(ETagError):
+class VersionMissingError(AppError):
     """Exception raised when the dataset version is missing in the request."""
 
     error_code = ErrorCode.VERSION_MISSING
     status_code = status.HTTP_428_PRECONDITION_REQUIRED
 
-    def __init__(self, dataset_id: str, version: int) -> None:
-        """Initialize with the dataset ID and version."""
-        self.dataset_id = dataset_id
-        super().__init__(
-            version, f"If-Match header required for updating dataset {dataset_id}"
-        )
+    def __init__(self, dataset_id: str) -> None:
+        """Initialize with the dataset ID."""
+        super().__init__(f"If-Match header required for updating dataset {dataset_id}")

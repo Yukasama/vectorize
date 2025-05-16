@@ -26,6 +26,7 @@ class InferenceCounter(SQLModel, table=True):
     ai_model_id: uuid.UUID = Field(
         default=None,
         foreign_key="ai_model.id",
+        index=True,
         description="ID of the AI model used for inference.",
     )
 
