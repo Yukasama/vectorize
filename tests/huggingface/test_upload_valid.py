@@ -1,23 +1,27 @@
+# ruff: noqa: S101
+
 """Test für das Hochladen eines Huggingface-Modells."""
+
 import pytest
+from fastapi import status
+from fastapi.testclient import TestClient
 
-from txt2vec.upload.exceptions import ModelAlreadyExistsError
-from txt2vec.upload.huggingface_service import load_model_and_cache_only
+_MODEL_ID = "distilbert-base-uncased"
+_MODEL_SECOND_ID = "distilroberta-base"
+_TAG = "main"
 
-"""Test für das Laden und Cachen eines Huggingface-Modells."""
 
-
-@pytest.mark.asyncio
-async def test_load_distilbert_model() -> None:
+@pytest.mark.huggingface
+def test_load_distilbert_model(client: TestClient) -> None:
     """Testet das Laden des distilbert-base-uncased Modells von Huggingface."""
-    model_id = "distilbert-base-uncased"
-    tag = "main"
+    response = client.post(
+        "/uploads/huggingface", json={"model_id": _MODEL_ID, "tag": _TAG}
+    )
+    assert response.status_code == status.HTTP_201_CREATED
 
-    try:
-        await load_model_and_cache_only(model_id, tag)
-    except ModelAlreadyExistsError:
-        # Das ist okay - der Test gilt als bestanden
-        pass
-    except Exception as e:
-        # Alle anderen Fehler schlagen den Test fehl
-        pytest.fail(f"Model loading failed with error: {e}")
+
+@pytest.mark.huggingface
+def test_load_distilbert_model_without_tag(client: TestClient) -> None:
+    """Testet das Laden des distilbert-base-uncased Modells von Huggingface ohne Tag."""
+    response = client.post("/uploads/huggingface", json={"model_id": _MODEL_SECOND_ID})
+    assert response.status_code == status.HTTP_201_CREATED

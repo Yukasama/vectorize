@@ -1,19 +1,19 @@
+# ruff: noqa: S101
+
 """Test für das Laden eines bereits vorhandenen Huggingface-Modells."""
+
 import pytest
+from fastapi import status
+from fastapi.testclient import TestClient
 
-from txt2vec.upload.exceptions import ModelAlreadyExistsError
-from txt2vec.upload.huggingface_service import load_model_and_cache_only
+_MODEL_ID = "distilbert-base-uncased"
+_TAG = "main"
 
 
-@pytest.mark.asyncio
-async def test_load_distilbert_model() -> None:
+@pytest.mark.huggingface
+def test_load_distilbert_model(client: TestClient) -> None:
     """Testet das Laden eines bereits vorhandenen distilbert-base-uncased Modells."""
-    model_id = "distilbert-base-uncased"
-    tag = "main"
-
-    try:
-        await load_model_and_cache_only(model_id, tag)
-    except ModelAlreadyExistsError:
-        pass
-    except Exception as e:
-        pytest.fail(f"Model loading failed with error: {e}")
+    response = client.post(
+        "/uploads/huggingface", json={"model_id": _MODEL_ID, "tag": _TAG}
+    )
+    assert response.status_code == status.HTTP_409_CONFLICT

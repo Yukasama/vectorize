@@ -18,7 +18,7 @@ from txt2vec.config.db import get_session
 from txt2vec.config.seed import seed_db
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 async def session() -> AsyncGenerator[AsyncSession]:
     """Create a test database engine.
 
@@ -27,7 +27,7 @@ async def session() -> AsyncGenerator[AsyncSession]:
     """
     test_engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
-        connect_args={"check_same_thread": False},
+        connect_args={"check_same_thread": False, "timeout": 30},
         poolclass=StaticPool,
         echo=False,
     )
@@ -45,6 +45,8 @@ async def session() -> AsyncGenerator[AsyncSession]:
         except Exception:
             await session.rollback()
             raise
+        finally:
+            await session.close()
 
 
 @pytest.fixture(name="client")

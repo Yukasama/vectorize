@@ -102,8 +102,7 @@ markers = [
     "dataset_invalid: marks test as a dataset invalid test",
     "dataset_write: marks test as a dataset write test",
     "inference: marks test as an inference test",
-    "upload: marks  test as an upload test",
-    
+    "huggingface: marks test as a huggingface test",
 ]
 minversion = "8.3.5"
 testpaths = ["tests"]
