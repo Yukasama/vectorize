@@ -1,6 +1,5 @@
 """AI-Model Exceptions."""
 
-
 from fastapi import status
 
 from txt2vec.common.app_error import AppError
@@ -15,7 +14,7 @@ class ModelNotFoundError(AppError):
     error_code = ErrorCode.NOT_FOUND
     status_code = status.HTTP_404_NOT_FOUND
 
-    def __init__(self, model_id: str, model_tag: str | None) -> None:
+    def __init__(self, model_id: str, model_tag: str | None = None) -> None:
         """Initialize with the model tag."""
         if model_tag:
             msg = f"Model with id {model_id} and tag {model_tag} not found"

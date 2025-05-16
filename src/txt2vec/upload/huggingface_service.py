@@ -13,7 +13,6 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipe
 
 from txt2vec.upload.exceptions import (
     InvalidModelError,
-    ModelAlreadyExistsError,
     NoValidModelsFoundError,
 )
 

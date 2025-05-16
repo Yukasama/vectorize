@@ -1,12 +1,5 @@
 """Main application module for the Text2Vec service."""
 
-# ruff: noqa: I001
-# Leider entsteht ein klassischer Zirkularimport (circular import) im Projekt.
-# Deshalb ist die Import-Reihenfolge wichtig.
-# Das ist ein bekanntes Problem in Python, wenn Module sich gegenseitig importieren.
-# https://docs.python.org/3/reference/import.html#circular-imports
-# Wie löse ich das am besten, bitte um Feedback.
-
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Final
