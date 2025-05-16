@@ -35,7 +35,7 @@ async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: R
 
     if key in _models:
         logger.info("Model is already in Cache.", modelKey=key)
-        raise ModelAlreadyExistsError(key)  # Hier wird der Fehler geworfen!
+        return
 
     try:
         snapshot_path = snapshot_download(
