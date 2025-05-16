@@ -33,7 +33,8 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     await makedirs(settings.model_upload_dir, exist_ok=True)
 
     async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
+        if settings.clear_db_on_restart:
+            await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
 
     if settings.app_env != "production":
@@ -52,6 +53,7 @@ app: Final = FastAPI(
 )
 
 Instrumentator().instrument(app).expose(app)
+
 
 # --------------------------------------------------------
 # R O U T E R S

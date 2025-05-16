@@ -18,7 +18,7 @@ from txt2vec.config.db import get_session
 from txt2vec.config.seed import seed_db
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 async def session() -> AsyncGenerator[AsyncSession]:
     """Create a test database engine.
 
