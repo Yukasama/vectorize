@@ -103,6 +103,7 @@ markers = [
     "dataset_write: marks test as a dataset write test",
     "inference: marks test as an inference test",
     "huggingface: marks test as a huggingface test",
+    "upload: mark test as upload related",
 ]
 minversion = "8.3.5"
 testpaths = ["tests"]

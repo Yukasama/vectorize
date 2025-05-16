@@ -6,6 +6,7 @@ from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
+    File,
     Query,
     Request,
     Response,
@@ -28,7 +29,10 @@ from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
 from txt2vec.upload.exceptions import ModelAlreadyExistsError
 from txt2vec.upload.github_service import handle_model_download
-from txt2vec.upload.huggingface_service import load_model_and_save_to_db
+from txt2vec.upload.huggingface_service import load_model_and_cache_only
+from txt2vec.upload.models import UploadTask
+from txt2vec.upload.repository import save_upload_task
+from txt2vec.upload.zip_service import upload_zip_model
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
 from txt2vec.upload.tasks import process_huggingface_model_background
 
