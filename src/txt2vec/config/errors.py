@@ -23,6 +23,9 @@ class ErrorCode(StrEnum):
 
     DATABASE_ERROR = "DATABASE_ERROR"
 
+    # Upload errors
+    DUPLICATE_ENTRY = "DUPLICATE_ENTRY"
+
 
 class ErrorNames(StrEnum):
     """Error names for standardized error handling."""

@@ -73,3 +73,14 @@ class ServiceUnavailableError(AppError):
     error_code = ErrorCode.SERVICE_UNAVAILABLE
     message = "Service is temporarily unavailable"
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+
+class ModelAlreadyExistsError(AppError):
+    """Exception raised when a model with the same tag already exists."""
+
+    error_code = ErrorCode.DUPLICATE_ENTRY
+    status_code = status.HTTP_409_CONFLICT
+
+    def __init__(self, message: str) -> None:
+        """Initialize with a custom message."""
+        super().__init__(message)
