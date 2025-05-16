@@ -9,6 +9,7 @@ from uuid import UUID
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.exc import NoResultFound
 
 from txt2vec.common.status import TaskStatus
 from txt2vec.upload.models import UploadTask
@@ -40,12 +41,17 @@ async def update_upload_task_status(
         status (TaskStatus): The new status to set for the task.
         error_msg (str | None): An optional error message if the task failed.
 
-    Raises:
-        NoResultFound: If the task with the given ID does not exist.
+    Hinweis: Falls der Task nicht gefunden wird, wird ein Fehler geloggt, aber keine Exception geworfen.
     """
     result = await db.exec(select(UploadTask).where(UploadTask.id == task_id))
-    task = result.one()
-    task.task_status = status
-    task.end_date = datetime.now(tz=UTC)
-    task.error_msg = error_msg
-    await db.commit()
+    try:
+        task = result.one()
+        task.task_status = status
+        task.end_date = datetime.now(tz=UTC)
+        task.error_msg = error_msg
+        await db.commit()
+    except NoResultFound:
+        # Logge den Fehler, aber wirf keine Exception, damit der BackgroundTask nicht crasht
+        import logging
+
+        logging.error(f"[update_upload_task_status] Task mit ID {task_id} nicht gefunden!")

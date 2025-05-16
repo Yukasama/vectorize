@@ -7,12 +7,14 @@ model uploads and processing, such as handling Hugging Face models.
 from uuid import UUID
 
 from loguru import logger
+from sqlalchemy.exc import IntegrityError
 
 from txt2vec.ai_model import AIModel
 from txt2vec.ai_model.models import ModelSource
 from txt2vec.ai_model.repository import save_ai_model
 from txt2vec.common.status import TaskStatus
 from txt2vec.config.db import get_session
+from txt2vec.upload.exceptions import ModelAlreadyExistsError
 from txt2vec.upload.huggingface_service import load_model_and_cache_only
 from txt2vec.upload.repository import update_upload_task_status
 
@@ -53,8 +55,21 @@ async def process_huggingface_model_background(
 
             logger.info("[BG] Task completed successfully", taskId=task_id)
 
+        except ModelAlreadyExistsError as e:
+            logger.error(f"[BG] Model already exists for task {task_id}: {e}")
+            await db.rollback()
+            await update_upload_task_status(
+                db, task_id, TaskStatus.FAILED, error_msg=str(e)
+            )
+        except IntegrityError as e:
+            logger.error(f"[BG] IntegrityError in task {task_id}: {e}")
+            await db.rollback()
+            await update_upload_task_status(
+                db, task_id, TaskStatus.FAILED, error_msg=str(e)
+            )
         except Exception as e:
             logger.error(f"[BG] Error in task {task_id}: {e}")
+            await db.rollback()
             await update_upload_task_status(
                 db, task_id, TaskStatus.FAILED, error_msg=str(e)
             )

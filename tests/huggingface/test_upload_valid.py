@@ -25,3 +25,4 @@ def test_load_distilbert_model_without_tag(client: TestClient) -> None:
     """Testet das Laden des distilbert-base-uncased Modells von Huggingface ohne Tag."""
     response = client.post("/uploads/huggingface", json={"model_id": _MODEL_SECOND_ID})
     assert response.status_code == status.HTTP_201_CREATED
+
