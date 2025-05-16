@@ -1,11 +1,14 @@
 """Router for model upload and management."""
 
 from typing import Annotated
+from uuid import uuid4
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
+    HTTPException,
     Query,
     Request,
     Response,
@@ -14,6 +17,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from loguru import logger
+from sqlmodel import Session
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.common.status import TaskStatus
@@ -21,10 +25,14 @@ from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
 from txt2vec.upload.background_service import write_to_database
 from txt2vec.upload.exceptions import ServiceUnavailableError
-from txt2vec.upload.github_service import handle_model_download
 from txt2vec.upload.huggingface_service import load_model_and_save_to_db
-from txt2vec.upload.models import UploadTask
-from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
+from txt2vec.upload.models import (
+    StatusResponse,
+    UploadRequest,
+    UploadResponse,
+    UploadTask,
+)
+from txt2vec.upload.schemas import HuggingFaceModelRequest
 from txt2vec.upload.zip_service import upload_zip_model
 
 router = APIRouter(tags=["Model Upload"])
@@ -68,37 +76,43 @@ async def load_model_huggingface(
         raise ServiceUnavailableError from e
 
 
-@router.post("/add_model", status_code=status.HTTP_201_CREATED)
-async def load_model_github(
-    request: GitHubModelRequest, db: Annotated[AsyncSession, Depends(get_session)]
-) -> dict:
-    """Create an upload task and register a model from a specified GitHub repository.
-
-    This endpoint stores a new UploadTask in the database using the given
-    GitHub URL and metadata. It then begins the model download process.
-
-    Args:
-        request (GitHubModelRequest): Includes the GitHub URL and model tag.
-        db (AsyncSession): Async database session.
-
-    Returns:
-        dict: JSON response containing the UploadTask ID.
-    """
-    logger.info("Received request to add model from GitHub URL: {}", request.github_url)
-
-    upload_task = UploadTask(
-        model_tag=request.model_tag,
-        source=request.source,
+@router.post("/upload/github", response_model=UploadResponse, status_code=202)
+def upload_github(
+    payload: UploadRequest,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+):
+    """Kick off background clone/validate/copy job."""
+    upload_id = str(uuid4())
+    task = UploadTask(
+        id=upload_id,
+        git_repo=payload.git_repo,
+        model_tag=payload.model_tag,
         task_status=TaskStatus.PENDING,
     )
+    session.add(task)
+    session.commit()
 
-    await write_to_database(db, upload_task)
+    # run the heavy-lifting in the background
+    background_tasks.add_task(
+        write_to_database, upload_id, payload.git_repo, get_session
+    )
 
-    await handle_model_download(request.github_url)
+    return UploadResponse(upload_id=upload_id, status=task.task_status)
 
-    logger.info("Model handled successfully for: {}", request.github_url)
 
-    return {"id": str(upload_task.id)}
+@router.get("/upload/{upload_id}/status", response_model=StatusResponse)
+def get_status(upload_id: str, session: Session = Depends(get_session)):
+    """Poll the current state of an UploadTask."""
+    task = session.get(UploadTask, upload_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="UploadTask not found")  # TODO own exception
+
+    return StatusResponse(
+        upload_id=task.id,
+        status=task.task_status,
+        error_msg=task.error_msg,
+    )
 
 
 @router.post("/local_models", summary="Upload multiple models from a ZIP archive")

@@ -2,11 +2,32 @@
 import uuid
 from datetime import datetime
 
+from pydantic import BaseModel
 from sqlalchemy.types import Enum as SQLEnum
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
 from txt2vec.ai_model.model_source import ModelSource
 from txt2vec.common.status import TaskStatus
+
+
+# TODO move own
+class UploadRequest(BaseModel):
+    """Upload process."""
+    git_repo: str
+    model_tag: str
+
+
+class UploadResponse(BaseModel):
+    """Upload process."""
+    upload_id: str
+    status: TaskStatus
+
+
+class StatusResponse(BaseModel):
+    """Upload process."""
+    upload_id: str
+    status: TaskStatus
+    error_msg: str | None = None
 
 
 class UploadTask(SQLModel, table=True):
