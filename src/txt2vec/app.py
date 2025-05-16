@@ -25,7 +25,6 @@ from txt2vec.config import (
     seed_db,
     settings,
 )
-from txt2vec.ai_model.router import router as model_router
 from txt2vec.datasets.router import router as dataset_router
 from txt2vec.inference.router import router as embeddings_router
 from txt2vec.upload.router import router as upload_router
@@ -68,7 +67,6 @@ base_router = APIRouter(prefix=settings.prefix)
 base_router.include_router(dataset_router, prefix="/datasets")
 base_router.include_router(upload_router, prefix="/uploads")
 base_router.include_router(embeddings_router, prefix="/embeddings")
-base_router.include_router(model_router, prefix="/models")
 
 app.include_router(base_router)
 
