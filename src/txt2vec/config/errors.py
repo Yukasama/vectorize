@@ -29,6 +29,9 @@ class ErrorCode(StrEnum):
     # URL
     INVALID_GITHUB_URL = "INVALID URL"
 
+    # Task
+    UPLOAD_TASK_NOT_FOUND = "UPLOAD TASK NOT FOUND"
+
 
 class ErrorNames(StrEnum):
     """Error names for standardized error handling."""

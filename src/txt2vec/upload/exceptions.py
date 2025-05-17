@@ -7,6 +7,14 @@ from txt2vec.config.errors import ErrorCode
 from txt2vec.datasets.utils.file_size_formatter import format_file_size
 
 
+class UploadTaskNotFound(AppError):  # noqa: N818
+    """Exception raised when no UploadTask is found."""
+
+    error_code = ErrorCode.UPLOAD_TASK_NOT_FOUND
+    message = "No task with the provided ID exists."
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
 class InvalidModelError(AppError):
     """Exception raised when the model file is not a valid PyTorch model."""
 

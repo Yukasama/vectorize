@@ -8,7 +8,6 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     File,
-    HTTPException,
     Query,
     Request,
     Response,
@@ -24,7 +23,7 @@ from txt2vec.common.status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
 from txt2vec.upload.background_service import write_to_database
-from txt2vec.upload.exceptions import ServiceUnavailableError
+from txt2vec.upload.exceptions import ServiceUnavailableError, UploadTaskNotFound
 from txt2vec.upload.huggingface_service import load_model_and_save_to_db
 from txt2vec.upload.models import (
     StatusResponse,
@@ -106,7 +105,7 @@ def get_status(upload_id: str, session: Session = Depends(get_session)):
     """Poll the current state of an UploadTask."""
     task = session.get(UploadTask, upload_id)
     if task is None:
-        raise HTTPException(status_code=404, detail="UploadTask not found")  # TODO own exception
+        raise UploadTaskNotFound()
 
     return StatusResponse(
         upload_id=task.id,
