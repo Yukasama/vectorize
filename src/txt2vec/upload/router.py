@@ -26,8 +26,18 @@ from txt2vec.ai_model.models import AIModel
 from txt2vec.common.status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
-from txt2vec.upload.exceptions import ModelAlreadyExistsError
-from txt2vec.upload.models import UploadTask
+from txt2vec.upload.background_service import write_to_database
+from txt2vec.upload.exceptions import (
+    ModelAlreadyExistsError,
+    ServiceUnavailableError,
+    UploadTaskNotFound,
+)
+from txt2vec.upload.models import (
+    StatusResponse,
+    UploadRequest,
+    UploadResponse,
+    UploadTask,
+)
 from txt2vec.upload.schemas import HuggingFaceModelRequest
 from txt2vec.upload.zip_service import upload_zip_model
 
