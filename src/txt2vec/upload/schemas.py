@@ -1,5 +1,6 @@
 """Schemas for importing models."""
 
+
 from pydantic import BaseModel, HttpUrl
 
 
@@ -8,11 +9,12 @@ class HuggingFaceModelRequest(BaseModel):
 
     Attributes:
         model_id (str): The ID of the model to load.
-        tag (str): The specific tag or version of the model to load.
+        tag (Optional[str]): The specific tag or version of the model to load.
+        Defaults to "main".
     """
 
     model_id: str
-    tag: str
+    tag: str = "main"
 
 
 class GitHubModelRequest(BaseModel):
