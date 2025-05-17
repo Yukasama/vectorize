@@ -56,17 +56,12 @@ class UploadTask(SQLModel, table=True):
     )
 
     source: ModelSource = Field(
-        default=ModelSource.GITHUB,
-        sa_column=Column(
-            SQLEnum(ModelSource),  # <-- same here
-            nullable=False
-        ),
-        description="Source of the model (github or huggingface).",
+        description="Source of the model (github or huggingface)."
     )
 
     end_date: datetime | None = Field(
         default=None,
-        description="Optional end time of the upload task.",
+        description="Optional end time of the synthetic generation.",
     )
 
     error_msg: str | None = Field(

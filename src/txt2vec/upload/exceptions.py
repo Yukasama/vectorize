@@ -84,51 +84,11 @@ class ServiceUnavailableError(AppError):
 
 
 class ModelAlreadyExistsError(AppError):
-    """Exception raised when a model with the same tag already exists."""
+    """Exception raised when the model already exists in the database."""
 
-    error_code = ErrorCode.DUPLICATE_ENTRY
+    error_code = ErrorCode.MODEL_ALREADY_EXISTS
     status_code = status.HTTP_409_CONFLICT
 
-    def __init__(self, message: str) -> None:
-        """Initialize with a custom message."""
-        super().__init__(message)
-
-
-class InvalidGitHubUrlError(AppError):
-    """Fehler beim Zugriff auf die GitHub URL."""
-
-    error_code = ErrorCode.INVALID_GITHUB_URL
-    message = "Invalid GitHub URL."
-    status_code = status.HTTP_400_BAD_REQUEST
-
-
-class MissingDownloadUrlError(AppError):
-    """Fehlerhafte Antwort der GitHub API."""
-
-    error_code = ErrorCode.SERVICE_UNAVAILABLE
-    message = "GitHub API did not return a download URL."
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-
-
-class ModelFileNotFoundError(AppError):
-    """Fehler beim Zugriff auf das Model."""
-
-    error_code = ErrorCode.NOT_FOUND
-    message = "Model file not found in the specified repository."
-    status_code = status.HTTP_404_NOT_FOUND
-
-
-class ModelDownloadError(AppError):
-    """Fehler beim Zugriff auf das Model."""
-
-    error_code = ErrorCode.SERVICE_UNAVAILABLE
-    message = "Error downloading the model from GitHub."
-    status_code = status.HTTP_502_BAD_GATEWAY
-
-
-class GitHubApiError(AppError):
-    """Fehler beim Zugriff auf die GitHub Api."""
-
-    error_code = ErrorCode.SERVICE_UNAVAILABLE
-    message = "Unexpected error calling the GitHub API."
-    status_code = status.HTTP_502_BAD_GATEWAY
+    def __init__(self, model_tag: str) -> None:
+        """Initialize with the model tag."""
+        super().__init__(f"Model with tag '{model_tag}' already exists.")

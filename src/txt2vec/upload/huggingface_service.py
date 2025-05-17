@@ -4,76 +4,72 @@ Dieses Modul lädt Modelle von Hugging Face, cached sie lokal und speichert sie
 in der Datenbank, falls sie noch nicht vorhanden sind.
 """
 
+from pathlib import Path
+
 from huggingface_hub import snapshot_download
+from huggingface_hub.utils import EntryNotFoundError
 from loguru import logger
-from sqlmodel.ext.asyncio.session import AsyncSession
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
-from txt2vec.ai_model import AIModel
-from txt2vec.ai_model.models import ModelSource
-from txt2vec.ai_model.repository import get_ai_model, save_ai_model
-from txt2vec.upload.exceptions import DatabaseError, InvalidModelError
+from txt2vec.upload.exceptions import (
+    InvalidModelError,
+    NoValidModelsFoundError,
+)
 
 _models = {}
 
 
-async def load_model_and_save_to_db(
-    model_id: str, tag: str, db: AsyncSession
-) -> None:
-    """Lädt ein Hugging Face Modell, cached es lokal und speichert es in die Datenbank.
+async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: RUF029
+    """Load a Hugging Face model and cache it locally if not already cached.
+
+    Downloads the model and tokenizer from Hugging Face using the given
+    model_id and tag, checks for valid safetensors, and stores the pipeline
+    in a local cache. Raises if the model is not found or invalid.
 
     Args:
-        model_id (str): Die ID des Modells auf Hugging Face.
-        tag (str): Der Tag oder die Version des Modells.
-        db (AsyncSession): Die Datenbank-Session.
-
-    Raises:
-        InvalidModelError: Wenn das Modell nicht geladen werden konnte.
-        DatabaseError: Wenn ein Fehler beim Zugriff auf die Datenbank auftritt.
+        model_id: The Hugging Face model repository ID.
+        tag: The revision or tag to download.
     """
     key = f"{model_id}@{tag}"
 
-    if key not in _models:
-        try:
-            logger.info(f"Lade Modell '{key}'...")
-            snapshot_path = snapshot_download(
-                repo_id=model_id,
-                revision=tag,
-                cache_dir="./hf_cache",
-            )
-            tokenizer = AutoTokenizer.from_pretrained(snapshot_path)
-            model = AutoModelForSequenceClassification.from_pretrained(snapshot_path)
-            _models[key] = pipeline(
-                "sentiment-analysis",
-                model=model,
-                tokenizer=tokenizer,
-            )
-            logger.info(f"Modell '{key}' erfolgreich geladen und gecached.")
-        except Exception as e:
-            logger.exception(f"Fehler beim Laden des Modells '{key}'")
-            raise InvalidModelError from e
-    else:
-        logger.info(f"Modell '{key}' bereits im Cache.")
+    if key in _models:
+        logger.info("Model is already in Cache.", modelKey=key)
+        return
 
-    # In die Datenbank schreiben, wenn noch nicht vorhanden
     try:
-        try:
-            await get_ai_model(db, key)  # Wenn gefunden → nichts tun
-            logger.info(f"Modell '{key}' bereits in der Datenbank.")
-            return
-        except Exception:
-            logger.info(
-                f"Modell '{key}' nicht in der DB - wird gespeichert..."
-            )
-
-        ai_model = AIModel(
-            model_tag=key,
-            name=model_id,
-            source=ModelSource.HUGGINGFACE,
+        snapshot_path = snapshot_download(
+            repo_id=model_id,
+            revision=tag,
+            cache_dir="./hf_cache",
+            allow_patterns=["*.safetensors", "*.json"],
         )
-        await save_ai_model(db, ai_model)
-        logger.info(f"Modell '{key}' erfolgreich in der Datenbank gespeichert.")
 
-    except Exception as db_error:
-        logger.error(f"Fehler beim Datenbankzugriff für Modell '{key}': {db_error}")
-        raise DatabaseError from db_error
+        safetensors_files = [
+            f.name for f in Path(snapshot_path).iterdir()
+            if f.name.endswith(".safetensors")
+        ]
+
+        if len(safetensors_files) != 1:
+            raise NoValidModelsFoundError
+
+        tokenizer = AutoTokenizer.from_pretrained(snapshot_path)
+        model = AutoModelForSequenceClassification.from_pretrained(snapshot_path)
+
+        _models[key] = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+        logger.info("Model successfully loaded and cached.", modelKey=key)
+
+    except EntryNotFoundError as e:
+        logger.debug(
+            "Model not found on Hugging Face.",
+            modelId=model_id,
+            tag=tag,
+            error=str(e),
+        )
+        raise FileNotFoundError(
+            "Model not found on Hugging Face.",
+            {"modelId": model_id, "tag": tag, "error": str(e)},
+        ) from e
+
+    except Exception as e:
+        logger.exception("Error loading model.", modelKey=key)
+        raise InvalidModelError from e

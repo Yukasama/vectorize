@@ -130,7 +130,7 @@ class TestZipModelUpload:
         )
         assert response.status_code == status.HTTP_409_CONFLICT
 
-        assert response.json()["code"] == "DUPLICATE_ENTRY"
+        assert response.json()["code"] == "MODEL_ALREADY_EXISTS"
 
     @staticmethod
     async def test_multiple_model(client: TestClient, temp_model_dir: str) -> None:

@@ -15,61 +15,57 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
+from huggingface_hub import model_info
+from huggingface_hub.utils import EntryNotFoundError, HfHubHTTPError
 from loguru import logger
-from sqlmodel import Session
+from sqlmodel import Session, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from txt2vec.ai_model.exceptions import ModelNotFoundError
+from txt2vec.ai_model.models import AIModel
 from txt2vec.common.status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
-from txt2vec.upload.background_service import write_to_database
-from txt2vec.upload.exceptions import ServiceUnavailableError, UploadTaskNotFound
-from txt2vec.upload.huggingface_service import load_model_and_save_to_db
-from txt2vec.upload.models import (
-    StatusResponse,
-    UploadRequest,
-    UploadResponse,
-    UploadTask,
-)
+from txt2vec.upload.exceptions import ModelAlreadyExistsError
+from txt2vec.upload.models import UploadTask
 from txt2vec.upload.schemas import HuggingFaceModelRequest
 from txt2vec.upload.zip_service import upload_zip_model
 
 router = APIRouter(tags=["Model Upload"])
 
 
-@router.post("/load", status_code=status.HTTP_201_CREATED)
+@router.post("/huggingface", status_code=status.HTTP_201_CREATED)
 async def load_model_huggingface(
     data: HuggingFaceModelRequest,
-    http_request: Request,
+    request: Request,
+    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Load a Hugging Face model and return a Location header.
+    """Upload a Hugging Face model by model_id and tag.
 
-    This endpoint loads a Hugging Face model using the provided model ID and
-    tag, caches it locally, and stores it in the database. If successful, it
-    returns a 201 Created response with a Location header pointing to the
-    model.
+    Checks if the model already exists, verifies its presence on
+    Hugging Face, creates an upload task, and starts background
+    processing. Returns a 201 response with a Location header.
 
     Args:
-        data (HuggingFaceModelRequest): Contains the model ID and tag.
-        http_request (Request): The HTTP request object.
-        db (AsyncSession): The database session.
+        data: Model id and tag for Hugging Face.
+        request: FastAPI request object.
+        background_tasks: FastAPI background task manager.
+        db: Async database session.
 
     Returns:
-        A 201 Created response with a Location header.
-
-    Raises:
-        HTTPException: If an error occurs during model loading or processing.
+        Response with 201 status and Location header.
     """
-    try:
-        logger.debug(f"Ladeanfrage: {data.model_id}@{data.tag}")
-        await load_model_and_save_to_db(data.model_id, data.tag, db)
+    key = f"{data.model_id}@{data.tag}"
 
-        key = f"{data.model_id}@{data.tag}"
-        return Response(
-            status_code=status.HTTP_201_CREATED,
-            headers={"Location": f"{http_request.url}/{key}"},
-        )
+    model_exists = await db.exec(select(AIModel).where(AIModel.model_tag == key))
+    if model_exists.first():
+        raise ModelAlreadyExistsError(key)
+
+    try:
+        model_info(repo_id=data.model_id, revision=data.tag)
+    except (EntryNotFoundError, HfHubHTTPError) as e:
+        raise ModelNotFoundError(data.model_id, data.tag) from e
     except Exception as e:
         logger.exception("Fehler beim Laden:")
         raise ServiceUnavailableError from e
