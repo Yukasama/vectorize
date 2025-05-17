@@ -83,7 +83,11 @@ async def load_model_huggingface(
     await save_upload_task(db, upload_task)
 
     background_tasks.add_task(
-        process_huggingface_model_background, data.model_id, data.tag, upload_task.id
+        process_huggingface_model_background,
+        db,
+        data.model_id,
+        data.tag,
+        upload_task.id,
     )
 
     return Response(

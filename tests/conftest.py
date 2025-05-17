@@ -12,13 +12,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel, StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.ai_model.models import AIModel  # noqa: F401
 from txt2vec.app import app
 from txt2vec.config import settings
 from txt2vec.config.db import get_session
 from txt2vec.config.seed import seed_db
-from txt2vec.inference.models import InferenceCounter  # noqa: F401
-from txt2vec.upload.models import UploadTask  # noqa: F401
 
 
 @pytest.fixture(scope="session")
