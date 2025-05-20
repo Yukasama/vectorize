@@ -1,16 +1,14 @@
-"""TODO."""
+"""UploadTask model."""
 import uuid
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy.types import Enum as SQLEnum
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
 from txt2vec.ai_model.model_source import ModelSource
 from txt2vec.common.status import TaskStatus
 
 
-# TODO move own
 class UploadRequest(BaseModel):
     """Upload process."""
     git_repo: str
@@ -31,7 +29,8 @@ class StatusResponse(BaseModel):
 
 
 class UploadTask(SQLModel, table=True):
-    """Upload process."""
+    """UploadTask model."""
+
     __tablename__ = "upload_task"
 
     id: uuid.UUID = Field(
@@ -50,10 +49,6 @@ class UploadTask(SQLModel, table=True):
     task_status: TaskStatus = Field(
         default=TaskStatus.PENDING,
         index=True,
-        sa_column=Column(
-            SQLEnum(TaskStatus),  # <-- SQLAlchemy Enum, not Python StrEnum
-            nullable=False
-        ),
         description="Status of the upload task.",
     )
 
@@ -71,22 +66,16 @@ class UploadTask(SQLModel, table=True):
         description="Optional error message encountered during upload.",
     )
 
-# pylint: disable=not-callable
     created_at: datetime | None = Field(
         default=None,
-        sa_column=Column(
-            DateTime(timezone=True),
-            insert_default=func.now(),
-        ),
+        sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
         description="Timestamp when the upload task was created.",
     )
-# pylint: disable=not-callable
+
     updated_at: datetime | None = Field(
         default=None,
         sa_column=Column(
-            DateTime(timezone=True),
-            insert_default=func.now(),
-            onupdate=func.now(),
+            DateTime(timezone=True), onupdate=func.now(), insert_default=func.now()
         ),
         description="Timestamp when the upload task was last updated.",
     )
