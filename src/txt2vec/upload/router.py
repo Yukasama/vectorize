@@ -77,7 +77,7 @@ async def load_model_huggingface(
         raise ServiceUnavailableError from e
 
 
-# https://github.com/facebookresearch/nougat(example model)
+# https://github.com/facebookresearch/nougat(example model) ##TODO remove
 @router.post("/github", status_code=status.HTTP_201_CREATED)
 async def upload_github_model(
     data: GitHubModelRequest,
