@@ -239,6 +239,12 @@ Thanks to everyone who’s helped this project!
 
 <!-- markdownlint-enable MD033 MD045 -->
 
+### Model References
+
+- [Transformers]('https://github.com/abacaj/awesome-transformers?tab=readme-ov-file#albert)
+- [HF]('https://github.com/huggingface/awesome-huggingface')
+- [GenAI]('https://github.com/steven2358/awesome-generative-ai')
+
 ## License
 
 This project is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).

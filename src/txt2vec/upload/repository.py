@@ -56,3 +56,16 @@ async def update_upload_task_status(
         logger.exception(
             "[update_upload_task_status] Task mit ID nicht gefunden!", task_id=task_id
         )
+
+
+async def create_upload_task(db: AsyncSession, model_tag: str, source: str) -> UploadTask:
+    task = UploadTask(
+        model_tag=model_tag,
+        source=source,
+        task_status=TaskStatus.PENDING,
+        start_date=datetime.now(tz=UTC),
+    )
+    db.add(task)
+    await db.commit()
+    await db.refresh(task)
+    return task

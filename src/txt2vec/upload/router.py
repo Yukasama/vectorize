@@ -1,7 +1,6 @@
 """Router for model upload and management."""
 
 from typing import Annotated
-from uuid import uuid4
 
 from fastapi import (
     APIRouter,
@@ -23,10 +22,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.ai_model.exceptions import ModelNotFoundError
 from txt2vec.ai_model.models import AIModel
-from txt2vec.common.status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
-from txt2vec.upload.background_service import write_to_database
+from txt2vec.upload import github_service, repository
 from txt2vec.upload.exceptions import (
     ModelAlreadyExistsError,
     ServiceUnavailableError,
@@ -34,11 +32,9 @@ from txt2vec.upload.exceptions import (
 )
 from txt2vec.upload.models import (
     StatusResponse,
-    UploadRequest,
-    UploadResponse,
     UploadTask,
 )
-from txt2vec.upload.schemas import HuggingFaceModelRequest
+from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
 from txt2vec.upload.zip_service import upload_zip_model
 
 router = APIRouter(tags=["Model Upload"])
@@ -81,29 +77,37 @@ async def load_model_huggingface(
         raise ServiceUnavailableError from e
 
 
-@router.post("/upload/github", response_model=UploadResponse, status_code=202)
-def upload_github(
-    payload: UploadRequest,
+@router.post("/github", status_code=status.HTTP_201_CREATED)
+async def upload_github_model(
+    data: GitHubModelRequest,
+    request: Request,
     background_tasks: BackgroundTasks,
-    session: Session = Depends(get_session),
-):
-    """Kick off background clone/validate/copy job."""
-    upload_id = str(uuid4())
-    task = UploadTask(
-        id=upload_id,
-        git_repo=payload.git_repo,
-        model_tag=payload.model_tag,
-        task_status=TaskStatus.PENDING,
-    )
-    session.add(task)
-    session.commit()
-
-    # run the heavy-lifting in the background
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    # 1. Build model_tag
+    key = f"{data.github_url}@{'main'}"    # 2. Check if model already exists
+    model_exists = await db.exec(select(AIModel).where(AIModel.model_tag == key))
+    if model_exists.first():
+        raise ModelAlreadyExistsError(key)
+    # 3. Check repo/tag existence
+    try:
+        github_service.repo_info(repo_url=data.github_url, revision='main')
+    except ModelNotFoundError:
+        raise
+    except Exception as e:
+        logger.exception(f"Fehler beim Check des GitHub-Repos: {e}")
+        raise ServiceUnavailableError from e
+    # 4. Create upload task, start background
+    upload_task = await repository.create_upload_task(db, key, "GITHUB")
     background_tasks.add_task(
-        write_to_database, upload_id, payload.git_repo, get_session
+        github_service.process_github_model_background,
+        data.github_url,
+        'main',
+        upload_task.id,
+        db,
     )
-
-    return UploadResponse(upload_id=upload_id, status=task.task_status)
+    location_url = str(request.url_for("get_status", upload_id=upload_task.id))
+    return Response(status_code=status.HTTP_201_CREATED, headers={"Location": location_url})
 
 
 @router.get("/upload/{upload_id}/status", response_model=StatusResponse)
