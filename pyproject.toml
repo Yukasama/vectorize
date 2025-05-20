@@ -64,7 +64,7 @@ dependencies = [
     "openpyxl>=3.1.5",
     "pydantic-settings>=2.9.1",
     "prometheus-fastapi-instrumentator>=7.1.0",
-    "gitpython==3.1.44"
+    "gitpython==3.1.44",
 ]
 
 [project.scripts]
@@ -104,6 +104,7 @@ markers = [
     "dataset_write: marks test as a dataset write test",
     "inference: marks test as an inference test",
     "huggingface: marks test as a huggingface test",
+    "github: marks test as github test",
     "upload: mark test as upload related",
 ]
 minversion = "8.3.5"
