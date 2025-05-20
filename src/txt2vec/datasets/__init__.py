@@ -29,13 +29,6 @@ from .service import (
     upload_file_srv,
 )
 from .upload_options_model import DatasetUploadOptions
-from .utils.csv_escaper import _escape_csv_formulas
-from .utils.dataset_classifier import _classify_dataset
-from .utils.file_df_converter import _convert_file_to_df
-from .utils.file_loaders import _load_file
-from .utils.file_size_formatter import _format_file_size
-from .utils.save_dataset import _save_dataframe_to_fs
-from .utils.validate_zip import _validate_zip_file
 
 __all__ = [
     "Classification",
@@ -56,13 +49,6 @@ __all__ = [
     "MissingColumnError",
     "TooManyFilesError",
     "UnsupportedFormatError",
-    "_classify_dataset",
-    "_convert_file_to_df",
-    "_escape_csv_formulas",
-    "_format_file_size",
-    "_load_file",
-    "_save_dataframe_to_fs",
-    "_validate_zip_file",
     "get_all_datasets_db",
     "get_dataset_db",
     "get_dataset_srv",

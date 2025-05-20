@@ -84,15 +84,14 @@ async def get_dataset(
         if clean_etag == str(version):
             logger.debug(
                 "Dataset not modified",
-                datasetId=dataset_id,
+                dataset_id=dataset_id,
                 etag=clean_etag,
                 version=version,
             )
             response.status_code = status.HTTP_304_NOT_MODIFIED
             return None
 
-    logger.debug("Dataset retrieved", datasetId=dataset_id, version=version)
-
+    logger.debug("Dataset retrieved", dataset_id=dataset_id, version=version)
     return dataset
 
 
@@ -111,7 +110,6 @@ async def update_dataset(
     Args:
         dataset_id: The UUID of the dataset to update
         request: The HTTP request object containing If-Match header
-        response: FastAPI response object for setting headers
         dataset: The updated dataset object
         db: Database session for persistence operations
 
@@ -153,7 +151,7 @@ async def delete_dataset(
         DatasetNotFoundError: If the dataset with the specified ID doesn't exist
     """
     await delete_dataset_srv(db, dataset_id)
-    logger.debug("Dataset deleted", datasetId=dataset_id)
+    logger.debug("Dataset deleted", dataset_id=dataset_id)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

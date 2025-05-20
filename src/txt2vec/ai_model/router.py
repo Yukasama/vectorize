@@ -39,7 +39,6 @@ async def update_ai_model(
     Args:
         ai_model_id: The UUID of the AIModel to update
         request: The HTTP request object containing If-Match header
-        response: FastAPI response object for setting headers
         ai_model: The updated AIModel object
         db: Database session for persistence operations
 

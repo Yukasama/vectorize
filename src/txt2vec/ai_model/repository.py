@@ -34,7 +34,7 @@ async def get_ai_model(db: AsyncSession, model_tag: str) -> AIModel:
     if model is None:
         raise ModelNotFoundError(model_tag)
 
-    logger.debug("AI Model loaded from DB", model=model)
+    logger.debug("AI Model loaded from DB", ai_model=model)
     return model
 
 
@@ -57,10 +57,7 @@ async def save_ai_model(db: AsyncSession, model: AIModel) -> UUID:
 
 
 async def update_ai_model_db(
-    db: AsyncSession,
-    model_id: UUID,
-    update_data: AIModelUpdate,
-    expected_version: int,
+    db: AsyncSession, model_id: UUID, update_data: AIModelUpdate, expected_version: int
 ) -> AIModel:
     """Update an AIModel using optimistic locking.
 

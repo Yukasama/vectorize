@@ -111,7 +111,7 @@ async def delete_dataset_srv(db: AsyncSession, dataset_id: UUID) -> None:
         None
     """
     await delete_dataset_db(db, dataset_id)
-    logger.debug("Dataset deleted", datasetId=dataset_id)
+    logger.debug("Dataset deleted", dataset_id=dataset_id)
 
 
 async def upload_file_srv(

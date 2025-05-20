@@ -135,4 +135,4 @@ async def delete_dataset_db(db: AsyncSession, dataset_id: UUID) -> None:
 
     await db.delete(dataset)
     await db.commit()
-    logger.debug("Dataset deleted", datasetId=dataset_id)
+    logger.debug("Dataset deleted", dataset=dataset)

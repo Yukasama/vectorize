@@ -15,10 +15,7 @@ __all__ = ["update_ai_model_srv"]
 
 
 async def update_ai_model_srv(
-    db: AsyncSession,
-    request: Request,
-    model_id: UUID,
-    update_data: AIModelUpdate,
+    db: AsyncSession, request: Request, model_id: UUID, update_data: AIModelUpdate
 ) -> int:
     """Update an AI model in the database.
 
