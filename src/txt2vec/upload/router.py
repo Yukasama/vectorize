@@ -77,7 +77,6 @@ async def load_model_huggingface(
         raise ServiceUnavailableError from e
 
 
-# https://github.com/facebookresearch/nougat(example model) ##TODO remove
 @router.post("/github", status_code=status.HTTP_201_CREATED)
 async def upload_github_model(
     data: GitHubModelRequest,
@@ -86,13 +85,13 @@ async def upload_github_model(
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
     # 1. Build model_tag
-    key = f"{data.github_url}@{'main'}"    # 2. Check if model already exists
+    key = f"{data.github_url}@{'main'}"  # 2. Check if model already exists
     model_exists = await db.exec(select(AIModel).where(AIModel.model_tag == key))
     if model_exists.first():
         raise ModelAlreadyExistsError(key)
     # 3. Check repo/tag existence
     try:
-        github_service.repo_info(repo_url=data.github_url, revision='main')
+        github_service.repo_info(repo_url=data.github_url, revision="main")
     except ModelNotFoundError:
         raise
     except Exception as e:
@@ -103,12 +102,14 @@ async def upload_github_model(
     background_tasks.add_task(
         github_service.process_github_model_background,
         data.github_url,
-        'main',
+        "main",
         upload_task.id,
         db,
     )
     location_url = str(request.url_for("get_status", upload_id=upload_task.id))
-    return Response(status_code=status.HTTP_201_CREATED, headers={"Location": location_url})
+    return Response(
+        status_code=status.HTTP_201_CREATED, headers={"Location": location_url}
+    )
 
 
 @router.get("/upload/{upload_id}/status", response_model=StatusResponse)

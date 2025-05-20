@@ -1,12 +1,11 @@
 """Service for importing models."""
 
-
 import shutil
 import tempfile
 
 import git
 import httpx
-
+from fastapi import status
 from txt2vec.ai_model.exceptions import ModelNotFoundError
 from txt2vec.common.status import TaskStatus
 from txt2vec.upload import repository
@@ -17,11 +16,15 @@ from txt2vec.upload.exceptions import (
 
 def repo_info(repo_url: str, revision: str = None):
     # Check if repo/branch/tag exists on GitHub (HEAD or API request)
-    api_url = str(repo_url).replace("https://github.com/", "https://api.github.com/repos/").rstrip("/")
+    api_url = (
+        str(repo_url)
+        .replace("https://github.com/", "https://api.github.com/repos/")
+        .rstrip("/")
+    )
     branch = revision or "main"
     check_url = f"{api_url}/branches/{branch}"
     resp = httpx.get(check_url, timeout=10)
-    if resp.status_code != 200:  # TODO use status.200
+    if resp.status_code != status.HTTP_200_OK:
         raise ModelNotFoundError(repo_url, branch)
     return True
 
@@ -46,4 +49,6 @@ async def process_github_model_background(repo_url, tag, task_id, db):
         # ggf. Modell speichern, falls notwendig (eigene Methode implementieren)
         await repository.update_upload_task_status(db, task_id, TaskStatus.COMPLETED)
     except Exception as e:
-        await repository.update_upload_task_status(db, task_id, TaskStatus.FAILED, error_msg=str(e))
+        await repository.update_upload_task_status(
+            db, task_id, TaskStatus.FAILED, error_msg=str(e)
+        )

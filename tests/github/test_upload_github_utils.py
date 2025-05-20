@@ -5,6 +5,7 @@ import pytest
 from txt2vec.upload.utils import GitHubUtils
 
 
+@pytest.mark.github
 @pytest.mark.parametrize(
     "url",
     [
