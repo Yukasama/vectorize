@@ -11,3 +11,10 @@ class ModelSource(StrEnum):
     GITHUB = "GitHub"
     HUGGINGFACE = "HuggingFace"
     LOCAL = "Local"
+
+
+class ModelSourceAsync(StrEnum):
+    """Source types for AI models that upload asynchronously."""
+
+    GITHUB = "GitHub"
+    HUGGINGFACE = "HuggingFace"
