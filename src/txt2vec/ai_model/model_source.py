@@ -1,4 +1,4 @@
-"""Source types for AI models."""
+"""Source types for AIModel."""
 
 from enum import StrEnum
 
@@ -8,6 +8,6 @@ __all__ = ["ModelSource"]
 class ModelSource(StrEnum):
     """Source types for AI models."""
 
-    GITHUB = "G"
-    HUGGINGFACE = "H"
-    LOCAL = "L"
+    GITHUB = "GitHub"
+    HUGGINGFACE = "HuggingFace"
+    LOCAL = "Local"

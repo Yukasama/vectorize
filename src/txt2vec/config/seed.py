@@ -1,6 +1,6 @@
 """Seed the database with initial data."""
 
-import uuid
+from uuid import UUID
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -14,12 +14,15 @@ from txt2vec.datasets.models import Dataset
 __all__ = ["seed_db"]
 
 
-DATASET_READ_ID = uuid.UUID("8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b")
-DATASET_FAIL_ID = uuid.UUID("5d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
-DATASET_PUT_ID = uuid.UUID("6d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
-DATASET_DELETE_ID = uuid.UUID("7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
-DATASET_BACKUP_ID = uuid.UUID("8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
-DATASET_BACKUP2_ID = uuid.UUID("9d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+DATASET_READ_ID = UUID("8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b")
+DATASET_FAIL_ID = UUID("5d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+DATASET_PUT_ID = UUID("6d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+DATASET_DELETE_ID = UUID("7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+DATASET_BACKUP_ID = UUID("8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+DATASET_BACKUP2_ID = UUID("9d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+
+AI_MODEL_READ_ID = UUID("7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+AI_MODEL_FAIL_ID = UUID("8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 
 
 async def seed_db(session: AsyncSession) -> None:
@@ -94,6 +97,7 @@ async def seed_db(session: AsyncSession) -> None:
     )
     session.add(
         AIModel(
+            id=AI_MODEL_READ_ID,
             name="example_model",
             source=ModelSource.LOCAL,
             model_tag="pytorch_model",
@@ -101,6 +105,7 @@ async def seed_db(session: AsyncSession) -> None:
     )
     session.add(
         AIModel(
+            id=AI_MODEL_FAIL_ID,
             name="Big Model",
             source=ModelSource.LOCAL,
             model_tag="big_model",

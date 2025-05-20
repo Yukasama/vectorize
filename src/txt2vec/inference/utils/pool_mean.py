@@ -2,10 +2,10 @@
 
 import torch
 
-__all__ = ["mean_pool"]
+__all__ = ["_mean_pool"]
 
 
-def mean_pool(
+def _mean_pool(
     last_hidden_state: torch.Tensor, attention_mask: torch.Tensor
 ) -> torch.Tensor:
     """Perform mean pooling on transformer embeddings.

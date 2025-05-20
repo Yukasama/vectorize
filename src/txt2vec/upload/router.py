@@ -24,7 +24,7 @@ from txt2vec.ai_model.exceptions import ModelNotFoundError
 from txt2vec.ai_model.model_source import ModelSource
 from txt2vec.ai_model.models import AIModel
 from txt2vec.common.exceptions import InternalServerError
-from txt2vec.common.status import TaskStatus
+from txt2vec.common.task_status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
 from txt2vec.upload.exceptions import ModelAlreadyExistsError

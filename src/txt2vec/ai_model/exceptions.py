@@ -1,4 +1,6 @@
-"""AI-Model Exceptions."""
+"""AIModel Exceptions."""
+
+from uuid import UUID
 
 from fastapi import status
 
@@ -14,7 +16,7 @@ class ModelNotFoundError(AppError):
     error_code = ErrorCode.NOT_FOUND
     status_code = status.HTTP_404_NOT_FOUND
 
-    def __init__(self, model_id: str, model_tag: str | None = None) -> None:
+    def __init__(self, model_id: UUID, model_tag: str | None = None) -> None:
         """Initialize with the model tag."""
         if model_tag:
             msg = f"Model with id {model_id} and tag {model_tag} not found"

@@ -8,7 +8,7 @@ from txt2vec.config.errors import ErrorNames
 
 from ..exceptions import InvalidCSVFormatError
 
-__all__ = ["escape_csv_formulas"]
+__all__ = ["_escape_csv_formulas"]
 
 
 _CTL_CHARS = {chr(i) for i in range(32)}
@@ -16,7 +16,7 @@ _WS_CHARS = set(string.whitespace)
 _CSV_SPECIAL_CHARS = ",;|\n\r"
 
 
-def escape_csv_formulas(df: pd.DataFrame) -> pd.DataFrame:
+def _escape_csv_formulas(df: pd.DataFrame) -> pd.DataFrame:
     """Prefix dangerous strings with `'` to prevent CSV formula injection attacks.
 
     Adds a single quote prefix to any cell that begins with =, +, -, or @ characters

@@ -1,16 +1,15 @@
 """Dataset service."""
 
-import uuid
 from pathlib import Path
+from uuid import UUID, uuid4
 
 from fastapi import Request, UploadFile
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.common.exceptions import VersionMismatchError, VersionMissingError
 from txt2vec.config import settings
 from txt2vec.config.errors import ErrorNames
-from txt2vec.utils import sanitize_filename
+from txt2vec.utils import parse_etag, sanitize_filename
 
 from .exceptions import InvalidFileError
 from .models import Dataset, DatasetAll, DatasetPublic, DatasetUpdate
@@ -22,10 +21,10 @@ from .repository import (
     update_dataset_db,
 )
 from .upload_options_model import DatasetUploadOptions
-from .utils.csv_escaper import escape_csv_formulas
-from .utils.dataset_classifier import classify_dataset
-from .utils.file_df_converter import convert_file_to_df
-from .utils.save_dataset import save_dataframe
+from .utils.csv_escaper import _escape_csv_formulas
+from .utils.dataset_classifier import _classify_dataset
+from .utils.file_df_converter import _convert_file_to_df
+from .utils.save_dataset import _save_dataframe_to_fs
 
 __all__ = [
     "get_dataset_srv",
@@ -33,9 +32,6 @@ __all__ = [
     "update_dataset_srv",
     "upload_file_srv",
 ]
-
-
-_MIN_LENGTH_ETAG = 3
 
 
 async def get_datasets_srv(db: AsyncSession) -> list[DatasetAll]:
@@ -54,7 +50,7 @@ async def get_datasets_srv(db: AsyncSession) -> list[DatasetAll]:
 
 
 async def get_dataset_srv(
-    db: AsyncSession, dataset_id: uuid.UUID
+    db: AsyncSession, dataset_id: UUID
 ) -> tuple[DatasetPublic, int]:
     """Read a single dataset from the database.
 
@@ -76,8 +72,8 @@ async def get_dataset_srv(
 async def update_dataset_srv(
     db: AsyncSession,
     request: Request,
-    dataset_id: uuid.UUID,
-    dataset: DatasetUpdate,
+    dataset_id: UUID,
+    dataset_update: DatasetUpdate,
 ) -> int:
     """Update a dataset in the database.
 
@@ -88,46 +84,21 @@ async def update_dataset_srv(
         db: Database session for persistence operations
         request: The HTTP request object
         dataset_id: The UUID of the dataset to update
-        dataset: The updated dataset data
+        dataset_update: The updated dataset data
 
     Returns:
         The updated dataset.
     """
-    if_match = request.headers.get("If-Match")
-
-    if (
-        not if_match
-        or not if_match.startswith('"')
-        or not if_match.endswith('"')
-        or len(if_match) < _MIN_LENGTH_ETAG
-    ):
-        logger.debug(
-            "ETag format error",
-            datasetId=dataset_id,
-            provided=if_match,
-        )
-        raise VersionMissingError(dataset_id=str(dataset_id))
-
-    _, current_version = await get_dataset_srv(db, dataset_id)
-
-    clean_etag = if_match.strip().strip('"')
-    if clean_etag != str(current_version):
-        logger.debug(
-            "ETag mismatch on dataset update",
-            datasetId=dataset_id,
-            provided=clean_etag,
-            current=current_version,
-        )
-        raise VersionMismatchError(dataset_id=str(dataset_id), version=current_version)
+    expected_version = parse_etag(str(dataset_id), request)
 
     updated_dataset = await update_dataset_db(
-        db=db, dataset_id=dataset_id, update_data=dataset.model_dump()
+        db, dataset_id, dataset_update, expected_version
     )
 
     return updated_dataset.version
 
 
-async def delete_dataset_srv(db: AsyncSession, dataset_id: uuid.UUID) -> None:
+async def delete_dataset_srv(db: AsyncSession, dataset_id: UUID) -> None:
     """Delete a dataset from the database.
 
     This function deletes a dataset by its ID from the database.
@@ -145,7 +116,7 @@ async def delete_dataset_srv(db: AsyncSession, dataset_id: uuid.UUID) -> None:
 
 async def upload_file_srv(
     db: AsyncSession, file: UploadFile, options: DatasetUploadOptions | None = None
-) -> uuid.UUID:
+) -> UUID:
     """Stream upload, parse file to DataFrame, save as CSV, and return dataset ID.
 
     Args:
@@ -176,13 +147,13 @@ async def upload_file_srv(
         "negative": options.negative_name,
     }
 
-    raw_df = await convert_file_to_df(file, ext, options.sheet_index)
-    escaped_df = escape_csv_formulas(raw_df)
-    df, classification = classify_dataset(escaped_df, column_mapping)
+    raw_df = await _convert_file_to_df(file, ext, options.sheet_index)
+    escaped_df = _escape_csv_formulas(raw_df)
+    df, classification = _classify_dataset(escaped_df, column_mapping)
 
     try:
-        unique_name = f"{Path(safe_name).stem}_{uuid.uuid4()}.csv"
-        file_path = save_dataframe(df, unique_name)
+        unique_name = f"{Path(safe_name).stem}_{uuid4()}.csv"
+        file_path = _save_dataframe_to_fs(df, unique_name)
 
         dataset = Dataset(
             name=safe_name,

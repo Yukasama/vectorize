@@ -1,8 +1,8 @@
 """Convert file to DataFrame."""
 
 import tempfile
-import uuid
 from pathlib import Path
+from uuid import uuid4
 
 import aiofiles
 import pandas as pd
@@ -18,16 +18,16 @@ from ..exceptions import (
     UnsupportedFormatError,
 )
 from ..file_format import FileFormat
-from .file_loaders import load_file
+from .file_loaders import _load_file
 
-__all__ = ["convert_file_to_df"]
+__all__ = ["_convert_file_to_df"]
 
 
 _CHUNK_SIZE = 1_048_576
 _FORMULA_PATTERNS = [b"=cmd", b"=sum", b"@", b"=importxml"]
 
 
-async def convert_file_to_df(
+async def _convert_file_to_df(
     file: UploadFile, ext: str, sheet_index: int
 ) -> pd.DataFrame:
     """Convert uploaded file to pandas DataFrame.
@@ -77,7 +77,7 @@ async def convert_file_to_df(
     await file.seek(0)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_path = Path(tmp_dir) / uuid.uuid4().hex
+        tmp_path = Path(tmp_dir) / uuid4().hex
         size = 0
         async with aiofiles.open(tmp_path, "wb") as tmp_file:
             while chunk := await file.read(_CHUNK_SIZE):
@@ -88,7 +88,7 @@ async def convert_file_to_df(
         await file.seek(0)
 
         try:
-            df = load_file[file_format](tmp_path, sheet_index)
+            df = _load_file[file_format](tmp_path, sheet_index)
         except Exception as e:
             raise InvalidCSVFormatError from e
 

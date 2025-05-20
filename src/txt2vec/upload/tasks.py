@@ -13,7 +13,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from txt2vec.ai_model import AIModel
 from txt2vec.ai_model.models import ModelSource
 from txt2vec.ai_model.repository import save_ai_model
-from txt2vec.common.status import TaskStatus
+from txt2vec.common.task_status import TaskStatus
 from txt2vec.upload.exceptions import ModelAlreadyExistsError
 from txt2vec.upload.huggingface_service import load_model_and_cache_only
 from txt2vec.upload.repository import update_upload_task_status

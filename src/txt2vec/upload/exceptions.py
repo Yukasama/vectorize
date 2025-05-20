@@ -4,7 +4,7 @@ from fastapi import status
 
 from txt2vec.common.app_error import AppError
 from txt2vec.config.errors import ErrorCode
-from txt2vec.datasets.utils.file_size_formatter import format_file_size
+from txt2vec.datasets.utils.file_size_formatter import _format_file_size
 
 
 class InvalidModelError(AppError):
@@ -31,7 +31,7 @@ class ModelTooLargeError(AppError):
 
     def __init__(self, size: int) -> None:
         """Initialize with the size of the file."""
-        formatted_size = format_file_size(size)
+        formatted_size = _format_file_size(size)
         super().__init__(f"Model file is too large: {formatted_size}")
 
 

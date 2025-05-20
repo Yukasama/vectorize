@@ -29,7 +29,7 @@ from .service import (
     upload_file_srv,
 )
 from .upload_options_model import DatasetUploadOptions
-from .utils.validate_zip import handle_zip_upload
+from .utils.validate_zip import _handle_zip_upload
 
 __all__ = ["router"]
 
@@ -124,7 +124,7 @@ async def update_dataset(
         DatasetNotFoundError: If the dataset doesn't exist
     """
     new_version = await update_dataset_srv(db, request, dataset_id, dataset)
-    logger.debug("Dataset updated", datasetId=dataset_id)
+    logger.debug("Dataset updated", dataset_id=dataset_id)
 
     return Response(
         status_code=status.HTTP_204_NO_CONTENT,
@@ -190,7 +190,7 @@ async def upload_dataset(
     failed_uploads = []
 
     if len(files) == 1 and first.filename.lower().endswith(".zip"):
-        zip_files = await handle_zip_upload(first)
+        zip_files = await _handle_zip_upload(first)
     elif any(f.filename.lower().endswith(".zip") for f in files):
         raise InvalidFileError("Cannot mix ZIP and individual files")
 
