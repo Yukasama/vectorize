@@ -5,12 +5,11 @@ This module provides functions to check repository info, clone and cache models,
 process the import in a background task.
 """
 
+import httpx
+import git
+from fastapi import status
 import shutil
 import tempfile
-
-import git
-import httpx
-from fastapi import status
 from txt2vec.ai_model.exceptions import ModelNotFoundError
 from txt2vec.common.status import TaskStatus
 from txt2vec.upload import repository
@@ -66,7 +65,6 @@ def load_model_and_cache_only(repo_url: str, revision: str = None) -> str:
     Raises:
         ServiceUnavailableError: If cloning or checkout fails for any reason.
     """
-
     # - Clone repo (with GitPython)
     # - Checkout correct revision/tag/branch
     # - Validate model structure (check for config.json, model file etc.)

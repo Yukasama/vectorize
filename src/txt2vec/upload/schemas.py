@@ -1,6 +1,5 @@
 """Schemas for importing models."""
 
-
 from pydantic import BaseModel, HttpUrl
 
 
