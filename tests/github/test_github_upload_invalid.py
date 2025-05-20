@@ -15,4 +15,4 @@ def test_load_invalid_model_should_fail(client: TestClient) -> None:
         "/uploads/github",
         json={"github_url": _INVALID_URL, "tag": _TAG},
     )
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_404_NOT_FOUND  # noqa: S101

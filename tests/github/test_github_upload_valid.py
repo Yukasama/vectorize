@@ -15,4 +15,4 @@ def test_load_nougat_model(client: TestClient) -> None:
         "/uploads/github",
         json={"github_url": _GITHUB_URL, "tag": _TAG},
     )
-    assert response.status_code == status.HTTP_201_CREATED
+    assert response.status_code == status.HTTP_201_CREATED  # noqa: S101
