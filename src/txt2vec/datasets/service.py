@@ -9,7 +9,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config import settings
 from txt2vec.config.errors import ErrorNames
-from txt2vec.utils import parse_etag, sanitize_filename
+from txt2vec.utils.etag_parser import parse_etag
+from txt2vec.utils.file_sanitizer import sanitize_filename
 
 from .exceptions import InvalidFileError
 from .models import Dataset, DatasetAll, DatasetPublic, DatasetUpdate
