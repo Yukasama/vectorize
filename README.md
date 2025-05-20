@@ -241,9 +241,9 @@ Thanks to everyone who’s helped this project!
 
 ### Model References
 
-- [Transformers]('https://github.com/abacaj/awesome-transformers?tab=readme-ov-file#albert')
-- [HF]('https://github.com/huggingface/awesome-huggingface')
-- [GenAI]('https://github.com/steven2358/awesome-generative-ai')
+- [Transformers](https://github.com/abacaj/awesome-transformers?tab=readme-ov-file#albert)
+- [HF](https://github.com/huggingface/awesome-huggingface)
+- [GenAI](https://github.com/steven2358/awesome-generative-ai)
 
 ## License
 
