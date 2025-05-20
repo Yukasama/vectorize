@@ -10,6 +10,7 @@ import tempfile
 import git
 import httpx
 from fastapi import status
+from sqlmodel import Session
 
 from txt2vec.ai_model.exceptions import ModelNotFoundError
 from txt2vec.common.status import TaskStatus
@@ -19,7 +20,7 @@ from txt2vec.upload.exceptions import (
 )
 
 
-def repo_info(repo_url: str, revision: str = None):
+def repo_info(repo_url: str, revision: str | None = None) -> bool:
     """Check if a GitHub repository and branch/tag exists.
 
     This function verifies the existence of the specified repository and branch (or tag)
@@ -27,8 +28,8 @@ def repo_info(repo_url: str, revision: str = None):
     if the branch/tag is not found.
 
     Args:
-          repo_url (str): The HTTPS URL of the GitHub repository
-          (e.g., "https://github.com/user/repo").
+        repo_url (str): The HTTPS URL of the GitHub repository
+        (e.g., "https://github.com/user/repo").
         revision (str, optional): The branch or tag name to check. Defaults to 'main'.
 
     Returns:
@@ -52,7 +53,7 @@ def repo_info(repo_url: str, revision: str = None):
     return True
 
 
-def load_model_and_cache_only(repo_url: str, revision: str = None) -> str:
+def load_model_and_cache_only(repo_url: str, revision: str | None = None) -> str:
     """Clone a GitHub repository and cache the model locally.
 
     This function creates a temporary directory, clones the specified repository
@@ -82,7 +83,12 @@ def load_model_and_cache_only(repo_url: str, revision: str = None) -> str:
         raise ServiceUnavailableError from e
 
 
-async def process_github_model_background(repo_url, tag, task_id, db):
+async def process_github_model_background(
+    repo_url: str,
+    tag: str,
+    task_id: str,
+    db: Session
+) -> None:
     """Background task to process and update the status of a GitHub model import.
 
     This coroutine clones and caches the model, then updates the upload task status
