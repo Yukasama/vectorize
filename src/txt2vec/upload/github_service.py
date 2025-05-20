@@ -1,15 +1,16 @@
-"""
-Service for importing models from GitHub into the application cache.
+"""Service for importing models from GitHub into the application cache.
 
 This module provides functions to check repository info, clone and cache models, and
 process the import in a background task.
 """
 
-import httpx
-import git
-from fastapi import status
 import shutil
 import tempfile
+
+import git
+import httpx
+from fastapi import status
+
 from txt2vec.ai_model.exceptions import ModelNotFoundError
 from txt2vec.common.status import TaskStatus
 from txt2vec.upload import repository
@@ -22,17 +23,20 @@ def repo_info(repo_url: str, revision: str = None):
     """Check if a GitHub repository and branch/tag exists.
 
     This function verifies the existence of the specified repository and branch (or tag)
-    by querying the GitHub API. Raises ModelNotFoundError if the branch/tag is not found.
+    by querying the GitHub API. Raises ModelNotFoundError
+    if the branch/tag is not found.
 
     Args:
-        repo_url (str): The HTTPS URL of the GitHub repository (e.g., "https://github.com/user/repo").
+          repo_url (str): The HTTPS URL of the GitHub repository
+          (e.g., "https://github.com/user/repo").
         revision (str, optional): The branch or tag name to check. Defaults to 'main'.
 
     Returns:
         bool: True if the repository and branch/tag exist.
 
     Raises:
-        ModelNotFoundError: If the repository or specified branch/tag is not found on GitHub.
+        ModelNotFoundError: If the repository or specified branch/tag
+        is not found on GitHub.
     """
     # Check if repo/branch/tag exists on GitHub (HEAD or API request)
     api_url = (
