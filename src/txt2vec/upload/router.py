@@ -84,6 +84,26 @@ async def upload_github_model(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
+    """Initiate the import of a GitHub model and return the task status location.
+
+    This endpoint creates a new upload task for a given GitHub repository URL and tag,
+    verifies the repository exists, schedules background processing, and returns
+    a 201 Created response with a Location header to track the task.
+
+    Args:
+        data (GitHubModelRequest): Pydantic model containing 'github_url' and 'tag'.
+        request (Request): FastAPI request object for URL generation.
+        background_tasks (BackgroundTasks): FastAPI background task manager.
+        db (AsyncSession): Database session dependency.
+
+    Returns:
+        Response: HTTP 201 with 'Location' header pointing to the status endpoint.
+
+    Raises:
+        ModelAlreadyExistsError: If a model with the same tag already exists.
+        ModelNotFoundError: If the specified GitHub repository or tag is not found.
+        ServiceUnavailableError: If an error occurs while checking the repository.
+    """
     # 1. Build model_tag
     key = f"{data.github_url}@{'main'}"  # 2. Check if model already exists
     model_exists = await db.exec(select(AIModel).where(AIModel.model_tag == key))
