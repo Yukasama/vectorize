@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
-from txt2vec.ai_model.model_source import ModelSourceAsync
+from txt2vec.ai_model.model_source import RemoteModelSource
 from txt2vec.common.task_status import TaskStatus
 
 
@@ -33,7 +33,7 @@ class UploadTask(SQLModel, table=True):
         description="Status of the upload task.",
     )
 
-    source: ModelSourceAsync = Field(
+    source: RemoteModelSource = Field(
         description="Source of the model (github or huggingface)."
     )
 
