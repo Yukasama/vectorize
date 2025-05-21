@@ -8,13 +8,13 @@ __all__ = ["ModelSource"]
 class ModelSource(StrEnum):
     """Source types for AI models."""
 
-    GITHUB = "GitHub"
-    HUGGINGFACE = "HuggingFace"
-    LOCAL = "Local"
+    GITHUB = "G"
+    HUGGINGFACE = "H"
+    LOCAL = "L"
 
 
 class RemoteModelSource(StrEnum):
     """Source types for AI models from remote sources."""
 
-    GITHUB = "GitHub"
-    HUGGINGFACE = "HuggingFace"
+    GITHUB = "G"
+    HUGGINGFACE = "H"
