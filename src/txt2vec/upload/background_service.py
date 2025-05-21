@@ -1,4 +1,4 @@
-"""BAckground Task Service."""
+"""Background Task Service."""
 
 import shutil
 import tempfile
@@ -17,8 +17,7 @@ MODEL_DIR.mkdir(exist_ok=True)
 
 
 def write_to_database(upload_id: str, git_repo: str, session_factory) -> None:
-    """Process an upload task by cloning a Git repository, validating model files,
-    copying them to a permanent location, and updating the database status.
+    """Process an upload task by cloning a Git repository.
 
     This function will:
       1. Mark the UploadTask as PENDING.
@@ -31,14 +30,15 @@ def write_to_database(upload_id: str, git_repo: str, session_factory) -> None:
     Args:
         upload_id (str): Unique identifier of the UploadTask to process.
         git_repo (str): GitHub repository path in the form 'owner/repo'.
-        session_factory (Callable[[], Session]): Factory function that returns a new database session.
+        session_factory (Callable[[], Session]): Factory function
+        that returns a new database session.
 
     Raises:
         ValueError: If the repository does not contain any '.bin' or '.json' files.
-        Exception: Propagates unexpected errors during Git operations, file system operations,
+        Exception: Propagates unexpected errors during Git operations,
+        file system operations,
                    or database interactions.
     """
-
     with session_factory() as session:
         task: UploadTask = session.exec(
             select(UploadTask).where(UploadTask.id == upload_id)

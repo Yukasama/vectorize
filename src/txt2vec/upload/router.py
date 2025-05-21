@@ -134,7 +134,7 @@ async def upload_github_model(
 
 @router.get("/upload/{upload_id}/status", response_model=StatusResponse)
 def get_status(
-    upload_id: str, session: Session = Depends(get_session)
+    upload_id: str, session: Annotated[Session, Depends(get_session)]
 ) -> StatusResponse:
     """Poll the current state of an UploadTask."""
     task = session.get(UploadTask, upload_id)
