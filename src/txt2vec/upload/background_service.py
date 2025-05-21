@@ -1,4 +1,5 @@
-"""Service."""
+"""BAckground Task Service."""
+
 import shutil
 import tempfile
 from pathlib import Path
@@ -16,7 +17,28 @@ MODEL_DIR.mkdir(exist_ok=True)
 
 
 def write_to_database(upload_id: str, git_repo: str, session_factory) -> None:
-    """Background task."""
+    """Process an upload task by cloning a Git repository, validating model files,
+    copying them to a permanent location, and updating the database status.
+
+    This function will:
+      1. Mark the UploadTask as PENDING.
+      2. Clone the specified GitHub repository (shallow clone).
+      3. Validate presence of required '.bin' and '.json' files.
+      4. Copy the repository contents to a permanent models directory.
+      5. Create an AIModel record.
+      6. Mark the UploadTask as COMPLETED or FAILED and record errors.
+
+    Args:
+        upload_id (str): Unique identifier of the UploadTask to process.
+        git_repo (str): GitHub repository path in the form 'owner/repo'.
+        session_factory (Callable[[], Session]): Factory function that returns a new database session.
+
+    Raises:
+        ValueError: If the repository does not contain any '.bin' or '.json' files.
+        Exception: Propagates unexpected errors during Git operations, file system operations,
+                   or database interactions.
+    """
+
     with session_factory() as session:
         task: UploadTask = session.exec(
             select(UploadTask).where(UploadTask.id == upload_id)
@@ -51,7 +73,8 @@ def write_to_database(upload_id: str, git_repo: str, session_factory) -> None:
             task = cast(
                 UploadTask,
                 session.exec(
-                    select(UploadTask).where(UploadTask.id == upload_id)).one(),
+                    select(UploadTask).where(UploadTask.id == upload_id)
+                ).one(),
             )
             task.task_status = TaskStatus.COMPLETED
             session.commit()

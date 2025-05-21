@@ -58,7 +58,24 @@ async def update_upload_task_status(
         )
 
 
-async def create_upload_task(db: AsyncSession, model_tag: str, source: str) -> UploadTask:
+async def create_upload_task(
+    db: AsyncSession, model_tag: str, source: str
+) -> UploadTask:
+    """Create and persist a new UploadTask in the database.
+
+    This function will:
+      1. Instantiate a new UploadTask with the given model tag and source.
+      2. Set the task status to PENDING and record the start timestamp.
+      3. Commit the new task to the database and refresh the instance.
+
+    Args:
+        db (AsyncSession): Asynchronous database session for transactional operations.
+        model_tag (str): Tag identifying the model to be uploaded.
+        source (str): Source identifier or URL for the upload task.
+
+    Returns:
+        UploadTask: The newly created and persisted UploadTask instance.
+    """
     task = UploadTask(
         model_tag=model_tag,
         source=source,
