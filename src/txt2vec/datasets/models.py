@@ -1,8 +1,8 @@
 """Dataset models."""
 
-import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
+from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
@@ -43,7 +43,7 @@ class DatasetCreate(_DatasetBase):
 
     rows: int = Field(description="Number of rows in the new dataset", gt=0)
 
-    synthesis_id: uuid.UUID | None = Field(
+    synthesis_id: UUID | None = Field(
         None, description="Optional ID linking to a synthetic dataset when created"
     )
 
@@ -59,23 +59,23 @@ class DatasetUpdate(SQLModel):
 class DatasetAll(_DatasetBase):
     """Dataset model for listing datasets with limited fields."""
 
-    id: uuid.UUID = Field(description="Unique identifier for the dataset")
+    id: UUID = Field(description="Unique identifier for the dataset")
+
+    version: int = Field(description="Version number of the dataset")
 
     rows: int = Field(description="Number of rows in the dataset")
 
-    created_at: datetime | None = Field(
-        None, description="Timestamp when the dataset was created"
-    )
+    created_at: datetime = Field(description="Timestamp when the dataset was created")
 
 
 class DatasetPublic(DatasetAll):
     """Dataset model for detailed view with all fields."""
 
-    updated_at: datetime | None = Field(
-        None, description="Timestamp when the dataset was last updated"
+    updated_at: datetime = Field(
+        description="Timestamp when the dataset was last updated"
     )
 
-    synthesis_id: uuid.UUID | None = Field(
+    synthesis_id: UUID | None = Field(
         None, description="Optional ID linking to a synthetic dataset"
     )
 
@@ -85,8 +85,8 @@ class Dataset(SQLModel, table=True):
 
     __tablename__ = "dataset"
 
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
+    id: UUID = Field(
+        default_factory=uuid4,
         primary_key=True,
         description="Unique identifier for the dataset",
     )
@@ -125,7 +125,7 @@ class Dataset(SQLModel, table=True):
         description="Timestamp when the dataset was last updated",
     )
 
-    synthesis_id: uuid.UUID | None = Field(
+    synthesis_id: UUID | None = Field(
         default=None,
         index=True,
         foreign_key="synthesis_task.id",

@@ -6,8 +6,9 @@ __all__ = ["FileFormat"]
 
 
 class FileFormat(StrEnum):
-    """Supported file formats."""
+    """Supported file formats for datasets."""
 
+    # No abbreviation to preserve extension names
     CSV = "csv"
     JSON = "json"
     XML = "xml"

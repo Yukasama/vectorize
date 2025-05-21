@@ -6,10 +6,10 @@ import pandas as pd
 
 from txt2vec.config import settings
 
-__all__ = ["save_dataframe"]
+__all__ = ["_save_dataframe_to_fs"]
 
 
-def save_dataframe(df: pd.DataFrame, filename: str) -> Path:
+def _save_dataframe_to_fs(df: pd.DataFrame, filename: str) -> Path:
     """Persist DataFrame as CSV in upload_dir and return its path.
 
     Args:

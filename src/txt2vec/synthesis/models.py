@@ -1,12 +1,12 @@
 """Synthesis Task model."""
 
-import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
+from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
-from txt2vec.common.status import TaskStatus
+from txt2vec.common.task_status import TaskStatus
 
 if TYPE_CHECKING:
     from txt2vec.datasets.models import Dataset
@@ -19,8 +19,8 @@ class SynthesisTask(SQLModel, table=True):
 
     __tablename__ = "synthesis_task"
 
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
+    id: UUID = Field(
+        default_factory=uuid4,
         primary_key=True,
         description="Unique identifier for the synthetic generation.",
     )

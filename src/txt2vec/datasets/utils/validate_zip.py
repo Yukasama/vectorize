@@ -16,14 +16,14 @@ from ..exceptions import (
     TooManyFilesError,
 )
 
-__all__ = ["handle_zip_upload", "validate_zip_file"]
+__all__ = ["_handle_zip_upload", "_validate_zip_file"]
 
 
 _MAX_ZIP_UNCOMPRESSED: Final[int] = 500 * 2**20
 _MAX_ZIP_RATIO: Final[float] = 100.0
 
 
-async def handle_zip_upload(
+async def _handle_zip_upload(
     zip_file: UploadFile,
 ) -> list[UploadFile]:
     """Process and validate each file in a ZIP archive.
@@ -45,7 +45,7 @@ async def handle_zip_upload(
     logger.debug("Processing ZIP file {}", zip_file.filename)
     content = await zip_file.read()
 
-    members = validate_zip_file(content)
+    members = _validate_zip_file(content)
     files = []
 
     for name, raw in members:
@@ -54,7 +54,7 @@ async def handle_zip_upload(
     return files
 
 
-def validate_zip_file(zip_bytes: bytes) -> Sequence[tuple[str, bytes]]:
+def _validate_zip_file(zip_bytes: bytes) -> Sequence[tuple[str, bytes]]:
     """Validate and extract files from a ZIP archive with security checks.
 
     Performs security validation on a ZIP archive to prevent potential attacks:

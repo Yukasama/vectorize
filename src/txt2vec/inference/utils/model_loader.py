@@ -17,7 +17,7 @@ from transformers import (
 from txt2vec.ai_model.exceptions import ModelLoadError, ModelNotFoundError
 from txt2vec.config import settings
 
-__all__ = ["load_model"]
+__all__ = ["_load_model"]
 
 
 _DEVICE = torch.device(settings.inference_device)
@@ -33,7 +33,7 @@ _COMMON_KWARGS = {
 
 
 @lru_cache(maxsize=10)
-def load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
+def _load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
     """Load a Hugging Face model and its tokenizer from a checkpoint directory.
 
     Supports loading from directories containing either a complete HF model snapshot

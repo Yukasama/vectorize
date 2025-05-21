@@ -12,7 +12,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.common.status import TaskStatus
+from txt2vec.common.task_status import TaskStatus
 from txt2vec.upload.models import UploadTask
 
 

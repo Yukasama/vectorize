@@ -1,10 +1,10 @@
-"""Generic application error handling module."""
+"""Generic application errors."""
 
 from fastapi import status
 
 from txt2vec.config.errors import ErrorCode
 
-__all__ = ["AppError"]
+__all__ = ["AppError", "ETagError"]
 
 
 class AppError(Exception):

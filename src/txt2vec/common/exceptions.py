@@ -1,14 +1,13 @@
 """Common exceptions."""
 
+from uuid import UUID
+
 from fastapi import status
 
 from txt2vec.common.app_error import AppError, ETagError
 from txt2vec.config.errors import ErrorCode
 
-__all__ = [
-    "InternalServerError",
-    "NotFoundError",
-]
+__all__ = ["InternalServerError", "NotFoundError"]
 
 
 class NotFoundError(AppError):
@@ -33,9 +32,11 @@ class VersionMismatchError(ETagError):
     error_code = ErrorCode.VERSION_MISMATCH
     status_code = status.HTTP_412_PRECONDITION_FAILED
 
-    def __init__(self, dataset_id: str, version: int) -> None:
-        """Initialize with the dataset ID and version."""
-        super().__init__(version, f"Dataset with ID {dataset_id} has version {version}")
+    def __init__(self, resource_id: str | int | UUID, version: int) -> None:
+        """Initialize with the resource ID and version."""
+        super().__init__(
+            version, f"Resource with ID {resource_id} has version {version}"
+        )
 
 
 class VersionMissingError(AppError):
@@ -44,6 +45,8 @@ class VersionMissingError(AppError):
     error_code = ErrorCode.VERSION_MISSING
     status_code = status.HTTP_428_PRECONDITION_REQUIRED
 
-    def __init__(self, dataset_id: str) -> None:
-        """Initialize with the dataset ID."""
-        super().__init__(f"If-Match header required for updating dataset {dataset_id}")
+    def __init__(self, resource_id: str | int | UUID) -> None:
+        """Initialize with the resource ID."""
+        super().__init__(
+            f"If-Match header required for updating resource {resource_id}"
+        )

@@ -1,12 +1,13 @@
 """Dataset exceptions."""
 
+from uuid import UUID
+
 from fastapi import status
 
 from txt2vec.common.app_error import AppError
 from txt2vec.config import settings
 from txt2vec.config.errors import ErrorCode
-
-from .utils.file_size_formatter import format_file_size
+from txt2vec.utils.file_size_formatter import format_file_size
 
 __all__ = [
     "DatasetNotFoundError",
@@ -102,7 +103,7 @@ class DatasetNotFoundError(AppError):
     error_code = ErrorCode.NOT_FOUND
     status_code = status.HTTP_404_NOT_FOUND
 
-    def __init__(self, dataset_id: str) -> None:
+    def __init__(self, dataset_id: UUID) -> None:
         """Initialize with the dataset ID."""
         super().__init__(f"Dataset with ID {dataset_id} not found")
 

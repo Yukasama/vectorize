@@ -3,8 +3,10 @@
 from uuid import UUID
 
 from loguru import logger
-from sqlmodel import select, update
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+from txt2vec.common.exceptions import VersionMismatchError
 
 from .exceptions import DatasetNotFoundError
 from .models import Dataset, DatasetUpdate
@@ -75,7 +77,10 @@ async def get_all_datasets_db(db: AsyncSession) -> list[Dataset]:
 
 
 async def update_dataset_db(
-    db: AsyncSession, dataset_id: UUID, update_data: DatasetUpdate
+    db: AsyncSession,
+    dataset_id: UUID,
+    update_data: DatasetUpdate,
+    expected_version: int,
 ) -> Dataset:
     """Update an existing dataset.
 
@@ -83,6 +88,7 @@ async def update_dataset_db(
         db: Database session instance.
         dataset_id: The UUID of the dataset to update.
         update_data: Dictionary containing the fields to update.
+        expected_version: The expected version of the dataset for optimistic locking.
 
     Returns:
         Dataset: The updated dataset object.
@@ -90,21 +96,23 @@ async def update_dataset_db(
     Raises:
         DatasetNotFoundError: If the dataset is not found.
     """
-    statement = select(Dataset).where(Dataset.id == dataset_id)
-    result = await db.exec(statement)
+    result = await db.exec(select(Dataset).where(Dataset.id == dataset_id))
     dataset = result.first()
-
     if dataset is None:
-        raise DatasetNotFoundError(str(dataset_id))
+        raise DatasetNotFoundError(dataset_id)
 
-    update_data["version"] = dataset.version + 1
+    if dataset.version != expected_version:
+        raise VersionMismatchError(dataset_id, dataset.version)
 
-    statement = update(Dataset).where(Dataset.id == dataset_id).values(**update_data)
-    await db.exec(statement)
+    for field, value in update_data.model_dump(exclude_unset=True).items():
+        setattr(dataset, field, value)
+
+    dataset.version += 1
+
     await db.commit()
     await db.refresh(dataset)
 
-    logger.debug("Dataset updated", datasetId=dataset_id)
+    logger.debug("Dataset updated", dataset=dataset)
     return dataset
 
 
@@ -127,4 +135,4 @@ async def delete_dataset_db(db: AsyncSession, dataset_id: UUID) -> None:
 
     await db.delete(dataset)
     await db.commit()
-    logger.debug("Dataset deleted", datasetId=dataset_id)
+    logger.debug("Dataset deleted", dataset=dataset)

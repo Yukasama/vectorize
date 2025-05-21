@@ -6,7 +6,7 @@ import pandas as pd
 
 from ..exceptions import MissingColumnError
 
-__all__ = ["normalize_dataset"]
+__all__ = ["_normalize_dataset"]
 
 
 _ALIASES: Mapping[str, tuple[str, ...]] = {
@@ -18,7 +18,7 @@ _ALIASES: Mapping[str, tuple[str, ...]] = {
 _ROLES = ("question", "positive", "negative")
 
 
-def normalize_dataset(
+def _normalize_dataset(
     df: pd.DataFrame, mapping: Mapping[str, str] | None = None
 ) -> None:
     """Normalize DataFrame columns to canonical names and order.

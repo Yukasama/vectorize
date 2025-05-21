@@ -1,12 +1,12 @@
 """UploadTask model."""
 
-import uuid
 from datetime import datetime
+from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
-from txt2vec.ai_model.model_source import ModelSource
-from txt2vec.common.status import TaskStatus
+from txt2vec.ai_model.model_source import RemoteModelSource
+from txt2vec.common.task_status import TaskStatus
 
 
 class UploadTask(SQLModel, table=True):
@@ -14,8 +14,8 @@ class UploadTask(SQLModel, table=True):
 
     __tablename__ = "upload_task"
 
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
+    id: UUID = Field(
+        default_factory=uuid4,
         primary_key=True,
         description="Unique identifier for the upload task.",
     )
@@ -33,7 +33,7 @@ class UploadTask(SQLModel, table=True):
         description="Status of the upload task.",
     )
 
-    source: ModelSource = Field(
+    source: RemoteModelSource = Field(
         description="Source of the model (github or huggingface)."
     )
 

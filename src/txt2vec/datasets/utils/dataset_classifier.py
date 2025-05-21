@@ -11,7 +11,7 @@ from ..exceptions import (
     MissingColumnError,
 )
 
-__all__ = ["classify_dataset"]
+__all__ = ["_classify_dataset"]
 
 
 _ALIASES: Mapping[str, tuple[str, ...]] = {
@@ -23,7 +23,7 @@ _ALIASES: Mapping[str, tuple[str, ...]] = {
 _ROLES = ("question", "positive", "negative")
 
 
-def classify_dataset(
+def _classify_dataset(
     df: pd.DataFrame,
     mapping: ColumnMapping | None = None,
 ) -> tuple[pd.DataFrame, Classification]:

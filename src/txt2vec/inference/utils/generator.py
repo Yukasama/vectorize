@@ -11,15 +11,15 @@ from txt2vec.config import settings
 
 from ..embedding_model import EmbeddingData
 from ..request_model import EmbeddingRequest
-from .pool_mean import mean_pool
+from .pool_mean import _mean_pool
 
-__all__ = ["generate_embeddings"]
+__all__ = ["_generate_embeddings"]
 
 
 _DEVICE = torch.device(settings.inference_device)
 
 
-def generate_embeddings(
+def _generate_embeddings(
     data: EmbeddingRequest, model: torch.nn.Module, tokenizer: AutoTokenizer | None
 ) -> tuple[list[EmbeddingData], int]:
     """Generate embeddings from input text using the provided model.
@@ -117,7 +117,7 @@ def _extract_embedding_vector(
     # Try extracting based on output type using match statement
     match model_output:
         case tensor if hasattr(tensor, "last_hidden_state"):
-            vec = mean_pool(tensor.last_hidden_state, attn_mask).squeeze(0)
+            vec = _mean_pool(tensor.last_hidden_state, attn_mask).squeeze(0)
 
         case tensor if hasattr(tensor, "pooler_output"):
             vec = tensor.pooler_output.squeeze(0)
@@ -130,7 +130,7 @@ def _extract_embedding_vector(
                 if isinstance(tensor.hidden_states, (list, tuple))
                 else tensor.hidden_states
             )
-            vec = mean_pool(last_hidden, attn_mask).squeeze(0)
+            vec = _mean_pool(last_hidden, attn_mask).squeeze(0)
 
         case tensor if hasattr(tensor, "logits"):
             vec = tensor.logits.mean(dim=1).squeeze(0)

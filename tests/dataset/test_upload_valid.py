@@ -11,7 +11,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from tests.datasets.utils import build_files
+from tests.dataset.utils import build_files
 
 _TRAINING_FOLDER = "test_data"
 _VALID_FOLDER = "valid"

@@ -13,7 +13,7 @@ from txt2vec.config import settings
 
 from ..file_format import FileFormat
 
-__all__ = ["load_file"]
+__all__ = ["_load_file"]
 
 
 _DELIMITERS: Final[tuple[str, ...]] = (",", ";", "\t", "|")
@@ -100,7 +100,7 @@ def _load_excel(path: Path, sheet_name: int = 0) -> pd.DataFrame:
     return pd.read_excel(path, sheet_name=sheet_name)
 
 
-load_file: Final[dict[FileFormat, Any]] = {
+_load_file: Final[dict[FileFormat, Any]] = {
     FileFormat.CSV: _load_csv,
     FileFormat.JSON: _load_json,
     FileFormat.XML: _load_xml,

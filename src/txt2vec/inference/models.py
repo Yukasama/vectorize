@@ -1,8 +1,8 @@
 """InferenceCounter model."""
 
-import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
+from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
@@ -17,13 +17,13 @@ class InferenceCounter(SQLModel, table=True):
 
     __tablename__ = "inference_counter"
 
-    id: uuid.UUID = Field(
-        default_factory=uuid.uuid4,
+    id: UUID = Field(
+        default_factory=uuid4,
         primary_key=True,
         description="Unique identifier for the inference counter.",
     )
 
-    ai_model_id: uuid.UUID = Field(
+    ai_model_id: UUID = Field(
         default=None,
         foreign_key="ai_model.id",
         index=True,

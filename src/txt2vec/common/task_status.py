@@ -11,4 +11,4 @@ class TaskStatus(StrEnum):
     PENDING = "P"
     DONE = "D"
     FAILED = "F"
-    CANCELED = "CA"
+    CANCELED = "C"

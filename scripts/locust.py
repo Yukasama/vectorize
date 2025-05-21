@@ -7,7 +7,7 @@ from pathlib import Path
 
 from locust import HttpUser, constant_throughput, task
 
-from tests.datasets.utils import build_files
+from tests.dataset.utils import build_files
 
 _DATASET_IDS = [
     "8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b",
