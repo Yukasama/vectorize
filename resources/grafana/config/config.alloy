@@ -1,0 +1,37 @@
+loki.source.api "listener" {
+  http {
+    listen_address = "0.0.0.0"
+    listen_port    = 9999
+  }
+  labels     = { source = "fastapi" }
+  forward_to = [loki.process.process_logs.receiver]
+}
+
+loki.process "process_logs" {
+  stage.json {
+    expressions = {
+      msg = "message",
+      ts  = "time",
+    }
+  }
+
+  stage.timestamp {
+    source = "ts"
+    format = "RFC3339"
+  }
+
+  stage.labels {
+    values = {
+      application = "fastapi",
+    }
+  }
+
+  stage.output { source = "msg" }
+  forward_to = [loki.write.loki_output.receiver]
+}
+
+loki.write "loki_output" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

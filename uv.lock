@@ -848,15 +848,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/93/fa/d24eee108ddf340d44ec4b381d056b569bfefc92883e19f63f48b5eb11ef/loki-handler-0.1.1.tar.gz", hash = "sha256:69bb3a27bff49adcfb974494349060f9763bc9839ef19cc50eb77c3657d4b7cd", size = 6212, upload-time = "2021-07-29T17:43:04.398Z" }
 
 [[package]]
-name = "loki-logger-handler"
-version = "1.1.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7e/72/0f874eb7c8098d3f51db9fe4572831ba39b8f41d7934c2efffd3a048827a/loki_logger_handler-1.1.1.tar.gz", hash = "sha256:82be552c166d44339cf752f83e5df3902d852906aa1b09b7d4b1dc1b82bf33b8", size = 15958, upload-time = "2025-02-10T10:48:58.205Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/44/ab/347a1674b2345ce9fec480b90ea80494b4bc840e361b13caaa3e7849244b/loki_logger_handler-1.1.1-py3-none-any.whl", hash = "sha256:016a5c73464c36e71e215d3b118ae7894296a8c2688c2463e622f5018a83ca6e", size = 14241, upload-time = "2025-02-10T10:48:56.335Z" },
-]
-
-[[package]]
 name = "lxml"
 version = "5.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2206,7 +2197,6 @@ dependencies = [
     { name = "hypercorn" },
     { name = "loguru" },
     { name = "loki-handler" },
-    { name = "loki-logger-handler" },
     { name = "lxml" },
     { name = "numpy" },
     { name = "openpyxl" },
@@ -2252,7 +2242,6 @@ requires-dist = [
     { name = "hypercorn", specifier = ">=0.17.3" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "loki-handler", specifier = ">=0.1.1" },
-    { name = "loki-logger-handler", specifier = ">=1.1.1" },
     { name = "lxml", specifier = ">=5.3.2" },
     { name = "numpy", specifier = ">=2.2.4" },
     { name = "openpyxl", specifier = ">=3.1.5" },
