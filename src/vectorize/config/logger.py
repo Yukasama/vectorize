@@ -5,7 +5,8 @@ from collections.abc import Mapping
 from typing import Any
 
 from loguru import logger
-from loki_handler import LokiHandler
+from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
+from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
 from .config import settings
 
@@ -38,16 +39,14 @@ def config_logger() -> None:
             enqueue=True,
         )
 
-    logger.add(
-        LokiHandler(
-            url="http://localhost:9999/loki/api/v1/push",
-            tags={"application": "fastapi"},
-            version="1",
-        ),
-        format="{message}",
-        serialize=True,
-        level=settings.log_level,
+    loki_handler = LokiLoggerHandler(
+        url="http://localhost:9999/loki/api/v1/push",
+        labels={"application": "vectorize", "environment": "dev"},
+        label_keys={},
+        timeout=10,
+        default_formatter=LoguruFormatter(),
     )
+    logger.configure(handlers=[{"sink": loki_handler, "serialize": True}])
 
 
 def _format_record(record: Mapping[str, Any]) -> str:

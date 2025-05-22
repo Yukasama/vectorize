@@ -3,7 +3,7 @@ loki.source.api "listener" {
     listen_address = "0.0.0.0"
     listen_port    = 9999
   }
-  labels     = { source = "fastapi" }
+  labels     = { source = "vectorize" }
   forward_to = [loki.process.process_logs.receiver]
 }
 
@@ -22,7 +22,7 @@ loki.process "process_logs" {
 
   stage.labels {
     values = {
-      application = "fastapi",
+      application = "vectorize",
     }
   }
 

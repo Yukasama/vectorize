@@ -66,6 +66,7 @@ dependencies = [
     "prometheus-fastapi-instrumentator>=7.1.0",
     "loki-handler>=0.1.1",
     "gitpython>=3.1.44",
+    "loki-logger-handler>=1.1.1",
 ]
 
 [project.scripts]
