@@ -22,11 +22,11 @@ from txt2vec.config.db import get_session
 from .exceptions import InvalidFileError
 from .models import DatasetAll, DatasetPublic, DatasetUpdate
 from .service import (
-    delete_dataset_srv,
-    get_dataset_srv,
-    get_datasets_srv,
-    update_dataset_srv,
-    upload_file_srv,
+    delete_dataset_svc,
+    get_dataset_svc,
+    get_datasets_svc,
+    update_dataset_svc,
+    upload_dataset_svc,
 )
 from .upload_options_model import DatasetUploadOptions
 from .utils.validate_zip import _handle_zip_upload
@@ -49,7 +49,7 @@ async def get_datasets(
     Returns:
         List of datasets with limited fields (DatasetAll model)
     """
-    datasets = await get_datasets_srv(db)
+    datasets = await get_datasets_svc(db)
     logger.debug("Datasets retrieved", length=len(datasets))
     return datasets
 
@@ -75,85 +75,19 @@ async def get_dataset(
     Raises:
         DatasetNotFoundError: If the dataset with the specified ID doesn't exist
     """
-    dataset, version = await get_dataset_srv(db, dataset_id)
+    dataset, version = await get_dataset_svc(db, dataset_id)
     response.headers["ETAG"] = f'"{version}"'
+    etag = f'"{version}"'
 
-    e_tag = request.headers.get("If-None-Match")
-    if e_tag:
-        clean_etag = e_tag.strip().strip('"')
-        if clean_etag == str(version):
-            logger.debug(
-                "Dataset not modified",
-                dataset_id=dataset_id,
-                etag=clean_etag,
-                version=version,
-            )
-            response.status_code = status.HTTP_304_NOT_MODIFIED
-            return None
+    client_match = request.headers.get("If-None-Match")
+    if client_match and client_match.strip('"') == str(version):
+        logger.debug("Dataset not modified", dataset_id=dataset_id, version=version)
+        return Response(
+            status_code=status.HTTP_304_NOT_MODIFIED, headers={"ETag": etag}
+        )
 
     logger.debug("Dataset retrieved", dataset_id=dataset_id, version=version)
     return dataset
-
-
-@router.put("/{dataset_id}")
-async def update_dataset(
-    dataset_id: UUID,
-    request: Request,
-    dataset: DatasetUpdate,
-    db: Annotated[AsyncSession, Depends(get_session)],
-) -> Response:
-    """Update a dataset with version control using ETags.
-
-    Updates a dataset by its ID, requiring an If-Match header with the current
-    version to prevent concurrent modification issues.
-
-    Args:
-        dataset_id: The UUID of the dataset to update
-        request: The HTTP request object containing If-Match header
-        dataset: The updated dataset object
-        db: Database session for persistence operations
-
-    Returns:
-        204 No Content response with Location header
-
-    Raises:
-        VersionMismatchError: If the ETag doesn't match current version
-        VersionMissingError: If the If-Match header is missing
-        DatasetNotFoundError: If the dataset doesn't exist
-    """
-    new_version = await update_dataset_srv(db, request, dataset_id, dataset)
-    logger.debug("Dataset updated", dataset_id=dataset_id)
-
-    return Response(
-        status_code=status.HTTP_204_NO_CONTENT,
-        headers={"Location": f"{request.url.path}", "ETag": f'"{new_version}"'},
-    )
-
-
-@router.delete("/{dataset_id}")
-async def delete_dataset(
-    dataset_id: UUID, db: Annotated[AsyncSession, Depends(get_session)]
-) -> Response:
-    """Delete a dataset by its ID.
-
-    Permanently removes the dataset and any related records (if cascading deletes
-    are configured) from the database.
-
-    Args:
-        dataset_id: The UUID of the dataset to delete
-        request: The HTTP request object
-        db: Database session for persistence operations
-
-    Returns:
-        204 No Content response
-
-    Raises:
-        DatasetNotFoundError: If the dataset with the specified ID doesn't exist
-    """
-    await delete_dataset_srv(db, dataset_id)
-    logger.debug("Dataset deleted", dataset_id=dataset_id)
-
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("")
@@ -197,7 +131,7 @@ async def upload_dataset(
     )
     for file in files_for_upload:
         try:
-            dataset_id = await upload_file_srv(db, file, options)
+            dataset_id = await upload_dataset_svc(db, file, options)
             dataset_ids.append(dataset_id)
         except AppError as e:
             if len(files_for_upload) == 1:
@@ -233,3 +167,64 @@ async def upload_dataset(
         status_code=status.HTTP_201_CREATED,
         headers={"Location": f"{request.url}/{last_id}"},
     )
+
+
+@router.put("/{dataset_id}")
+async def update_dataset(
+    dataset_id: UUID,
+    request: Request,
+    dataset: DatasetUpdate,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    """Update a dataset with version control using ETags.
+
+    Updates a dataset by its ID, requiring an If-Match header with the current
+    version to prevent concurrent modification issues.
+
+    Args:
+        dataset_id: The UUID of the dataset to update
+        request: The HTTP request object containing If-Match header
+        dataset: The updated dataset object
+        db: Database session for persistence operations
+
+    Returns:
+        204 No Content response with Location header
+
+    Raises:
+        VersionMismatchError: If the ETag doesn't match current version
+        VersionMissingError: If the If-Match header is missing
+        DatasetNotFoundError: If the dataset doesn't exist
+    """
+    new_version = await update_dataset_svc(db, request, dataset_id, dataset)
+    logger.debug("Dataset updated", dataset_id=dataset_id)
+
+    return Response(
+        status_code=status.HTTP_204_NO_CONTENT,
+        headers={"Location": f"{request.url.path}", "ETag": f'"{new_version}"'},
+    )
+
+
+@router.delete("/{dataset_id}")
+async def delete_dataset(
+    dataset_id: UUID, db: Annotated[AsyncSession, Depends(get_session)]
+) -> Response:
+    """Delete a dataset by its ID.
+
+    Permanently removes the dataset and any related records (if cascading deletes
+    are configured) from the database.
+
+    Args:
+        dataset_id: The UUID of the dataset to delete
+        request: The HTTP request object
+        db: Database session for persistence operations
+
+    Returns:
+        204 No Content response
+
+    Raises:
+        DatasetNotFoundError: If the dataset with the specified ID doesn't exist
+    """
+    await delete_dataset_svc(db, dataset_id)
+    logger.debug("Dataset deleted", dataset_id=dataset_id)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

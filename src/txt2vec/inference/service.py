@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.ai_model.repository import get_ai_model
+from txt2vec.ai_model.repository import get_ai_model_db
 from txt2vec.inference.repository import create_inference_counter, get_model_count
 
 from .embedding_model import EmbeddingUsage, Embeddings
@@ -34,7 +34,7 @@ async def get_embeddings_srv(db: AsyncSession, data: EmbeddingRequest) -> Embedd
         ModelNotFoundError: If the requested model cannot be found.
         ModelLoadError: If there's an error loading the AI model.
     """
-    ai_model = await get_ai_model(db, data.model)
+    ai_model = await get_ai_model_db(db, data.model)
 
     model, tokenizer = _load_model(ai_model.model_tag)
     results, total_toks = _generate_embeddings(data, model, tokenizer)
@@ -64,7 +64,7 @@ async def get_model_stats_srv(db: AsyncSession, model_tag: str) -> dict[str, int
         Dict[str, int]: Dictionary with dates as keys (format: YYYY-MM-DD)
                        and inference counts as values.
     """
-    ai_model = await get_ai_model(db, model_tag)
+    ai_model = await get_ai_model_db(db, model_tag)
     creation_date = ai_model.created_at.date()
     counters = await get_model_count(db, model_tag)
 

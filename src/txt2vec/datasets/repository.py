@@ -12,28 +12,28 @@ from .exceptions import DatasetNotFoundError
 from .models import Dataset, DatasetUpdate
 
 __all__ = [
-    "get_all_datasets_db",
     "get_dataset_db",
-    "save_dataset_db",
+    "get_datasets_db",
     "update_dataset_db",
+    "upload_dataset_db",
 ]
 
 
-async def save_dataset_db(db: AsyncSession, dataset: Dataset) -> UUID:
-    """Save a new dataset to the database.
+async def get_datasets_db(db: AsyncSession) -> list[Dataset]:
+    """Retrieve all datasets from the database.
 
     Args:
         db: Database session instance.
-        dataset: The dataset object to save.
 
     Returns:
-        UUID: The UUID of the saved dataset.
+        A list of all Dataset objects in the database.
     """
-    db.add(dataset)
-    await db.commit()
-    await db.refresh(dataset)
-    logger.debug("Dataset saved to DB", dataset=dataset)
-    return dataset.id
+    statement = select(Dataset)
+    result = await db.exec(statement)
+    datasets = result.all()
+
+    logger.debug("Retrieved {} datasets from database", len(datasets))
+    return datasets
 
 
 async def get_dataset_db(db: AsyncSession, dataset_id: UUID) -> Dataset:
@@ -59,21 +59,21 @@ async def get_dataset_db(db: AsyncSession, dataset_id: UUID) -> Dataset:
     return dataset
 
 
-async def get_all_datasets_db(db: AsyncSession) -> list[Dataset]:
-    """Retrieve all datasets from the database.
+async def upload_dataset_db(db: AsyncSession, dataset: Dataset) -> UUID:
+    """Save a new dataset to the database.
 
     Args:
         db: Database session instance.
+        dataset: The dataset object to save.
 
     Returns:
-        A list of all Dataset objects in the database.
+        UUID: The UUID of the saved dataset.
     """
-    statement = select(Dataset)
-    result = await db.exec(statement)
-    datasets = result.all()
-
-    logger.debug("Retrieved {} datasets from database", len(datasets))
-    return datasets
+    db.add(dataset)
+    await db.commit()
+    await db.refresh(dataset)
+    logger.debug("Dataset saved to DB", dataset=dataset)
+    return dataset.id
 
 
 async def update_dataset_db(
