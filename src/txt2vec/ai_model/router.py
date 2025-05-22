@@ -94,6 +94,7 @@ async def update_ai_model(
         headers={"Location": f"{request.url.path}", "ETag": f'"{new_version}"'},
     )
 
+
 @router.delete("/{model_id}")
 async def delete_model(
     model_id: UUID, db: Annotated[AsyncSession, Depends(get_session)]

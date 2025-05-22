@@ -93,6 +93,7 @@ async def update_ai_model_db(
     logger.debug("AIModel updated", ai_model=model)
     return model
 
+
 async def delete_model_db(db: AsyncSession, model_id: UUID) -> None:
     """Delete an AI model from the database by ID.
 
@@ -112,4 +113,4 @@ async def delete_model_db(db: AsyncSession, model_id: UUID) -> None:
 
     await db.delete(model)
     await db.commit()
-
+    logger.debug("Model deleted", model=model)

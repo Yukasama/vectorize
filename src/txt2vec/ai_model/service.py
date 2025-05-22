@@ -59,6 +59,7 @@ async def update_ai_model_svc(
     logger.debug("AIModel updated", ai_model_id=ai_model_id)
     return updated_model.version
 
+
 async def delete_model_srv(db: AsyncSession, model_id: UUID) -> None:
     """Delete an AI model by its ID from the database.
 
@@ -67,5 +68,4 @@ async def delete_model_srv(db: AsyncSession, model_id: UUID) -> None:
         model_id: UUID of the model to delete.
     """
     await delete_model_db(db, model_id)
-    logger.debug("Model deleted from service", modelId=model_id)
-
+    logger.debug("Model deleted from service", model_id=model_id)
