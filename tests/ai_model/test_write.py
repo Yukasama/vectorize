@@ -7,6 +7,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 _VALID_ID = "7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
+_VALID_TAG = "pytorch_model"
 _INVALID_ID = "8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
 
 
@@ -31,10 +32,10 @@ class TestUpdateAIModels:
         assert "ETag" in response.headers
         assert response.headers["ETag"] == '"1"'
 
-        # get_response = client.get(f"/models/{_VALID_ID}")
-        # assert get_response.status_code == status.HTTP_200_OK
-        # updated_model = get_response.json()
-        # assert updated_model["name"] == "Updated AI Model Name"
+        get_response = client.get(f"/models/{_VALID_TAG}")
+        assert get_response.status_code == status.HTTP_200_OK
+        updated_model = get_response.json()
+        assert updated_model["name"] == "Updated AI Model Name"
 
     @classmethod
     async def test_failed_update_missing_name(cls, client: TestClient) -> None:
