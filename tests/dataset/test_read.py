@@ -49,8 +49,8 @@ class TestGetDatasets:
         assert "created_at" in dataset
         assert "updated_at" in dataset
 
-        assert "ETAG" in response.headers
-        etag = response.headers["ETAG"].strip('"')
+        assert "ETag" in response.headers
+        etag = response.headers["ETag"].strip('"')
         assert etag == "0"
 
     @classmethod

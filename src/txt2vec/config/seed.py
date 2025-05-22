@@ -23,7 +23,6 @@ DATASET_BACKUP2_ID = UUID("9d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 
 AI_MODEL_READ_ID = UUID("7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_FAIL_ID = UUID("8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
-AI_MODEL_READ2_ID = UUID("1d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 
 
 async def seed_db(session: AsyncSession) -> None:
@@ -99,7 +98,7 @@ async def seed_db(session: AsyncSession) -> None:
     session.add(
         AIModel(
             id=AI_MODEL_READ_ID,
-            name="example_model",
+            name="Pytorch Model",
             source=ModelSource.LOCAL,
             model_tag="pytorch_model",
         ),
@@ -110,14 +109,6 @@ async def seed_db(session: AsyncSession) -> None:
             name="Big Model",
             source=ModelSource.LOCAL,
             model_tag="big_model",
-        ),
-    )
-    session.add(
-        AIModel(
-            id=AI_MODEL_READ2_ID,
-            name="example_model2",
-            source=ModelSource.LOCAL,
-            model_tag="pytorch_model",
         ),
     )
     session.add(

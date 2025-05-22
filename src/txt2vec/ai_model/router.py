@@ -24,9 +24,9 @@ __all__ = ["router"]
 router = APIRouter(tags=["AIModel"])
 
 
-@router.get("/{ai_model_id}")
+@router.get("/{ai_model_tag}")
 async def get_ai_model(
-    ai_model_id: UUID,
+    ai_model_tag: str,
     request: Request,
     response: Response,
     db: Annotated[AsyncSession, Depends(get_session)],
@@ -34,7 +34,7 @@ async def get_ai_model(
     """Retrieve a single AI model by its ID.
 
     Args:
-        ai_model_id: The UUID of the AI model to retrieve
+        ai_model_tag: The tag of the AI model to retrieve
         request: The HTTP request object
         response: FastAPI response object for setting headers
         db: Database session for persistence operations
@@ -45,23 +45,18 @@ async def get_ai_model(
     Raises:
         ModelNotFoundError: If the AI model with the specified ID doesn't exist
     """
-    ai_model, version = await get_ai_model_svc(db, ai_model_id)
-    response.headers["ETAG"] = f'"{version}"'
+    ai_model, version = await get_ai_model_svc(db, ai_model_tag)
+    response.headers["ETag"] = f'"{version}"'
+    etag = f'"{version}"'
 
-    e_tag = request.headers.get("If-None-Match")
-    if e_tag:
-        clean_etag = e_tag.strip().strip('"')
-        if clean_etag == str(version):
-            logger.debug(
-                "AIModel not modified",
-                ai_model_id=ai_model_id,
-                etag=clean_etag,
-                version=version,
-            )
-            response.status_code = status.HTTP_304_NOT_MODIFIED
-            return None
+    client_match = request.headers.get("If-None-Match")
+    if client_match and client_match.strip('"') == str(version):
+        logger.debug("AIModel not modified", ai_model_tag=ai_model_tag, version=version)
+        return Response(
+            status_code=status.HTTP_304_NOT_MODIFIED, headers={"ETag": etag}
+        )
 
-    logger.debug("AIModel retrieved", ai_model_id=ai_model_id, version=version)
+    logger.debug("AIModel retrieved", ai_model_tag=ai_model_tag, version=version)
     return ai_model
 
 

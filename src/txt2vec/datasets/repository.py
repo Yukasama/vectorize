@@ -98,6 +98,7 @@ async def update_dataset_db(
     """
     result = await db.exec(select(Dataset).where(Dataset.id == dataset_id))
     dataset = result.first()
+
     if dataset is None:
         raise DatasetNotFoundError(dataset_id)
 

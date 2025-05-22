@@ -15,7 +15,7 @@ __all__ = ["get_ai_model_svc", "update_ai_model_svc"]
 
 
 async def get_ai_model_svc(
-    db: AsyncSession, ai_model_id: UUID
+    db: AsyncSession, ai_model_tag: str
 ) -> tuple[AIModelPublic, int]:
     """Read a single AI model from the database.
 
@@ -24,17 +24,17 @@ async def get_ai_model_svc(
 
     Args:
         db: Database session for persistence operations
-        ai_model_id: The UUID of the AI model to retrieve
+        ai_model_tag: The tag of the AI model to retrieve
 
     Returns:
         Dictionary representing the AI model with all fields.
     """
-    ai_model = await get_ai_model_db(db, ai_model_id)
+    ai_model = await get_ai_model_db(db, ai_model_tag)
     return AIModelPublic.model_validate(ai_model), ai_model.version
 
 
 async def update_ai_model_svc(
-    db: AsyncSession, request: Request, model_id: UUID, update_data: AIModelUpdate
+    db: AsyncSession, request: Request, ai_model_id: UUID, update_data: AIModelUpdate
 ) -> int:
     """Update an AI model in the database.
 
@@ -44,17 +44,17 @@ async def update_ai_model_svc(
     Args:
         db: Database session for persistence operations
         request: The HTTP request object
-        model_id: The UUID of the AI model to update
+        ai_model_id: The UUID of the AI model to update
         update_data: The updated AI model data
 
     Returns:
         The updated version of the AI model.
     """
-    expected_version = parse_etag(str(model_id), request)
+    expected_version = parse_etag(str(ai_model_id), request)
 
     updated_model = await update_ai_model_db(
-        db, model_id, update_data, expected_version
+        db, ai_model_id, update_data, expected_version
     )
 
-    logger.debug("AIModel updated", ai_model_id=model_id)
+    logger.debug("AIModel updated", ai_model_id=ai_model_id)
     return updated_model.version
