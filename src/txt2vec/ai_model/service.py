@@ -9,7 +9,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from txt2vec.utils.etag_parser import parse_etag
 
 from .models import AIModelPublic, AIModelUpdate
-from .repository import get_ai_model_db, update_ai_model_db
+from .repository import delete_model_db, get_ai_model_db, update_ai_model_db
 
 __all__ = ["get_ai_model_svc", "update_ai_model_svc"]
 
@@ -60,7 +60,7 @@ async def update_ai_model_svc(
     return updated_model.version
 
 
-async def delete_model_srv(db: AsyncSession, model_id: UUID) -> None:
+async def delete_model_svc(db: AsyncSession, model_id: UUID) -> None:
     """Delete an AI model by its ID from the database.
 
     Args:
