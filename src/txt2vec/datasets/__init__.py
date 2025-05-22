@@ -16,17 +16,17 @@ from .exceptions import (
 from .file_format import FileFormat
 from .models import Dataset, DatasetAll, DatasetCreate, DatasetPublic, DatasetUpdate
 from .repository import (
-    get_all_datasets_db,
     get_dataset_db,
-    save_dataset_db,
+    get_datasets_db,
     update_dataset_db,
+    upload_dataset_db,
 )
 from .router import router
 from .service import (
-    get_dataset_srv,
-    get_datasets_srv,
-    update_dataset_srv,
-    upload_file_srv,
+    get_dataset_svc,
+    get_datasets_svc,
+    update_dataset_svc,
+    upload_dataset_svc,
 )
 from .upload_options_model import DatasetUploadOptions
 
@@ -49,13 +49,13 @@ __all__ = [
     "MissingColumnError",
     "TooManyFilesError",
     "UnsupportedFormatError",
-    "get_all_datasets_db",
     "get_dataset_db",
-    "get_dataset_srv",
-    "get_datasets_srv",
+    "get_dataset_svc",
+    "get_datasets_db",
+    "get_datasets_svc",
     "router",
-    "save_dataset_db",
     "update_dataset_db",
-    "update_dataset_srv",
-    "upload_file_srv",
+    "update_dataset_svc",
+    "upload_dataset_db",
+    "upload_dataset_svc",
 ]

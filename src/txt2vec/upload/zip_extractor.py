@@ -11,7 +11,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.ai_model import AIModel, ModelSource
 from txt2vec.ai_model.exceptions import ModelNotFoundError
-from txt2vec.ai_model.repository import get_ai_model, save_ai_model
+from txt2vec.ai_model.repository import get_ai_model_db, save_ai_model_db
 from txt2vec.config.config import settings
 from txt2vec.upload.exceptions import (
     ModelAlreadyExistsError,
@@ -77,7 +77,7 @@ async def process_model_directory(
     """
     safe_model_name = "".join(c if c.isalnum() else "_" for c in model_name)
     try:
-        await get_ai_model(db, safe_model_name)
+        await get_ai_model_db(db, safe_model_name)
 
         raise ModelAlreadyExistsError(
             f"Model with tag '{safe_model_name}' already exists"
@@ -143,7 +143,7 @@ async def process_model_directory(
         name=model_name,
         source=ModelSource.LOCAL,
     )
-    model_id = await save_ai_model(db, ai_model)
+    model_id = await save_ai_model_db(db, ai_model)
 
     return (model_dir, str(model_id))
 
@@ -173,7 +173,7 @@ async def process_single_model(
     safe_model_name = "".join(c if c.isalnum() else "_" for c in model_name)
 
     try:
-        await get_ai_model(db, safe_model_name)
+        await get_ai_model_db(db, safe_model_name)
 
         raise ModelAlreadyExistsError(
             f"Model with tag '{safe_model_name}' already exists"
@@ -209,6 +209,6 @@ async def process_single_model(
         name=model_name,
         source=ModelSource.LOCAL,
     )
-    model_id = await save_ai_model(db, ai_model)
+    model_id = await save_ai_model_db(db, ai_model)
 
     return (model_dir, str(model_id))

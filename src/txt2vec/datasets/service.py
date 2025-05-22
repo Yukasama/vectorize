@@ -16,10 +16,10 @@ from .exceptions import InvalidFileError
 from .models import Dataset, DatasetAll, DatasetPublic, DatasetUpdate
 from .repository import (
     delete_dataset_db,
-    get_all_datasets_db,
     get_dataset_db,
-    save_dataset_db,
+    get_datasets_db,
     update_dataset_db,
+    upload_dataset_db,
 )
 from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import _escape_csv_formulas
@@ -28,14 +28,14 @@ from .utils.file_df_converter import _convert_file_to_df
 from .utils.save_dataset import _save_dataframe_to_fs
 
 __all__ = [
-    "get_dataset_srv",
-    "get_datasets_srv",
-    "update_dataset_srv",
-    "upload_file_srv",
+    "get_dataset_svc",
+    "get_datasets_svc",
+    "update_dataset_svc",
+    "upload_dataset_svc",
 ]
 
 
-async def get_datasets_srv(db: AsyncSession) -> list[DatasetAll]:
+async def get_datasets_svc(db: AsyncSession) -> list[DatasetAll]:
     """Read all datasets from the database.
 
     This function retrieves all datasets from the database and returns them as a
@@ -45,12 +45,12 @@ async def get_datasets_srv(db: AsyncSession) -> list[DatasetAll]:
     Returns:
         List of dictionaries representing datasets with limited fields.
     """
-    datasets = await get_all_datasets_db(db)
+    datasets = await get_datasets_db(db)
 
     return [DatasetAll.model_validate(dataset) for dataset in datasets]
 
 
-async def get_dataset_srv(
+async def get_dataset_svc(
     db: AsyncSession, dataset_id: UUID
 ) -> tuple[DatasetPublic, int]:
     """Read a single dataset from the database.
@@ -66,56 +66,10 @@ async def get_dataset_srv(
         Dictionary representing the dataset with all fields.
     """
     dataset = await get_dataset_db(db, dataset_id)
-
     return DatasetPublic.model_validate(dataset), dataset.version
 
 
-async def update_dataset_srv(
-    db: AsyncSession,
-    request: Request,
-    dataset_id: UUID,
-    dataset_update: DatasetUpdate,
-) -> int:
-    """Update a dataset in the database.
-
-    This function updates an existing dataset in the database with the provided
-    data. It returns the updated dataset.
-
-    Args:
-        db: Database session for persistence operations
-        request: The HTTP request object
-        dataset_id: The UUID of the dataset to update
-        dataset_update: The updated dataset data
-
-    Returns:
-        The updated dataset.
-    """
-    expected_version = parse_etag(str(dataset_id), request)
-
-    updated_dataset = await update_dataset_db(
-        db, dataset_id, dataset_update, expected_version
-    )
-
-    return updated_dataset.version
-
-
-async def delete_dataset_srv(db: AsyncSession, dataset_id: UUID) -> None:
-    """Delete a dataset from the database.
-
-    This function deletes a dataset by its ID from the database.
-
-    Args:
-        db: Database session for persistence operations
-        dataset_id: The UUID of the dataset to delete
-
-    Returns:
-        None
-    """
-    await delete_dataset_db(db, dataset_id)
-    logger.debug("Dataset deleted", dataset_id=dataset_id)
-
-
-async def upload_file_srv(
+async def upload_dataset_svc(
     db: AsyncSession, file: UploadFile, options: DatasetUploadOptions | None = None
 ) -> UUID:
     """Stream upload, parse file to DataFrame, save as CSV, and return dataset ID.
@@ -163,7 +117,7 @@ async def upload_file_srv(
             rows=len(df),
         )
         logger.debug("Dataset DTO created", dataset=dataset)
-        dataset_id = await save_dataset_db(db, dataset)
+        dataset_id = await upload_dataset_db(db, dataset)
         logger.debug("Dataset saved", datasetId=dataset_id)
         return dataset_id
     except Exception:
@@ -171,3 +125,48 @@ async def upload_file_srv(
         if "file_path" in locals() and Path(file_path).exists():
             Path(file_path).unlink()
         raise
+
+
+async def update_dataset_svc(
+    db: AsyncSession,
+    request: Request,
+    dataset_id: UUID,
+    dataset_update: DatasetUpdate,
+) -> int:
+    """Update a dataset in the database.
+
+    This function updates an existing dataset in the database with the provided
+    data. It returns the updated dataset.
+
+    Args:
+        db: Database session for persistence operations
+        request: The HTTP request object
+        dataset_id: The UUID of the dataset to update
+        dataset_update: The updated dataset data
+
+    Returns:
+        The updated dataset.
+    """
+    expected_version = parse_etag(str(dataset_id), request)
+
+    updated_dataset = await update_dataset_db(
+        db, dataset_id, dataset_update, expected_version
+    )
+
+    return updated_dataset.version
+
+
+async def delete_dataset_svc(db: AsyncSession, dataset_id: UUID) -> None:
+    """Delete a dataset from the database.
+
+    This function deletes a dataset by its ID from the database.
+
+    Args:
+        db: Database session for persistence operations
+        dataset_id: The UUID of the dataset to delete
+
+    Returns:
+        None
+    """
+    await delete_dataset_db(db, dataset_id)
+    logger.debug("Dataset deleted", dataset_id=dataset_id)

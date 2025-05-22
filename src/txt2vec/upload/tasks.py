@@ -12,7 +12,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.ai_model import AIModel
 from txt2vec.ai_model.models import ModelSource
-from txt2vec.ai_model.repository import save_ai_model
+from txt2vec.ai_model.repository import save_ai_model_db
 from txt2vec.common.task_status import TaskStatus
 from txt2vec.upload.exceptions import ModelAlreadyExistsError
 from txt2vec.upload.huggingface_service import load_model_and_cache_only
@@ -49,7 +49,7 @@ async def process_huggingface_model_background(
             name=model_id,
             source=ModelSource.HUGGINGFACE,
         )
-        await save_ai_model(db, ai_model)
+        await save_ai_model_db(db, ai_model)
         await update_upload_task_status(db, task_id, TaskStatus.DONE)
 
         logger.info("[BG] Task completed successfully", taskId=task_id)
