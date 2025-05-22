@@ -21,7 +21,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.ai_model.exceptions import ModelNotFoundError
 from txt2vec.ai_model.model_source import ModelSource
-from txt2vec.ai_model.models import AIModel
 from txt2vec.ai_model.service import get_ai_model_svc
 from txt2vec.common.exceptions import InternalServerError
 from txt2vec.common.task_status import TaskStatus
