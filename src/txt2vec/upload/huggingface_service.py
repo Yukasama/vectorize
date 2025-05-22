@@ -47,7 +47,7 @@ async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: R
         snapshot_path = snapshot_download(
             repo_id=model_id,
             revision=tag,
-            cache_dir="./hf_cache",
+            cache_dir="data/models",
             allow_patterns=["*.safetensors", "*.json"],
         )
 

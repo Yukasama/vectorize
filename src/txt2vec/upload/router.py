@@ -37,7 +37,7 @@ from txt2vec.upload.zip_service import upload_zip_model
 router = APIRouter(tags=["Model Upload"])
 
 
-@router.post("/huggingface", status_code=status.HTTP_201_CREATED)
+@router.post("/huggingface")
 async def load_model_huggingface(
     data: HuggingFaceModelRequest,
     request: Request,
