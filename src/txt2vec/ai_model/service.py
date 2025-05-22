@@ -8,13 +8,32 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.utils.etag_parser import parse_etag
 
-from .models import AIModelUpdate
-from .repository import update_ai_model_db
+from .models import AIModelPublic, AIModelUpdate
+from .repository import get_ai_model_db, update_ai_model_db
 
-__all__ = ["update_ai_model_srv"]
+__all__ = ["get_ai_model_svc", "update_ai_model_svc"]
 
 
-async def update_ai_model_srv(
+async def get_ai_model_svc(
+    db: AsyncSession, ai_model_id: UUID
+) -> tuple[AIModelPublic, int]:
+    """Read a single AI model from the database.
+
+    This function retrieves an AI model by its ID from the database and returns it
+    as a dictionary. The dictionary contains all fields of the AI model.
+
+    Args:
+        db: Database session for persistence operations
+        ai_model_id: The UUID of the AI model to retrieve
+
+    Returns:
+        Dictionary representing the AI model with all fields.
+    """
+    ai_model = await get_ai_model_db(db, ai_model_id)
+    return AIModelPublic.model_validate(ai_model), ai_model.version
+
+
+async def update_ai_model_svc(
     db: AsyncSession, request: Request, model_id: UUID, update_data: AIModelUpdate
 ) -> int:
     """Update an AI model in the database.
