@@ -34,7 +34,7 @@ from .utils.validate_zip import _handle_zip_upload
 __all__ = ["router"]
 
 
-router = APIRouter(tags=["Dataset", "Upload"])
+router = APIRouter(tags=["Dataset"])
 
 
 @router.get("")
@@ -76,7 +76,7 @@ async def get_dataset(
         DatasetNotFoundError: If the dataset with the specified ID doesn't exist
     """
     dataset, version = await get_dataset_svc(db, dataset_id)
-    response.headers["ETAG"] = f'"{version}"'
+    response.headers["ETag"] = f'"{version}"'
     etag = f'"{version}"'
 
     client_match = request.headers.get("If-None-Match")

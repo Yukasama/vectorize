@@ -59,14 +59,6 @@ class NoValidModelsFoundError(AppError):
     status_code = status.HTTP_400_BAD_REQUEST
 
 
-class DatabaseError(AppError):
-    """Exception raised when there is a database error."""
-
-    error_code = ErrorCode.DATABASE_ERROR
-    message = "Database connection was lost"
-    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-
-
 class ServiceUnavailableError(AppError):
     """Exception raised when the service is unavailable."""
 

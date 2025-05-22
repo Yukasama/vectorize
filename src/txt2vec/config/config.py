@@ -11,6 +11,7 @@ __all__ = ["settings"]
 
 
 _app_config_path = Path(__file__).parent / "resources" / "app.toml"
+
 with Path.open(_app_config_path, "rb") as f:
     _config = tomllib.load(f)
     _app_config = _config.get("app", {})
