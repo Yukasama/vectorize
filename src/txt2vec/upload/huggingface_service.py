@@ -1,7 +1,7 @@
-"""Service zum Laden und Speichern von Hugging Face Modellen.
+"""Service for loading and saving Hugging Face models.
 
-Dieses Modul lädt Modelle von Hugging Face, cached sie lokal und speichert sie
-in der Datenbank, falls sie noch nicht vorhanden sind.
+This module loads models from Hugging Face, caches them locally, and stores them
+in the database if they are not already present.
 """
 
 from pathlib import Path
