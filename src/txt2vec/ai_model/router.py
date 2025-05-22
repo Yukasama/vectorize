@@ -15,13 +15,54 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.config.db import get_session
 
-from .models import AIModelUpdate
-from .service import update_ai_model_srv
+from .models import AIModelPublic, AIModelUpdate
+from .service import get_ai_model_svc, update_ai_model_svc
 
 __all__ = ["router"]
 
 
 router = APIRouter(tags=["AIModel"])
+
+
+@router.get("/{ai_model_id}")
+async def get_ai_model(
+    ai_model_id: UUID,
+    request: Request,
+    response: Response,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> AIModelPublic | None:
+    """Retrieve a single AI model by its ID.
+
+    Args:
+        ai_model_id: The UUID of the AI model to retrieve
+        request: The HTTP request object
+        response: FastAPI response object for setting headers
+        db: Database session for persistence operations
+
+    Returns:
+        The AI model object, or 304 Not Modified if the ETag matches the current version
+
+    Raises:
+        ModelNotFoundError: If the AI model with the specified ID doesn't exist
+    """
+    ai_model, version = await get_ai_model_svc(db, ai_model_id)
+    response.headers["ETAG"] = f'"{version}"'
+
+    e_tag = request.headers.get("If-None-Match")
+    if e_tag:
+        clean_etag = e_tag.strip().strip('"')
+        if clean_etag == str(version):
+            logger.debug(
+                "AIModel not modified",
+                ai_model_id=ai_model_id,
+                etag=clean_etag,
+                version=version,
+            )
+            response.status_code = status.HTTP_304_NOT_MODIFIED
+            return None
+
+    logger.debug("AIModel retrieved", ai_model_id=ai_model_id, version=version)
+    return ai_model
 
 
 @router.put("/{ai_model_id}")
@@ -50,7 +91,7 @@ async def update_ai_model(
         VersionMissingError: If the If-Match header is missing
         ModelNotFoundError: If the AIModel doesn't exist
     """
-    new_version = await update_ai_model_srv(db, request, ai_model_id, ai_model)
+    new_version = await update_ai_model_svc(db, request, ai_model_id, ai_model)
     logger.debug("AIModel updated", ai_model_id=ai_model_id)
 
     return Response(

@@ -11,10 +11,10 @@ from txt2vec.common.exceptions import VersionMismatchError
 from .exceptions import ModelNotFoundError
 from .models import AIModel, AIModelUpdate
 
-__all__ = ["get_ai_model", "save_ai_model", "update_ai_model_db"]
+__all__ = ["get_ai_model_db", "save_ai_model_db", "update_ai_model_db"]
 
 
-async def get_ai_model(db: AsyncSession, model_tag: str) -> AIModel:
+async def get_ai_model_db(db: AsyncSession, model_tag: str) -> AIModel:
     """Retrieve an AI model by its ID.
 
     Args:
@@ -38,7 +38,7 @@ async def get_ai_model(db: AsyncSession, model_tag: str) -> AIModel:
     return model
 
 
-async def save_ai_model(db: AsyncSession, model: AIModel) -> UUID:
+async def save_ai_model_db(db: AsyncSession, model: AIModel) -> UUID:
     """Persist model to database with a unique tag.
 
     Args:
