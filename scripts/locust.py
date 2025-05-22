@@ -1,6 +1,7 @@
 """Load testing with Locust.
 
 Run with: uvx locust -f scripts/locust.py
+Run headless with: uvx locust -f scripts/locust.py --headless -u 1 -r 1 -t 1m
 """
 
 from pathlib import Path

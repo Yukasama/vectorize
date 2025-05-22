@@ -30,23 +30,22 @@ def config_logger() -> None:
         colorize=False,
     )
 
-    if not is_production:
-        logger.add(
-            sys.stdout,
-            format=_format_record,
-            level=settings.log_level,
-            colorize=True,
-            enqueue=True,
-        )
+    logger.add(
+        sys.stdout,
+        # format=_format_record,
+        level=settings.log_level,
+        colorize=True,
+        enqueue=True,
+    )
 
     loki_handler = LokiLoggerHandler(
         url="http://localhost:9999/loki/api/v1/push",
-        labels={"application": "vectorize", "environment": "dev"},
-        label_keys={},
+        labels={"application": "fastapi", "environment": "dev"},
         timeout=10,
+        enable_structured_loki_metadata=True,
         default_formatter=LoguruFormatter(),
     )
-    logger.configure(handlers=[{"sink": loki_handler, "serialize": True}])
+    logger.add(loki_handler)
 
 
 def _format_record(record: Mapping[str, Any]) -> str:
