@@ -35,8 +35,9 @@ async def process_huggingface_model_background(
         task_id (UUID): The unique identifier of the upload task.
 
     Raises:
-        Exception: If an error occurs during model processing or database
-        operations.
+        ModelAlreadyExistsError: If the model already exists in the database.
+        IntegrityError: If a database integrity error occurs.
+        Exception: If an error occurs during model processing or database operations.
     """
     key = f"{model_id}@{tag}"
 

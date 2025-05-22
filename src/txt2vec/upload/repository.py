@@ -44,6 +44,9 @@ async def update_upload_task_status(
 
     Hinweis: Falls der Task nicht gefunden wird, wird ein Fehler geloggt,
     aber keine Exception geworfen.
+
+    Raises:
+        NoResultFound: If the task with the given ID is not found (error is only logged, not raised).
     """
     result = await db.exec(select(UploadTask).where(UploadTask.id == task_id))
     try:
