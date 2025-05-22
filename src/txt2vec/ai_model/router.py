@@ -16,7 +16,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from txt2vec.config.db import get_session
 
 from .models import AIModelPublic, AIModelUpdate
-from .service import get_ai_model_svc, update_ai_model_svc
+from .service import delete_model_svc, get_ai_model_svc, update_ai_model_svc
 
 __all__ = ["router"]
 
@@ -111,7 +111,7 @@ async def delete_model(
     Raises:
         ModelNotFoundError: If no model with that ID exists.
     """
-    await delete_model_srv(db, model_id)
+    await delete_model_svc(db, model_id)
     logger.debug("Model deleted", modelId=model_id)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

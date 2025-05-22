@@ -9,6 +9,9 @@ from fastapi.testclient import TestClient
 _VALID_ID = "7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
 _VALID_TAG = "pytorch_model"
 _INVALID_ID = "8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
+_NON_EXISTENT_ID = "12345678-1234-5678-1234-567812345678"
+_DELETE_ID = "2d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
+_DELETE_TAG = "huge_model"
 
 
 @pytest.mark.asyncio
@@ -80,3 +83,34 @@ class TestUpdateAIModels:
         assert response.status_code == status.HTTP_428_PRECONDITION_REQUIRED
         response_body = response.json()
         assert response_body["code"] == "VERSION_MISSING"
+
+    @classmethod
+    async def test_delete(cls, client: TestClient) -> None:
+        """Test successful deletion of a model."""
+        # response = client.get("/models")
+        # assert response.status_code == status.HTTP_200_OK
+        # models_length = len(response.json())
+
+        response = client.delete(f"/models/{_DELETE_ID}")
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+        model = client.get(f"/models/{_DELETE_TAG}")
+        assert model.status_code == status.HTTP_404_NOT_FOUND
+
+        # response = client.get("/models")
+        # assert len(response.json()) == models_length - 1
+
+    @classmethod
+    async def test_delete_not_exist(cls, client: TestClient) -> None:
+        """Test deletion of a non-existent model."""
+        # response = client.get("/models")
+        # assert response.status_code == status.HTTP_200_OK
+        # models_length = len(response.json())
+
+        response = client.delete(f"/models/{_NON_EXISTENT_ID}")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        response_body = response.json()
+        assert response_body["code"] == "NOT_FOUND"
+
+        # response = client.get("/models")
+        # assert len(response.json()) == models_length
