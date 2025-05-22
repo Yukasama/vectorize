@@ -22,6 +22,12 @@ def test_load_distilbert_model(client: TestClient) -> None:
 
 @pytest.mark.huggingface
 def test_load_distilbert_model_without_revision(client: TestClient) -> None:
-    """Testet das Laden des distilbert-base-uncased Modells von Huggingface ohne Revision."""
-    response = client.post("/uploads/huggingface", json={"model_tag": _MODEL_SECOND_TAG})
+    """Testet das Laden des distilbert-base-uncased Modells von Huggingface.
+
+    ohne Revision.
+    """
+    response = client.post(
+        "/uploads/huggingface",
+        json={"model_tag": _MODEL_SECOND_TAG},
+    )
     assert response.status_code == status.HTTP_201_CREATED
