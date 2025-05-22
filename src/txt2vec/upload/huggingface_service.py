@@ -29,6 +29,11 @@ async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: R
     Args:
         model_id: The Hugging Face model repository ID.
         tag: The revision or tag to download.
+
+    Raises:
+        NoValidModelsFoundError: If no valid .safetensors file is found or more than one exists.
+        FileNotFoundError: If the model is not found on Hugging Face.
+        InvalidModelError: If an error occurs while loading the model or tokenizer.
     """
     key = f"{model_id}@{tag}"
 

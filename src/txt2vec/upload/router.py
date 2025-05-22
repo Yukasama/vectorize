@@ -17,12 +17,12 @@ from fastapi.responses import JSONResponse
 from huggingface_hub import model_info
 from huggingface_hub.utils import EntryNotFoundError, HfHubHTTPError
 from loguru import logger
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from txt2vec.ai_model.exceptions import ModelNotFoundError
 from txt2vec.ai_model.model_source import ModelSource
 from txt2vec.ai_model.models import AIModel
+from txt2vec.ai_model.service import get_ai_model_svc
 from txt2vec.common.exceptions import InternalServerError
 from txt2vec.common.task_status import TaskStatus
 from txt2vec.config.db import get_session
@@ -59,15 +59,19 @@ async def load_model_huggingface(
 
     Returns:
         Response with 201 status and Location header.
+
+    Raises:
+        ModelAlreadyExistsError: If the model already exists in the database.
+        ModelNotFoundError: If the model is not found on Hugging Face.
+        InternalServerError: If an internal error occurs while checking the model.
     """
     key = f"{data.model_id}@{data.tag}"
 
-    model_exists = await db.exec(select(AIModel).where(AIModel.model_tag == key))
-    if model_exists.first():
+    try:
+        await get_ai_model_svc(db, key)
         raise ModelAlreadyExistsError(key)
-
-    # Das muss in den Service rein und der Router muss den Service aufrufen
-    # ai_model/reository.py get_ai_model implementieren, keine DB-Aufrufe im Router
+    except ModelNotFoundError:
+        pass
 
     try:
         model_info(repo_id=data.model_id, revision=data.tag)
