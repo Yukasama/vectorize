@@ -66,6 +66,9 @@ async def load_model_huggingface(
     if model_exists.first():
         raise ModelAlreadyExistsError(key)
 
+    # Das muss in den Service rein und der Router muss den Service aufrufen
+    # ai_model/reository.py get_ai_model implementieren, keine DB-Aufrufe im Router 
+
     try:
         model_info(repo_id=data.model_id, revision=data.tag)
     except (EntryNotFoundError, HfHubHTTPError) as e:
