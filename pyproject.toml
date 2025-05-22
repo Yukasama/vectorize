@@ -102,11 +102,13 @@ markers = [
     "dataset: marks test as a dataset test",
     "dataset_valid: marks test as a dataset valid test",
     "dataset_invalid: marks test as a dataset invalid test",
+    "dataset_read: marks test as a dataset read test",
     "dataset_write: marks test as a dataset write test",
     "inference: marks test as an inference test",
     "huggingface: marks test as a huggingface test",
     "upload: mark test as upload related",
     "ai_model: mark test as ai model related",
+    "ai_model_read: mark test as ai model read related",
     "ai_model_write: mark test as ai model write related",
 ]
 minversion = "8.3.5"

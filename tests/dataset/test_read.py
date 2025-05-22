@@ -2,14 +2,9 @@
 
 """Tests for dataset GET endpoints."""
 
-from pathlib import Path
-
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-
-_TRAINING_FOLDER = "test_data"
-_VALID_FOLDER = "valid"
 
 _WRONG_ID = "00000000-0000-0000-0000-000000000000"
 _VALID_ID = "5d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
@@ -17,11 +12,9 @@ _VALID_ID = "5d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
 
 @pytest.mark.asyncio
 @pytest.mark.dataset
+@pytest.mark.dataset_read
 class TestGetDatasets:
     """Tests for GET /datasets and GET /datasets/{dataset_id} endpoints."""
-
-    _base_dir = Path(__file__).parent.parent.parent / _TRAINING_FOLDER / "datasets"
-    valid_dir = _base_dir / _VALID_FOLDER
 
     @classmethod
     async def test_get_all_datasets(cls, client: TestClient) -> None:
