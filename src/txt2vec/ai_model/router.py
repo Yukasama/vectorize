@@ -93,3 +93,24 @@ async def update_ai_model(
         status_code=status.HTTP_204_NO_CONTENT,
         headers={"Location": f"{request.url.path}", "ETag": f'"{new_version}"'},
     )
+
+@router.delete("/{model_id}")
+async def delete_model(
+    model_id: UUID, db: Annotated[AsyncSession, Depends(get_session)]
+) -> Response:
+    """Delete an AI model by its ID.
+
+    Args:
+        model_id: The UUID of the model to delete.
+        db: Database session.
+
+    Returns:
+        204 No Content if deletion is successful.
+
+    Raises:
+        ModelNotFoundError: If no model with that ID exists.
+    """
+    await delete_model_srv(db, model_id)
+    logger.debug("Model deleted", modelId=model_id)
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
