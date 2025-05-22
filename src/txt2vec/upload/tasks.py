@@ -20,7 +20,7 @@ from txt2vec.upload.repository import update_upload_task_status
 
 
 async def process_huggingface_model_background(
-    db: AsyncSession, model_id: str, tag: str, task_id: UUID
+    db: AsyncSession, model_tag: str, revision: str, task_id: UUID
 ) -> None:
     """Processes a Hugging Face model upload in the background.
 
@@ -30,8 +30,8 @@ async def process_huggingface_model_background(
 
     Args:
         db (AsyncSession): The database session for database operations.
-        model_id (str): The ID of the Hugging Face model repository.
-        tag (str): The specific revision or tag of the model to download.
+        model_tag (str): The tag of the Hugging Face model repository.
+        revision (str): The specific revision or version of the model to download.
         task_id (UUID): The unique identifier of the upload task.
 
     Raises:
@@ -39,15 +39,15 @@ async def process_huggingface_model_background(
         IntegrityError: If a database integrity error occurs.
         Exception: If an error occurs during model processing or database operations.
     """
-    key = f"{model_id}@{tag}"
+    key = f"{model_tag}@{revision}"
 
     try:
         logger.info("[BG] Starting model upload for task", taskId=task_id)
-        await load_model_and_cache_only(model_id, tag)
+        await load_model_and_cache_only(model_tag, revision)
 
         ai_model = AIModel(
             model_tag=key,
-            name=model_id,
+            name=model_tag,
             source=ModelSource.HUGGINGFACE,
         )
         await save_ai_model_db(db, ai_model)
