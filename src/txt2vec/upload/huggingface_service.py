@@ -19,16 +19,16 @@ from txt2vec.upload.exceptions import (
 _models = {}
 
 
-async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: RUF029
+async def load_model_and_cache_only(model_tag: str, revision: str) -> None:  # noqa: RUF029
     """Load a Hugging Face model and cache it locally if not already cached.
 
     Downloads the model and tokenizer from Hugging Face using the given
-    model_id and tag, checks for valid safetensors, and stores the pipeline
+    model_tag and revision, checks for valid safetensors, and stores the pipeline
     in a local cache. Raises if the model is not found or invalid.
 
     Args:
-        model_id: The Hugging Face model repository ID.
-        tag: The revision or tag to download.
+        model_tag: The Hugging Face model repository tag.
+        revision: The revision or version to download.
 
     Raises:
         NoValidModelsFoundError: If no valid .safetensors file is found or
@@ -37,7 +37,7 @@ async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: R
         InvalidModelError: If an error occurs while loading the model or
             tokenizer.
     """
-    key = f"{model_id}@{tag}"
+    key = f"{model_tag}@{revision}"
 
     if key in _models:
         logger.info("Model is already in Cache.", modelKey=key)
@@ -45,8 +45,8 @@ async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: R
 
     try:
         snapshot_path = snapshot_download(
-            repo_id=model_id,
-            revision=tag,
+            repo_id=model_tag,
+            revision=revision,
             cache_dir="data/models",
             allow_patterns=["*.safetensors", "*.json"],
         )
@@ -68,13 +68,13 @@ async def load_model_and_cache_only(model_id: str, tag: str) -> None:  # noqa: R
     except EntryNotFoundError as e:
         logger.debug(
             "Model not found on Hugging Face.",
-            modelId=model_id,
-            tag=tag,
+            modelTag=model_tag,
+            revision=revision,
             error=str(e),
         )
         raise FileNotFoundError(
             "Model not found on Hugging Face.",
-            {"modelId": model_id, "tag": tag, "error": str(e)},
+            {"modelTag": model_tag, "revision": revision, "error": str(e)},
         ) from e
 
     except Exception as e:

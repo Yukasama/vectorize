@@ -44,14 +44,14 @@ async def load_model_huggingface(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Upload a Hugging Face model by model_id and tag.
+    """Upload a Hugging Face model by model_tag and revision.
 
     Checks if the model already exists, verifies its presence on
     Hugging Face, creates an upload task, and starts background
     processing. Returns a 201 response with a Location header.
 
     Args:
-        data: Model id and tag for Hugging Face.
+        data: Model tag and revision for Hugging Face.
         request: FastAPI request object.
         background_tasks: FastAPI background task manager.
         db: Async database session.
@@ -64,7 +64,7 @@ async def load_model_huggingface(
         ModelNotFoundError: If the model is not found on Hugging Face.
         InternalServerError: If an internal error occurs while checking the model.
     """
-    key = f"{data.model_id}@{data.tag}"
+    key = f"{data.model_tag}@{data.revision}"
 
     try:
         await get_ai_model_svc(db, key)
@@ -73,9 +73,9 @@ async def load_model_huggingface(
         pass
 
     try:
-        model_info(repo_id=data.model_id, revision=data.tag)
+        model_info(repo_id=data.model_tag, revision=data.revision)
     except (EntryNotFoundError, HfHubHTTPError) as e:
-        raise ModelNotFoundError(data.model_id, data.tag) from e
+        raise ModelNotFoundError(data.model_tag, data.revision) from e
     except Exception as e:
         raise InternalServerError(
             "Internal server error while checking model on Hugging Face.",
@@ -91,8 +91,8 @@ async def load_model_huggingface(
     background_tasks.add_task(
         process_huggingface_model_background,
         db,
-        data.model_id,
-        data.tag,
+        data.model_tag,
+        data.revision,
         upload_task.id,
     )
 
