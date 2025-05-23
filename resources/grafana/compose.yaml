@@ -74,7 +74,11 @@ services:
       - "12345:12345"
     volumes:
       - ./config/config.alloy:/etc/alloy/config.alloy
-    command: ["run", "/etc/alloy/config.alloy"]
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --stability.level=experimental
+      - /etc/alloy/config.alloy
     cap_drop: [ALL]
     restart: unless-stopped
     healthcheck:
@@ -82,13 +86,17 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    depends_on:
+      - loki
 
   loki:
     image: grafana/loki:latest
     container_name: loki
     ports:
       - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
     cap_drop: [ALL]
     restart: unless-stopped
     healthcheck:

@@ -5,7 +5,9 @@ from collections.abc import Mapping
 from typing import Any
 
 from loguru import logger
-from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
+
+# from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
+from loki_logger_handler.formatters.logger_formatter import LoggerFormatter
 from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
 from .config import settings
@@ -43,9 +45,14 @@ def config_logger() -> None:
         labels={"application": "fastapi", "environment": "dev"},
         timeout=10,
         enable_structured_loki_metadata=True,
-        default_formatter=LoguruFormatter(),
+        # default_formatter=LoguruFormatter(),
+        default_formatter=LoggerFormatter(
+            add_timestamp=True,
+            timestamp_format="%Y-%m-%dT%H:%M:%S.%fZ",
+            structured_append_message=True,
+        ),
     )
-    logger.add(loki_handler)
+    logger.add(loki_handler, level=settings.log_level)
 
 
 def _format_record(record: Mapping[str, Any]) -> str:

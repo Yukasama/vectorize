@@ -7,6 +7,10 @@ loki.source.api "listener" {
   forward_to = [loki.process.process_logs.receiver]
 }
 
+livedebugging {
+  enabled = true
+}
+
 loki.process "process_logs" {
   stage.json {
     expressions = {
@@ -23,6 +27,7 @@ loki.process "process_logs" {
   stage.labels {
     values = {
       application = "fastapi",
+      source = "fastapi",
     }
   }
 
