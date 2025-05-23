@@ -15,4 +15,6 @@ def run() -> None:
         reload=settings.reload,
         reload_dirs=["src/vectorize"],
         server_header=settings.server_header,
+        log_config=None,
+        log_level=None,
     )

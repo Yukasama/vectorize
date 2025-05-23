@@ -21,7 +21,8 @@ loki.process "process_logs" {
 
   stage.timestamp {
     source = "ts"
-    format = "RFC3339"
+    format = "RFC3339Nano"
+    action_on_failure = "skip"
   }
 
   stage.labels {
@@ -37,6 +38,17 @@ loki.process "process_logs" {
 
 loki.write "loki_output" {
   endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
+    url                 = "http://loki:3100/loki/api/v1/push"
+    batch_size          = "8KiB"
+    batch_wait          = "5s"
+    remote_timeout      = "10s"
+    min_backoff_period  = "500ms"
+    max_backoff_period  = "5s"
+    max_backoff_retries = 3
+  }
+  wal {
+    enabled         = true  
+    drain_timeout   = "30s"       
+    max_segment_age = "1h"      
   }
 }

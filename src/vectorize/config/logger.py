@@ -1,13 +1,12 @@
 """Logger configuration."""
 
+import logging
 import sys
 from collections.abc import Mapping
 from typing import Any
 
 from loguru import logger
-
-# from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
-from loki_logger_handler.formatters.logger_formatter import LoggerFormatter
+from loki_logger_handler.formatters.loguru_formatter import LoguruFormatter
 from loki_logger_handler.loki_logger_handler import LokiLoggerHandler
 
 from .config import settings
@@ -17,9 +16,31 @@ __all__ = ["config_logger"]
 
 def config_logger() -> None:
     """Logger configuration."""
-    logger.remove()
-
     is_production = settings.app_env == "production"
+
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
+    class InterceptHandler(logging.Handler):
+        @staticmethod
+        def emit(record: object) -> None:
+            """Intercepts standard logging and sends it to Loguru."""
+            try:
+                level = logger.level(record.levelname).name
+            except ValueError:
+                level = record.levelno
+
+            frame, depth = logging.currentframe(), 2
+            while frame.f_back and frame.f_code.co_filename == logging.__file__:
+                frame = frame.f_back
+                depth += 1
+
+            logger.opt(depth=depth, exception=record.exc_info).log(
+                level, record.getMessage()
+            )
+
+    logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
+    logger.remove()
 
     logger.add(
         settings.log_path,
@@ -34,25 +55,24 @@ def config_logger() -> None:
 
     logger.add(
         sys.stdout,
-        # format=_format_record,
+        format=_format_record,
         level=settings.log_level,
         colorize=True,
         enqueue=True,
     )
 
-    loki_handler = LokiLoggerHandler(
-        url="http://localhost:9999/loki/api/v1/push",
-        labels={"application": "fastapi", "environment": "dev"},
-        timeout=10,
-        enable_structured_loki_metadata=True,
-        # default_formatter=LoguruFormatter(),
-        default_formatter=LoggerFormatter(
-            add_timestamp=True,
-            timestamp_format="%Y-%m-%dT%H:%M:%S.%fZ",
-            structured_append_message=True,
+    logger.add(
+        LokiLoggerHandler(
+            url="http://localhost:9999/loki/api/v1/push",
+            labels={"application": "fastapi", "environment": settings.app_env},
+            timeout=10,
+            enable_structured_loki_metadata=True,
+            default_formatter=LoguruFormatter(),
         ),
+        serialize=True,
+        enqueue=True,
+        level=logging.INFO,
     )
-    logger.add(loki_handler, level=settings.log_level)
 
 
 def _format_record(record: Mapping[str, Any]) -> str:
