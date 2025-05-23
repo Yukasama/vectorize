@@ -1,5 +1,5 @@
 [project]
-name = "txt2vec"
+name = "vectorize"
 version = "0.1.0"
 description = "AWP Projekt für Text Embedding Service"
 authors = [
@@ -70,7 +70,7 @@ dependencies = [
 ]
 
 [project.scripts]
-app = "txt2vec:main"
+app = "vectorize:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -94,9 +94,9 @@ dev = [
 ]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/txt2vec"]
+include = ["src/vectorize"]
 [tool.hatch.build.targets.wheel]
-packages = ["src/txt2vec"]
+packages = ["src/vectorize"]
 
 [tool.pytest.ini_options]
 markers = [

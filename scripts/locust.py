@@ -21,7 +21,7 @@ _DATASET_PATH = "/datasets"
 _PRECONDITION_FAILED = 412
 
 
-class Txt2VecLoadTests(HttpUser):
+class AppLoadTests(HttpUser):
     """Load tests for the API."""
 
     host = "http://localhost:8000/v1"

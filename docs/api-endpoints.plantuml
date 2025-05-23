@@ -26,7 +26,7 @@ rectangle "Backend (FastAPI)" {
   ' --- INTERNAL PROCESSES ---
   package "Internal Processes" {
     [GitHub Pull / HuggingFace Pull]
-    [Save model to file system (~txt2vec/models)]
+    [Save model to file system (~vectorize/models)]
     [Create database entry for model]
     
     [Start asynchronous training]
@@ -43,7 +43,7 @@ rectangle "Backend (FastAPI)" {
 ' Upload processes (models)
 [POST /models/upload] --> [GitHub Pull / HuggingFace Pull]
 [POST /models/batch-upload] --> [GitHub Pull / HuggingFace Pull]
-[GitHub Pull / HuggingFace Pull] --> [Save model to file system (~txt2vec/models)]
+[GitHub Pull / HuggingFace Pull] --> [Save model to file system (~vectorize/models)]
 [GitHub Pull / HuggingFace Pull] --> [Create database entry for model]
 
 ' Dataset processes
