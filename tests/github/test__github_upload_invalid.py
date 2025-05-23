@@ -8,13 +8,13 @@ from fastapi.testclient import TestClient
 _INVALID_SYNTAX_URLS = [
     "",                    # leer
     "not a url",           # kein valider URL-String
-    "ftp://github.com/owner/repo",  # ungültiges Schema
+    "ftp://github.com/owner/repo",  # nosec  # NOSONAR #ungültiges Schema
 ]
 
 # Cases where it *is* a valid HTTP URL, but not a well-formed GitHub repo
 _INVALID_GITHUB_URLS = [
-    "http://example.com/owner/repo",  # falsche Domain
-    "https://github.com/",            # keine owner/repo
+    "http://example.com/owner/repo",  # nosec  # NOSONAR #ungültige url
+    "https://github.com/",
 ]
 
 
