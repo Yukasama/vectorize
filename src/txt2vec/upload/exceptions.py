@@ -81,6 +81,6 @@ class ModelAlreadyExistsError(AppError):
 class InvalidUrlError(AppError):
     """Exception raised when the service is unavailable."""
 
-    error_code = ErrorCode.SERVICE_UNAVAILABLE
-    message = "Service is temporarily unavailable"
-    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    error_code = ErrorCode.INVALID_URL
+    message = "Invalid GitHub URL"
+    status_code = status.HTTP_400_BAD_REQUEST

@@ -19,7 +19,7 @@ from txt2vec.upload.utils import GitHubUtils
 _github_models: dict[str, object] = {}
 
 
-async def load_github_model_and_cache_only(github_url: str) -> None:
+def load_github_model_and_cache_only(github_url: str) -> None:
     """Clone ein GitHub-Repo, suche das Model und cache es lokal + im Memory.
 
     Args:
@@ -41,7 +41,8 @@ async def load_github_model_and_cache_only(github_url: str) -> None:
 
     if key in _github_models:
         logger.info("GitHub-Model bereits im Cache.", modelKey=key)
-        return {"owner": owner, "repo": repo, "branch": branch, "local_path": _github_models[key]._path, "key": key}
+        return {"owner": owner, "repo": repo, "branch": branch,
+                 "local_path": _github_models[key], "key": key}
 
     try:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -53,7 +54,7 @@ async def load_github_model_and_cache_only(github_url: str) -> None:
             repo_obj.git.checkout(branch)
 
             base = Path(tmpdir)
-            candidates = list(base.rglob("*.safetensors")) + list(base.rglob("*.pt"))
+            candidates = list(base.rglob("*.safetensors"))
             if len(candidates) != 1:
                 raise NoValidModelsFoundError(
                     f"{len(candidates)} Model-Dateien gefunden")

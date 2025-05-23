@@ -18,7 +18,10 @@ class HuggingFaceModelRequest(BaseModel):
 
 
 class GitHubModelRequest(BaseModel):
+    """_RequestModel for passing (GitHub) Urls.
+
+    Args:
+        BaseModel (_type_): _description_
+    """
     repo_url: HttpUrl = Field(..., alias="github_url")
     revision: str | None = Field(None, alias="tag")
-    class Config:
-        allow_population_by_field_name = True

@@ -9,16 +9,32 @@ from txt2vec.upload.exceptions import InvalidUrlError
 
 
 class GitHubUtils:
-    # only anchor the base part; allow anything after
+    """Utils supporting the github service.
+
+    Raises:
+        InvalidUrlError: _description_
+
+    Returns:
+        _type_: _description_
+    """
     GITHUB_BASE_REGEX = (
         r"^https?://(?:www\.)?github\.com/"
         r"(?P<owner>[\w\-\.]+)/"
         r"(?P<repo>[\w\-\.]+)"
+        r"(?:\.git)?/?$"
     )
 
     @staticmethod
     def is_github_url(url: str | HttpUrl) -> bool:
-        return bool(re.match(GitHubUtils.GITHUB_BASE_REGEX, str(url)))
+        """Checks if the provided Url is a github Url.
+
+        Args:
+            url (str | HttpUrl): _description_
+
+        Returns:
+            bool: _description_
+        """
+        return bool(re.fullmatch(GitHubUtils.GITHUB_BASE_REGEX, str(url)))
 
     @staticmethod
     def parse_github_url(
@@ -30,7 +46,7 @@ class GitHubUtils:
         Otherwise revision is None.
         """
         text = str(url)
-        m = re.match(GitHubUtils.GITHUB_BASE_REGEX, text)
+        m = re.fullmatch(GitHubUtils.GITHUB_BASE_REGEX, text)
         if not m:
             raise InvalidUrlError()
 
@@ -39,7 +55,7 @@ class GitHubUtils:
 
         path_parts = urlparse(text).path.strip("/").split("/")
         revision = None
-        if len(path_parts) >= 4 and path_parts[2] == "releases" and path_parts[3] == "tag":
+        if len(path_parts) >= 4 and path_parts[2] == "releases" and path_parts[3] == "tag":  # noqa: E501, PLR2004
             revision = path_parts[4]
 
         return owner, repo, revision

@@ -120,7 +120,7 @@ async def load_model_github(
     processing. Returns a 201 response with a Location header.
 
     Args:
-        data:
+        data: The GitHub Model request Url
         request: FastAPI request object.
         background_tasks: FastAPI background task manager.
         db: Async database session.
@@ -138,9 +138,11 @@ async def load_model_github(
 
     logger.info("Importing GitHub model {} @ {}", repo, branch)
 
-    existing = await db.exec(select(AIModel).where(AIModel.model_tag == key))
-    if existing.first():
+    try:
+        await get_ai_model_svc(db, key)
         raise ModelAlreadyExistsError(key)
+    except ModelNotFoundError:
+        pass
 
     try:
         repo_info(repo_url=base_url, revision=branch)
