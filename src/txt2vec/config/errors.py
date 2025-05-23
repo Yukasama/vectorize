@@ -22,6 +22,13 @@ class ErrorCode(StrEnum):
     INVALID_CSV_FORMAT = "INVALID_CSV_FORMAT"
     EMPTY_FILE = "EMPTY_FILE"
 
+    DATABASE_ERROR = "DATABASE_ERROR"
+
+    # Upload errors
+    DUPLICATE_ENTRY = "DUPLICATE_ENTRY"
+
+    INVALID_URL = "INVALID_URL"
+
 
 class ErrorNames(StrEnum):
     """Error names for standardized error handling."""

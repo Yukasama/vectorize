@@ -1,44 +1,45 @@
 """Utilities for validating GitHub repository URLs."""
 
 import re
+from urllib.parse import urlparse
 
-from loguru import logger
+from pydantic import HttpUrl
+
+from txt2vec.upload.exceptions import InvalidUrlError
 
 
 class GitHubUtils:
-    """Utility methods for working with GitHub repository URLs."""
-
-    GITHUB_URL_REGEX = (
-        r"^(https?://)"  # http:// or https://
-        r"(www\.)?"  # optional www.
-        r"github\.com/"  # github.com/
-        r"(?P<owner>[\w\-\.]+)/"  # owner or organization
-        r"(?P<repo>[\w\-\.]+)"  # repository name
-        r"(?:\.git)?"  # optional .git suffix
-        r"/?$"  # optional trailing slash
+    # only anchor the base part; allow anything after
+    GITHUB_BASE_REGEX = (
+        r"^https?://(?:www\.)?github\.com/"
+        r"(?P<owner>[\w\-\.]+)/"
+        r"(?P<repo>[\w\-\.]+)"
     )
 
     @staticmethod
-    def is_github_url(url: str) -> bool:
-        """Check if the given URL is a valid GitHub repository URL."""
-        logger.trace("Validating GitHub URL: {}", url)
-        match = re.match(GitHubUtils.GITHUB_URL_REGEX, url)
-
-        if match:
-            logger.debug("Valid GitHub URL detected: {}", url)
-            return True
-        logger.debug("Invalid GitHub URL: {}", url)
-        return False
+    def is_github_url(url: str | HttpUrl) -> bool:
+        return bool(re.match(GitHubUtils.GITHUB_BASE_REGEX, str(url)))
 
     @staticmethod
-    def parse_github_url(url: str) -> tuple[str, str]:
-        """Extract the owner and repository name from a valid GitHub URL."""
-        logger.trace("Parsing GitHub URL: {}", url)
-        match = re.match(GitHubUtils.GITHUB_URL_REGEX, url)
-        if match:
-            owner, repo = match.group("owner"), match.group("repo")
-            logger.debug("Parsed GitHub URL → owner: {}, repo: {}", owner, repo)
-            return owner, repo
+    def parse_github_url(
+        url: str | HttpUrl
+    ) -> tuple[str, str, str | None]:
+        """Returns (owner, repo, maybe_revision).
 
-        logger.error("Failed to parse GitHub URL: {}", url)
-        raise ValueError("Invalid GitHub repository URL.")
+        If the path contains /releases/tag/{tag}, that tag is returned as revision.
+        Otherwise revision is None.
+        """
+        text = str(url)
+        m = re.match(GitHubUtils.GITHUB_BASE_REGEX, text)
+        if not m:
+            raise InvalidUrlError()
+
+        owner = m.group("owner")
+        repo = m.group("repo")
+
+        path_parts = urlparse(text).path.strip("/").split("/")
+        revision = None
+        if len(path_parts) >= 4 and path_parts[2] == "releases" and path_parts[3] == "tag":
+            revision = path_parts[4]
+
+        return owner, repo, revision

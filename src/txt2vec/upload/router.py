@@ -26,12 +26,16 @@ from txt2vec.common.exceptions import InternalServerError
 from txt2vec.common.task_status import TaskStatus
 from txt2vec.config.db import get_session
 from txt2vec.datasets.exceptions import InvalidFileError
-from txt2vec.upload.exceptions import ModelAlreadyExistsError
-from txt2vec.upload.github_service import handle_model_download
+from txt2vec.upload.exceptions import InvalidUrlError, ModelAlreadyExistsError
+from txt2vec.upload.github_service import repo_info
 from txt2vec.upload.models import UploadTask
 from txt2vec.upload.repository import save_upload_task
 from txt2vec.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
-from txt2vec.upload.tasks import process_huggingface_model_background
+from txt2vec.upload.tasks import (
+    process_github_model_background,
+    process_huggingface_model_background,
+)
+from txt2vec.upload.utils import GitHubUtils
 from txt2vec.upload.zip_service import upload_zip_model
 
 router = APIRouter(tags=["Model Upload"])
@@ -102,36 +106,61 @@ async def load_model_huggingface(
     )
 
 
-@router.post("/add_model")
-async def load_model_github(request: GitHubModelRequest) -> Response:
-    """Download and register a model from a specified GitHub repository.
+@router.post("/github")
+async def load_model_github(
+    data: GitHubModelRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    """Upload a Github model by url.
 
-    This endpoint accepts a GitHub repository URL and attempts to download
-    and prepare the model files for use. If successful, a JSON response is returned.
+    Checks if the model already exists, verifies its presence in the
+    Github Repository, creates an upload task, and starts background
+    processing. Returns a 201 response with a Location header.
 
     Args:
-        request: Contains the GitHub repository URL.
+        data:
+        request: FastAPI request object.
+        background_tasks: FastAPI background task manager.
+        db: Async database session.
 
     Returns:
-        A response indicating success or error details.
-
-    Raises:
-        HTTPException:
-            - 400 if the GitHub URL is invalid.
-            - 500 if an unexpected error occurs during model processing.
-
+        Response with 201 status and Location header.
     """
-    logger.info(
-        "Received request to add model from GitHub URL: {}",
-        request.github_url,
+    if not GitHubUtils.is_github_url(data.repo_url):
+        raise InvalidUrlError()
+
+    owner, repo, url_tag = GitHubUtils.parse_github_url(data.repo_url)
+    branch = data.revision or url_tag or "main"
+    key = f"{owner}/{repo}@{branch}"
+    base_url = f"https://github.com/{owner}/{repo}"
+
+    logger.info("Importing GitHub model {} @ {}", repo, branch)
+
+    existing = await db.exec(select(AIModel).where(AIModel.model_tag == key))
+    if existing.first():
+        raise ModelAlreadyExistsError(key)
+
+    try:
+        repo_info(repo_url=base_url, revision=branch)
+    except ModelNotFoundError:
+        raise
+    except Exception as e:
+        raise InternalServerError("Error checking GitHub repository") from e
+
+    task = UploadTask(model_tag=key, task_status=TaskStatus.PENDING,
+                      source=ModelSource.GITHUB)
+    await save_upload_task(db, task)
+    background_tasks.add_task(
+        process_github_model_background,
+        db, owner, repo, branch, data.repo_url, task.id
     )
 
-    result = await handle_model_download(request.github_url)
-    logger.info(
-        "Model handled successfully for: {}",
-        request.github_url,
+    return Response(
+        status_code=status.HTTP_201_CREATED,
+        headers={"Location": f"{request.base_url}v1/upload/tasks/{task.id}"}
     )
-    return result
 
 
 @router.post("/local_models", summary="Upload multiple models from a ZIP archive")
