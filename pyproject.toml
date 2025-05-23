@@ -66,6 +66,7 @@ dependencies = [
     "prometheus-fastapi-instrumentator>=7.1.0",
     "loki-logger-handler>=1.1.1",
     "loki-handler>=0.1.1",
+    "gitpython>=3.1.44",
 ]
 
 [project.scripts]
@@ -106,6 +107,7 @@ markers = [
     "dataset_write: marks test as a dataset write test",
     "inference: marks test as an inference test",
     "huggingface: marks test as a huggingface test",
+    "github: marks test as a github test",
     "upload: mark test as upload related",
     "ai_model: mark test as ai model related",
     "ai_model_read: mark test as ai model read related",
