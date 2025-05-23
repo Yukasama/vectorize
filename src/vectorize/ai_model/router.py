@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import (
     APIRouter,
     Depends,
+    Query,
     Request,
     Response,
     status,
@@ -15,7 +16,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config.db import get_session
 
-from .models import AIModelPublic, AIModelUpdate
+from .models import AIModelPublic, AIModelUpdate, PagedResponse
 from .service import delete_model_svc, get_ai_model_svc, update_ai_model_svc
 
 __all__ = ["router"]
@@ -115,3 +116,24 @@ async def delete_model(
     logger.debug("Model deleted", modelId=model_id)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/models", summary="Returns all models")
+async def list_models(
+    page: Annotated[int, Query(ge=1, description="Page number, starts at 1")] = 1,
+    size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 10,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> PagedResponse:
+    """Summary.
+
+    Args:
+        page (int, optional): _description_. Defaults to Query(1, ge=1,
+        description="Page number, starts at 1").
+        size (int, optional): _description_. Defaults to Query(10, ge=1, le=100,
+        description="Items per page").
+        db: Database session.
+
+    Returns:
+        PagedResponse: _description_
+    """
+    return await get_models_paged_db(db, page, size)

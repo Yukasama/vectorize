@@ -3,13 +3,13 @@
 from uuid import UUID
 
 from loguru import logger
-from sqlmodel import select
+from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.common.exceptions import VersionMismatchError
 
-from .exceptions import ModelNotFoundError
-from .models import AIModel, AIModelUpdate
+from .exceptions import ModelNotFoundError, NoModelFoundError
+from .models import AIModel, AIModelUpdate, PagedResponse
 
 __all__ = ["get_ai_model_db", "save_ai_model_db", "update_ai_model_db"]
 
@@ -114,3 +114,32 @@ async def delete_model_db(db: AsyncSession, model_id: UUID) -> None:
     await db.delete(model)
     await db.commit()
     logger.debug("Model deleted", model=model)
+
+
+async def get_models_paged_db(
+    db: AsyncSession,
+    page: int = 1,
+    size: int = 10,
+) -> PagedResponse[AIModel]:
+    """Gibt alle AIModel-Einträge paged zurück.
+
+    Raises:
+        ModelNotFoundError: wenn es überhaupt keinen Eintrag gibt.
+    """
+    total_stmt = select(func.count()).select_from(AIModel)
+    total_result = await db.exec(total_stmt)
+    total = total_result.scalar_one()
+
+    if total == 0:
+        raise NoModelFoundError()
+
+    offset = (page - 1) * size
+    stmt = (
+        select(AIModel)
+        .offset(offset)
+        .limit(size)
+    )
+    result = await db.exec(stmt)
+    items: list[AIModel] = result.scalars().all()
+
+    return PagedResponse.from_query(data=items, page=page, size=size, total=total)
