@@ -24,10 +24,8 @@ services:
     volumes:
       - ${HOME}/volumes/txt2vec/grafana:/var/lib/grafana
       - ${HOME}/volumes/txt2vec/grafana/provisioning:/etc/grafana/provisioning
-    environment:
-      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+    env_file:
+      - .env
     entrypoint:
       - sh
       - -euc
