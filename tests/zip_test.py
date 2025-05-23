@@ -11,7 +11,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from txt2vec.config.config import settings
+from vectorize.config.config import settings
 
 from .utils import get_test_zip_file
 

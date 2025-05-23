@@ -27,9 +27,9 @@ Table of contents
 
 ## Introduction
 
-**txt2vec** is a self-hosted text embedding service that makes it easy to upload your own corpora, train and evaluate embedding models, and generate synthetic datasets from existing data. Built on FastAPI and PyTorch with SQLModel for persistence, it exposes RESTful endpoints to manage the full lifecycle of text embedding workflows.
+**vectorize** is a self-hosted text embedding service that makes it easy to upload your own corpora, train and evaluate embedding models, and generate synthetic datasets from existing data. Built on FastAPI and PyTorch with SQLModel for persistence, it exposes RESTful endpoints to manage the full lifecycle of text embedding workflows.
 
-The project uses the `uv` tool for seamless dependency management and environment isolation, combined with GitHub Actions for CI and Locust-based load testing to ensure reliability at scale. Packaged in Docker and configured via `.env`, txt2vec is designed for both rapid prototyping and production deployment, offering a unified, extensible platform for NLP experimentation and integration.
+The project uses the `uv` tool for seamless dependency management and environment isolation, combined with GitHub Actions for CI and Locust-based load testing to ensure reliability at scale. Packaged in Docker and configured via `.env`, vectorize is designed for both rapid prototyping and production deployment, offering a unified, extensible platform for NLP experimentation and integration.
 
 ## Setup
 
@@ -106,7 +106,7 @@ uv run app
 ruff check .
 
 # Run ruff over specific folder
-ruff check src/txt2vec/datasets
+ruff check src/vectorize/datasets
 ```
 
 #### Run SonarQube
@@ -161,7 +161,7 @@ uvx locust -f scripts/locust.py
 
 ```bash
 # Build Docker image
-docker build -t txt2vec:1.0.0-prod .
+docker build -t vectorize:1.0.0-prod .
 ```
 
 ## Workflow
@@ -213,7 +213,7 @@ act -s GITHUB_TOKEN="$(gh auth token)" --artifact-server-path $PWD/.artifacts. -
 
 ```bash
 # Create startup.prof file
-python -m cProfile -o startup.prof src/txt2vec/app.py
+python -m cProfile -o startup.prof src/vectorize/app.py
 
 # Start a snakeviz server and look into it
 uv run snakeviz startup.prof

@@ -22,7 +22,7 @@ services:
     ports:
       - "3001:3000"
     volumes:
-      - ~/volumes/txt2vec/grafana:/var/lib/grafana
+      - ~/volumes/vectorize/grafana:/var/lib/grafana
     env_file:
       - .env
     cap_drop: [ALL]

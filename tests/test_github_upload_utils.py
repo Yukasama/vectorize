@@ -2,7 +2,7 @@
 
 import pytest
 
-from txt2vec.upload.utils import GitHubUtils
+from vectorize.upload.utils import GitHubUtils
 
 
 @pytest.mark.parametrize(

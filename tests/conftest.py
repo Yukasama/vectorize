@@ -12,10 +12,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel import SQLModel, StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.app import app
-from txt2vec.config import settings
-from txt2vec.config.db import get_session
-from txt2vec.config.seed import seed_db
+from vectorize.app import app
+from vectorize.config import settings
+from vectorize.config.db import get_session
+from vectorize.config.seed import seed_db
 
 
 @pytest.fixture(scope="session")

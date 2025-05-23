@@ -1,6 +1,6 @@
 services:
-  txt2vec:
-    image: txt2vec:1.0.0-prod # ghcr.io/yukasama/txt2vec:latest
+  vectorize:
+    image: vectorize:1.0.0-prod # ghcr.io/yukasama/vectorize:latest
     ports:
       - "8000:8000"
     environment:
@@ -10,8 +10,8 @@ services:
       - LOG_DIR=/app/log
       - DB_DIR=/app/db
     volumes:
-      - ~/volumes/txt2vec/data:/app/data
-      - ~/volumes/txt2vec/log:/app/log
-      - ~/volumes/txt2vec/db:/app/db
+      - ~/volumes/vectorize/data:/app/data
+      - ~/volumes/vectorize/log:/app/log
+      - ~/volumes/vectorize/db:/app/db
     restart: unless-stopped
     cap_drop: [ALL]
