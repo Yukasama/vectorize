@@ -27,6 +27,8 @@ class ErrorCode(StrEnum):
     # Upload errors
     DUPLICATE_ENTRY = "DUPLICATE_ENTRY"
 
+    INVALID_URL = "INVALID_URL"
+
 
 class ErrorNames(StrEnum):
     """Error names for standardized error handling."""

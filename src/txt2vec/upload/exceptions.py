@@ -84,3 +84,11 @@ class ModelAlreadyExistsError(AppError):
     def __init__(self, model_tag: str) -> None:
         """Initialize with the model tag."""
         super().__init__(f"Model with tag '{model_tag}' already exists.")
+
+
+class InvalidUrlError(AppError):
+    """Exception raised when the service is unavailable."""
+
+    error_code = ErrorCode.SERVICE_UNAVAILABLE
+    message = "Service is temporarily unavailable"
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
