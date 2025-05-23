@@ -1,9 +1,10 @@
 """AIModel models."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 from uuid import UUID, uuid4
 
+from pydantic.generics import GenericModel
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
 from .model_source import ModelSource
@@ -97,3 +98,39 @@ class AIModel(SQLModel, table=True):
         ),
         description="Timestamp when the AI model was last updated.",
     )
+
+
+T = TypeVar('T')
+
+
+class PagedResponse[T](GenericModel):
+    """Paged response class.
+
+    Args:
+        GenericModel (_type_): _description_
+        Generic (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    page: int
+    size: int
+    totalpages: int
+    data: list[T]
+
+    @classmethod
+    def from_query(cls, *, data: list[T],
+                    page: int, size: int, total: int) -> "PagedResponse[T]":
+        """Ctor.
+
+        Args:
+            data (list[T]): _description_
+            page (int): _description_
+            size (int): _description_
+            total (int): _description_
+
+        Returns:
+            PagedResponse[T]: _description_
+        """
+        pages = (total + size - 1) // size
+        return cls(page=page, size=size, total=total, pages=pages, data=data)

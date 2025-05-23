@@ -45,3 +45,10 @@ class UnsupportedModelError(AppError):
     def __init__(self, model: str) -> None:
         """Initialize with the model format."""
         super().__init__(f"Model format {model} not supported")
+
+
+class NoModelFoundError(AppError):
+    """Exception raised when no model is found."""
+
+    error_code = ErrorCode.NOT_FOUND
+    status_code = status.HTTP_404_NOT_FOUND
