@@ -79,7 +79,7 @@ class ModelAlreadyExistsError(AppError):
 
 
 class InvalidUrlError(AppError):
-    """Exception raised when the service is unavailable."""
+    """Exception raised when the url is invalid."""
 
     error_code = ErrorCode.INVALID_URL
     message = "Invalid GitHub URL"
