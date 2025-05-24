@@ -163,7 +163,7 @@ class Settings(BaseSettings):
         default=_log_config.get("log_file"), description="Name of the log file."
     )
 
-    log_level: str = Field(
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="DEBUG",
         validation_alias="LOG_LEVEL",
         description="Logging level (e.g., DEBUG, INFO, WARNING, ERROR).",

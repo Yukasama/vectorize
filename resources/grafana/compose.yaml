@@ -5,7 +5,7 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./config:/etc/prometheus
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml
     command:
       - "--config.file=/etc/prometheus/prometheus.yaml"
     cap_drop: [ALL]
@@ -22,9 +22,53 @@ services:
     ports:
       - "3001:3000"
     volumes:
-      - ~/volumes/vectorize/grafana:/var/lib/grafana
+      - ${HOME}/volumes/txt2vec/grafana:/var/lib/grafana
+      - ${HOME}/volumes/txt2vec/grafana/provisioning:/etc/grafana/provisioning
+      - ./config:/var/lib/grafana/dashboards
     env_file:
       - .env
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        mkdir -p /etc/grafana/provisioning/dashboards
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+        - name: Loki
+          type: loki
+          access: proxy
+          orgId: 1
+          url: http://loki:3100
+          basicAuth: false
+          isDefault: false
+          version: 1
+          editable: false
+        - name: Prometheus
+          type: prometheus
+          orgId: 1
+          url: http://prometheus:9090
+          basicAuth: false
+          isDefault: true
+          version: 1
+          editable: false
+        EOF
+
+        # --- dashboard provider ---
+        cat <<EOF > /etc/grafana/provisioning/dashboards/fastapi.yaml
+        apiVersion: 1
+        providers:
+          - name: FastAPI
+            folder: FastAPI
+            type: file
+            updateIntervalSeconds: 30
+            allowUiUpdates: true
+            options:
+              path: /var/lib/grafana/dashboards
+              foldersFromFilesStructure: true
+        EOF
+        /run.sh
     cap_drop: [ALL]
     restart: unless-stopped
     healthcheck:
@@ -32,13 +76,45 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    depends_on:
+      - loki
+      - prometheus
 
-  # loki:
-  #   image: grafana/loki:latest
-  #   container_name: loki
-  #   ports:
-  #     - "3100:3100"
-  #   volumes:
-  #     - ./config:/etc/loki
-  #   command: -config.file=/etc/loki/loki-config.yaml
-  #   cap_drop: [ALL]
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    ports:
+      - "9999:9999"
+      - "12345:12345"
+    volumes:
+      - ./config/config.alloy:/etc/alloy/config.alloy
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --stability.level=experimental
+      - /etc/alloy/config.alloy
+    cap_drop: [ALL]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9999/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - loki
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
+    cap_drop: [ALL]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

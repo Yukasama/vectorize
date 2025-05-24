@@ -1,12 +1,13 @@
 """Main application module for the Vectorize service."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from typing import Final
 
 from aiofiles.os import makedirs
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_client import Gauge
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -50,7 +51,30 @@ app: Final = FastAPI(
     lifespan=lifespan,
 )
 
+
+# --------------------------------------------------------
+# P R O M E T H E U S
+# --------------------------------------------------------
 Instrumentator().instrument(app).expose(app)
+
+
+REQUESTS_IN_PROGRESS = Gauge(
+    "http_requests_in_progress_total",
+    "Active HTTP requests",
+    ["method", "path"],
+)
+
+
+@app.middleware("http")
+async def track_in_flight(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Middleware to track the number of in-flight requests."""
+    REQUESTS_IN_PROGRESS.labels(request.method, request.url.path).inc()
+    try:
+        return await call_next(request)
+    finally:
+        REQUESTS_IN_PROGRESS.labels(request.method, request.url.path).dec()
 
 
 # --------------------------------------------------------

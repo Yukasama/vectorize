@@ -1,0 +1,193 @@
+{
+  "uid": "fastapi-overview",
+  "title": "FastAPI - Service Overview",
+  "tags": ["FastAPI", "Prometheus"],
+  "schemaVersion": 38,
+  "version": 7,
+  "refresh": "5s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total Requests (1 h)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(increase(http_requests_total{job=\"fastapi\"}[1h]))",
+          "refId": "A"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["sum"] } },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "type": "stat",
+      "title": "Req/s (1 m avg)",
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(http_requests_total{job=\"fastapi\"}[1m]))", "refId": "A" }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "unit": "reqps" },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "type": "stat",
+      "title": "Uptime",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "time() - max(process_start_time_seconds{job=\"fastapi\"})",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "unit": "dthms" },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "type": "stat",
+      "title": "Running",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "last_over_time(up{job=\"fastapi\"}[1m])",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "thresholds": {
+          "mode": "absolute",
+          "steps": [{ "color": "red" }, { "value": 1, "color": "green" }]
+        }
+      },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Status Codes (req/s)",
+      "datasource": "Prometheus",
+      "options": { "stacking": { "mode": "normal" }, "legend": { "showLegend": true } },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "stacking": { "mode": "normal" }
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{job=\"fastapi\",status=~\"2..\"}[1m]))",
+          "legendFormat": "2xx"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{job=\"fastapi\",status=~\"3..\"}[1m]))",
+          "legendFormat": "3xx"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{job=\"fastapi\",status=~\"4..\"}[1m]))",
+          "legendFormat": "4xx"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{job=\"fastapi\",status=~\"5..\"}[1m]))",
+          "legendFormat": "5xx"
+        }
+      ],
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 }
+    },
+
+    {
+      "type": "table",
+      "title": "Top Paths (req/s)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "topk(10, sum by (path) (rate(http_requests_total{job=\"fastapi\"}[1m])))",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "labelsToFields", "options": { "byLabel": "path" } },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": { "Value": "req/s" },
+            "excludeByName": { "Time": true }
+          }
+        }
+      ],
+      "sort": {
+        "field": "req/s",
+        "desc": true
+      },
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 6 }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Latency P50 / P90 / P99 (ms)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50,sum(rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])) by (le))*1000",
+          "legendFormat": "P50"
+        },
+        {
+          "expr": "histogram_quantile(0.90,sum(rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])) by (le))*1000",
+          "legendFormat": "P90"
+        },
+        {
+          "expr": "histogram_quantile(0.99,sum(rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])) by (le))*1000",
+          "legendFormat": "P99"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "gridPos": { "x": 0, "y": 10, "w": 12, "h": 6 }
+    },
+
+    {
+      "type": "heatmap",
+      "title": "Request Duration Heat-map",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(http_request_duration_seconds_bucket{job=\"fastapi\"}[5m])",
+          "legendFormat": "{{le}}"
+        }
+      ],
+      "gridPos": { "x": 12, "y": 10, "w": 12, "h": 6 }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Error Rate %",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "(sum(rate(http_requests_total{job=\"fastapi\",status=~\"5..\"}[1m])) / sum(rate(http_requests_total{job=\"fastapi\"}[1m])) * 100) or (0 * sum(rate(http_requests_total{job=\"fastapi\"}[1m])))",
+          "legendFormat": "errors %"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } },
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 6 }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Average Latency (ms)",
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "(rate(http_request_duration_seconds_sum{job=\"fastapi\"}[1m]) / rate(http_request_duration_seconds_count{job=\"fastapi\"}[1m]))*1000",
+          "legendFormat": "avg"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } },
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 6 }
+    }
+  ]
+}

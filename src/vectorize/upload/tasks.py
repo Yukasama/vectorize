@@ -14,10 +14,11 @@ from vectorize.ai_model import AIModel
 from vectorize.ai_model.models import ModelSource
 from vectorize.ai_model.repository import save_ai_model_db
 from vectorize.common.task_status import TaskStatus
-from vectorize.upload.exceptions import ModelAlreadyExistsError
-from vectorize.upload.github_service import load_github_model_and_cache_only
-from vectorize.upload.huggingface_service import load_model_and_cache_only
-from vectorize.upload.repository import update_upload_task_status
+
+from .exceptions import ModelAlreadyExistsError
+from .github_service import load_github_model_and_cache_only
+from .huggingface_service import load_model_and_cache_only
+from .repository import update_upload_task_status
 
 
 async def process_huggingface_model_background(

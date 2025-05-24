@@ -13,12 +13,13 @@ from vectorize.ai_model import AIModel, ModelSource
 from vectorize.ai_model.exceptions import ModelNotFoundError
 from vectorize.ai_model.repository import get_ai_model_db, save_ai_model_db
 from vectorize.config.config import settings
-from vectorize.upload.exceptions import (
+
+from .exceptions import (
     ModelAlreadyExistsError,
     ModelTooLargeError,
     NoValidModelsFoundError,
 )
-from vectorize.upload.zip_validator import validate_model_files
+from .zip_validator import validate_model_files
 
 __all__ = ["process_model_directory", "process_single_model", "save_zip_to_temp"]
 

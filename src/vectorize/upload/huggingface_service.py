@@ -11,7 +11,7 @@ from huggingface_hub.utils import EntryNotFoundError
 from loguru import logger
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 
-from vectorize.upload.exceptions import (
+from .exceptions import (
     InvalidModelError,
     NoValidModelsFoundError,
 )

@@ -11,19 +11,20 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config.config import settings
-from vectorize.upload.exceptions import (
+
+from .exceptions import (
     EmptyModelError,
     InvalidModelError,
     InvalidZipError,
     ModelAlreadyExistsError,
     NoValidModelsFoundError,
 )
-from vectorize.upload.zip_extractor import (
+from .zip_extractor import (
     process_model_directory,
     process_single_model,
     save_zip_to_temp,
 )
-from vectorize.upload.zip_validator import get_toplevel_directories, is_valid_zip
+from .zip_validator import get_toplevel_directories, is_valid_zip
 
 __all__ = ["upload_zip_model"]
 
