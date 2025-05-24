@@ -1,6 +1,6 @@
 {
   "uid": "fastapi-overview",
-  "title": "FastAPI – Service Overview",
+  "title": "FastAPI - Service Overview",
   "tags": ["FastAPI", "Prometheus"],
   "schemaVersion": 38,
   "version": 7,
