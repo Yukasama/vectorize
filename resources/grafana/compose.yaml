@@ -8,8 +8,9 @@ services:
       - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml
     command:
       - "--config.file=/etc/prometheus/prometheus.yaml"
-    cap_drop: [ALL]
+    networks: [vectorize-network]
     restart: unless-stopped
+    cap_drop: [ALL]
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/ready"]
       interval: 30s
@@ -55,7 +56,6 @@ services:
           editable: false
         EOF
 
-        # --- dashboard provider ---
         cat <<EOF > /etc/grafana/provisioning/dashboards/fastapi.yaml
         apiVersion: 1
         providers:
@@ -69,6 +69,7 @@ services:
               foldersFromFilesStructure: true
         EOF
         /run.sh
+    networks: [vectorize-network]
     cap_drop: [ALL]
     restart: unless-stopped
     healthcheck:
@@ -93,6 +94,7 @@ services:
       - --server.http.listen-addr=0.0.0.0:12345
       - --stability.level=experimental
       - /etc/alloy/config.alloy
+    networks: [vectorize-network]
     cap_drop: [ALL]
     restart: unless-stopped
     healthcheck:
@@ -112,6 +114,7 @@ services:
       - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
       - ${HOME}/volumes/vectorize/loki:/loki
     command: -config.file=/etc/loki/loki-config.yaml
+    networks: [vectorize-network]
     cap_drop: [ALL]
     restart: unless-stopped
     healthcheck:

@@ -7,6 +7,7 @@ from typing import Final
 from aiofiles.os import makedirs
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from prometheus_client import Gauge
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlmodel import SQLModel
@@ -80,6 +81,11 @@ async def track_in_flight(
 # --------------------------------------------------------
 # R O U T E R S
 # --------------------------------------------------------
+app.get("/", include_in_schema=False)(lambda: Response(content="OK"))
+app.get("/health", include_in_schema=False)(
+    lambda: JSONResponse(content={"status": "healthy"})
+)
+
 register_routers(app)
 
 

@@ -11,5 +11,12 @@ services:
       - ~/volumes/vectorize/data/datasets:/app/data/datasets
       - ~/volumes/vectorize/data/models:/app/data/models
       - ~/volumes/vectorize/db:/app/db
+    networks: [vectorize-network]
     restart: unless-stopped
     cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
