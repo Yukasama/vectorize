@@ -5,15 +5,18 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    environment:
-      - ENV=production
-      - DATABASE_URL=sqlite+aiosqlite:///./db/app.db
-      - UPLOAD_DIR=/app/data/datasets
-      - LOG_DIR=/app/log
-      - DB_DIR=/app/db
+    env_file:
+      - .env
     volumes:
-      - ~/volumes/vectorize/data:/app/data
-      - ~/volumes/vectorize/log:/app/log
+      - ~/volumes/vectorize/data/datasets:/app/data/datasets
+      - ~/volumes/vectorize/data/models:/app/data/models
       - ~/volumes/vectorize/db:/app/db
+    networks: [vectorize-network]
     restart: unless-stopped
     cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
