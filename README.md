@@ -84,6 +84,19 @@ CLEAR_DB_ON_RESTART=1
 LOG_LEVEL=DEBUG
 ```
 
+##### Generate SSL certificate for HTTPS
+
+```sh
+# Generate a private key
+openssl genrsa -out key.pem 2048
+
+# Generate a self-signed certificate
+# You can leave all the inputs blank (only press Enter everywhere)
+openssl req -new -x509 -key key.pem -out cert.pem -days 365
+```
+
+Then, put `key.pem` and `cert.pem` into `src/vectorize/config/resources`
+
 #### Fix lock file
 
 Error: Failed to parse `uv.lock`

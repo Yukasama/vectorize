@@ -67,7 +67,7 @@ def config_logger() -> None:
     if is_production:
         logger.add(
             LokiLoggerHandler(
-                url="http://localhost:9999/loki/api/v1/push",
+                url="http://alloy:9999/loki/api/v1/push",
                 labels={"application": "fastapi", "environment": settings.app_env},
                 timeout=10,
                 enable_structured_loki_metadata=True,

@@ -1,6 +1,8 @@
 services:
   vectorize:
-    image: vectorize:1.0.0-prod # ghcr.io/yukasama/vectorize:latest
+    build:
+      context: ../../
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:

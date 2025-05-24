@@ -1,0 +1,13 @@
+name: vectorize-stack
+
+include:
+  - path: ./resources/deploy/compose.yaml
+    project_directory: ./resources/deploy
+    env_file: ./.env
+  - path: ./resources/grafana/compose.yaml
+    project_directory: ./resources/grafana
+    env_file: ./resources/grafana/.env
+
+networks:
+  vectorize-network:
+    driver: bridge
