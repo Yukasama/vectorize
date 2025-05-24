@@ -3,4 +3,5 @@ global:
 scrape_configs:
   - job_name: fastapi
     static_configs:
-      - targets: ["vectorize:8000"]
+      # - targets: ["vectorize:8000"] # for production (with docker-compose)
+      - targets: ["host.docker.internal:8000"] # for development with localhost

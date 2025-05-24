@@ -37,17 +37,19 @@ def add_security_headers(app: FastAPI) -> None:
         return response
 
 
-def _set_security_headers(response: Response) -> None:
+def _set_security_headers(response: Response, path: str = "") -> None:
     """Set security headers to harden the API.
 
     Args:
         response: The HTTP response to secure
+        path: The request path to determine if it's a documentation page
     """
     # Prevents the page from being displayed in frames to protect against clickjacking
     response.headers["X-Frame-Options"] = "DENY"
 
-    if settings.app_env == "production":
-        # Restricts resources the page can load to prevent XSS in production
+    is_docs = path.startswith(("/docs", "/redoc"))
+    if settings.app_env == "production" and not is_docs:
+        # Restricts resources the page can load to prevent XSS in production except docs
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "img-src 'self' data:; "

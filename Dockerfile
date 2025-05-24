@@ -34,9 +34,8 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 
 # Define directory environment variables
-ENV DATA_DIR=/app/data \
-    UPLOAD_DIR=/app/data/datasets \
-    LOG_DIR=/app/log \
+ENV UPLOAD_DIR=/app/data/datasets \
+    MODELS_DIR=/app/data/models \
     DB_DIR=/app/db
 
 # Install git for git-python dependency  
@@ -54,9 +53,9 @@ RUN groupadd --system appuser && useradd --system \
             --no-create-home \
             --shell /usr/sbin/nologin \
             appuser && \
-    mkdir -p ${UPLOAD_DIR} ${LOG_DIR} ${DB_DIR} && \
-    chown -R appuser:appuser ${DATA_DIR} ${LOG_DIR} ${DB_DIR} && \
-    chmod 755 ${DATA_DIR} ${LOG_DIR} ${DB_DIR}
+    mkdir -p ${MODELS_DIR} ${UPLOAD_DIR} ${DB_DIR} && \
+    chown -R appuser:appuser ${MODELS_DIR} ${UPLOAD_DIR} ${DB_DIR} && \
+    chmod 755 ${MODELS_DIR} ${UPLOAD_DIR} ${DB_DIR}
 
 # Copy non-writable source code into workdir
 COPY --from=builder --chown=root:root --chmod=0755 /app /app

@@ -18,6 +18,10 @@ def config_logger() -> None:
     """Logger configuration."""
     is_production = settings.app_env == "production"
 
+    logging.getLogger("watchfiles").setLevel(logging.ERROR)
+    logging.getLogger("watchfiles.main").setLevel(logging.ERROR)
+    logging.getLogger("uvicorn.error").handlers = []
+
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
 
@@ -25,6 +29,9 @@ def config_logger() -> None:
         @staticmethod
         def emit(record: object) -> None:
             """Intercepts standard logging and sends it to Loguru."""
+            if "changes detected" in record.getMessage():
+                return
+
             try:
                 level = logger.level(record.levelname).name
             except ValueError:
@@ -64,19 +71,19 @@ def config_logger() -> None:
         diagnose=not is_production,
     )
 
-    if is_production:
-        logger.add(
-            LokiLoggerHandler(
-                url="http://alloy:9999/loki/api/v1/push",
-                labels={"application": "fastapi", "environment": settings.app_env},
-                timeout=10,
-                enable_structured_loki_metadata=True,
-                default_formatter=LoguruFormatter(),
-            ),
-            serialize=True,
-            enqueue=True,
-            level=logging.INFO,
-        )
+    # if is_production:
+    logger.add(
+        LokiLoggerHandler(
+            url="http://localhost:9999/loki/api/v1/push",
+            labels={"application": "fastapi", "environment": settings.app_env},
+            timeout=10,
+            enable_structured_loki_metadata=True,
+            default_formatter=LoguruFormatter(),
+        ),
+        serialize=True,
+        enqueue=True,
+        level=logging.INFO,
+    )
 
 
 def _format_record(record: Mapping[str, Any]) -> str:

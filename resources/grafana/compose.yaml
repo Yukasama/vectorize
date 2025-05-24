@@ -24,7 +24,7 @@ services:
     volumes:
       - ${HOME}/volumes/vectorize/grafana:/var/lib/grafana
       - ${HOME}/volumes/vectorize/grafana/provisioning:/etc/grafana/provisioning
-      - ./config:/var/lib/grafana/dashboards
+      - ./config/dashboard.json:/var/lib/grafana/dashboards/dashboard.json
     env_file:
       - .env
     entrypoint:
@@ -110,7 +110,7 @@ services:
       - "3100:3100"
     volumes:
       - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
-      - ${HOME}/volumes/vectorize/loki/data:/loki
+      - ${HOME}/volumes/vectorize/loki:/loki
     command: -config.file=/etc/loki/loki-config.yaml
     cap_drop: [ALL]
     restart: unless-stopped
