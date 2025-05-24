@@ -42,37 +42,39 @@ def config_logger() -> None:
     logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
     logger.remove()
 
-    logger.add(
-        settings.log_path,
-        rotation=settings.rotation,
-        format=_format_record,
-        enqueue=not is_production,
-        backtrace=not is_production,
-        diagnose=not is_production,
-        compression="zip",
-        colorize=False,
-    )
+    if not is_production:
+        logger.add(
+            settings.log_path,
+            rotation=settings.rotation,
+            format=_format_record,
+            enqueue=not is_production,
+            backtrace=not is_production,
+            diagnose=not is_production,
+            compression="zip",
+            colorize=False,
+        )
 
     logger.add(
         sys.stdout,
         format=_format_record,
-        level=settings.log_level,
-        colorize=True,
+        level=logging.INFO if is_production else settings.log_level,
+        colorize=not is_production,
         enqueue=True,
     )
 
-    logger.add(
-        LokiLoggerHandler(
-            url="http://localhost:9999/loki/api/v1/push",
-            labels={"application": "fastapi", "environment": settings.app_env},
-            timeout=10,
-            enable_structured_loki_metadata=True,
-            default_formatter=LoguruFormatter(),
-        ),
-        serialize=True,
-        enqueue=True,
-        level=logging.INFO,
-    )
+    if is_production:
+        logger.add(
+            LokiLoggerHandler(
+                url="http://localhost:9999/loki/api/v1/push",
+                labels={"application": "fastapi", "environment": settings.app_env},
+                timeout=10,
+                enable_structured_loki_metadata=True,
+                default_formatter=LoguruFormatter(),
+            ),
+            serialize=True,
+            enqueue=True,
+            level=logging.INFO,
+        )
 
 
 def _format_record(record: Mapping[str, Any]) -> str:

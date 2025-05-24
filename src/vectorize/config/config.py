@@ -1,5 +1,6 @@
 """Define configuration for the project."""
 
+import logging
 import tomllib
 from pathlib import Path
 from typing import Literal
@@ -164,7 +165,7 @@ class Settings(BaseSettings):
     )
 
     log_level: str = Field(
-        default="DEBUG",
+        default=logging.DEBUG,
         validation_alias="LOG_LEVEL",
         description="Logging level (e.g., DEBUG, INFO, WARNING, ERROR).",
     )
