@@ -47,9 +47,9 @@ def config_logger() -> None:
             settings.log_path,
             rotation=settings.rotation,
             format=_format_record,
-            enqueue=not is_production,
-            backtrace=not is_production,
-            diagnose=not is_production,
+            enqueue=True,
+            backtrace=False,
+            diagnose=False,
             compression="zip",
             colorize=False,
         )
@@ -60,6 +60,8 @@ def config_logger() -> None:
         level=logging.INFO if is_production else settings.log_level,
         colorize=not is_production,
         enqueue=True,
+        backtrace=not is_production,
+        diagnose=not is_production,
     )
 
     if is_production:
