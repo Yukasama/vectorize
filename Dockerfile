@@ -39,6 +39,15 @@ ENV DATA_DIR=/app/data \
     LOG_DIR=/app/log \
     DB_DIR=/app/db
 
+# Install git for git-python dependency  
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git-core \
+        libcurl4 \
+        libpcre2-8-0 \
+        ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Create user with no home dir and login, then prepare writable volumes
 RUN groupadd --system appuser && useradd --system \
             --gid appuser \
@@ -55,7 +64,8 @@ COPY --from=builder --chown=root:root --chmod=0755 /app /app
 # Drop privileges
 USER appuser
 
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:/usr/bin:$PATH" \
+    GIT_PYTHON_GIT_EXECUTABLE="/usr/bin/git"
 
 EXPOSE 8000
 STOPSIGNAL SIGINT
