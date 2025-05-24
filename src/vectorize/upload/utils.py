@@ -5,9 +5,12 @@ from urllib.parse import urlparse
 
 from pydantic import HttpUrl
 
-from vectorize.upload.exceptions import InvalidUrlError
+from .exceptions import InvalidUrlError
 
 _MIN_PATH_PARTS_FOR_RELEASE_URL = 4
+
+
+__all__ = ["GitHubUtils"]
 
 
 class GitHubUtils:

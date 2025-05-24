@@ -68,7 +68,7 @@ REQUESTS_IN_PROGRESS = Gauge(
 @app.middleware("http")
 async def track_in_flight(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
-) -> Request:
+) -> Response:
     """Middleware to track the number of in-flight requests."""
     REQUESTS_IN_PROGRESS.labels(request.method, request.url.path).inc()
     try:

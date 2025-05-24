@@ -13,7 +13,8 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.common.task_status import TaskStatus
-from vectorize.upload.models import UploadTask
+
+from .models import UploadTask
 
 
 async def save_upload_task(db: AsyncSession, task: UploadTask) -> None:

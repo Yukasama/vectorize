@@ -9,12 +9,13 @@ from git import Repo
 from loguru import logger
 
 from vectorize.ai_model.exceptions import ModelNotFoundError
-from vectorize.upload.exceptions import (
+
+from .exceptions import (
     InvalidModelError,
     InvalidUrlError,
     NoValidModelsFoundError,
 )
-from vectorize.upload.utils import GitHubUtils
+from .utils import GitHubUtils
 
 _github_models: dict[str, object] = {}
 

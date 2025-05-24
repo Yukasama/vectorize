@@ -6,9 +6,9 @@ from datetime import UTC, datetime, timedelta
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.ai_model.repository import get_ai_model_db
-from vectorize.inference.repository import create_inference_counter, get_model_count
 
 from .embedding_model import EmbeddingUsage, Embeddings
+from .repository import create_inference_counter, get_model_count
 from .request_model import EmbeddingRequest
 from .utils.generator import _generate_embeddings
 from .utils.model_loader import _load_model

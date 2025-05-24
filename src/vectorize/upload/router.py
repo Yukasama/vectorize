@@ -26,17 +26,18 @@ from vectorize.common.exceptions import InternalServerError
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
 from vectorize.datasets.exceptions import InvalidFileError
-from vectorize.upload.exceptions import InvalidUrlError, ModelAlreadyExistsError
-from vectorize.upload.github_service import repo_info
-from vectorize.upload.models import UploadTask
-from vectorize.upload.repository import save_upload_task
-from vectorize.upload.schemas import GitHubModelRequest, HuggingFaceModelRequest
-from vectorize.upload.tasks import (
+
+from .exceptions import InvalidUrlError, ModelAlreadyExistsError
+from .github_service import repo_info
+from .models import UploadTask
+from .repository import save_upload_task
+from .schemas import GitHubModelRequest, HuggingFaceModelRequest
+from .tasks import (
     process_github_model_background,
     process_huggingface_model_background,
 )
-from vectorize.upload.utils import GitHubUtils
-from vectorize.upload.zip_service import upload_zip_model
+from .utils import GitHubUtils
+from .zip_service import upload_zip_model
 
 router = APIRouter(tags=["Model Upload"])
 

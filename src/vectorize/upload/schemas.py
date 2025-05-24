@@ -1,7 +1,8 @@
 """Schemas for importing models."""
 
-
 from pydantic import BaseModel, Field, HttpUrl
+
+__all__ = ["GitHubModelRequest", "HuggingFaceModelRequest"]
 
 
 class HuggingFaceModelRequest(BaseModel):
@@ -23,5 +24,6 @@ class GitHubModelRequest(BaseModel):
     Args:
         BaseModel (_type_): _description_
     """
+
     repo_url: HttpUrl = Field(..., alias="github_url")
     revision: str | None = Field(None, alias="tag")
