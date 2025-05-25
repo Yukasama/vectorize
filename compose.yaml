@@ -2,8 +2,6 @@ name: vectorize-stack
 
 include:
   - path: ./resources/deploy/compose.yaml
-    project_directory: ./resources/deploy
-    env_file: ./resources/deploy/.env
   - path: ./resources/grafana/compose.yaml
   - path: ./resources/caddy/compose.yaml
 
