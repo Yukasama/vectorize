@@ -14,8 +14,8 @@ from fastapi import (
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from txt2vec.ai_model.repository import get_models_paged_db
-from txt2vec.config.db import get_session
+from vectorize.ai_model.repository import get_models_paged_db
+from vectorize.config.db import get_session
 
 from .models import AIModelPublic, AIModelUpdate, PagedResponse
 from .service import delete_model_svc, get_ai_model_svc, update_ai_model_svc
@@ -121,9 +121,9 @@ async def delete_model(
 
 @router.get("/models", summary="Returns all models")
 async def list_models(
-    page: Annotated[int, Query(ge=1, description="Page number, starts at 1")] = 1,
-    size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 10,
     db: Annotated[AsyncSession, Depends(get_session)],
+    page: Annotated[int, Query(ge=1, description="Page number, starts at 1")] = 1,
+    size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 10
 ) -> PagedResponse:
     """Summary.
 

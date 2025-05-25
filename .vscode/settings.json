@@ -1,4 +1,5 @@
 {
+  "python.envFile": "${workspaceFolder}/.env",
   "python.pythonPath": ".venv/bin/python",
   "python.linting.enabled": true,
   "python.formatting.provider": "ruff",
