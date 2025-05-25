@@ -3,47 +3,25 @@
 # ruff noqa: PLR2004
 
 import math
-from datetime import UTC, datetime
-from uuid import uuid4
 
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from sqlmodel import delete
-from sqlmodel.ext.asyncio.session import AsyncSession
-
-from vectorize.ai_model import AIModel, ModelSource
 
 DEFAULT_PAGE_SIZE: int = 10
 DEFAULT_PAGE_NUMBER: int = 1
 
+# This should match whatever your seed function does
+SEEDED_MODEL_COUNT = 8
+
 
 @pytest.mark.asyncio
-async def test_list_models_pagination_non_default_params(
-    session: AsyncSession,
+def test_list_models_pagination_non_default_params(
     client: TestClient,
 ) -> None:
-    """Tests the all models endpoint."""
-    dbobjectcount: int = 23
-    # TODO check default seed as this implementation deletes previously seeded data for other test cases  # noqa: E501, TD002, TD003, TD004
-    await session.exec(delete(AIModel))
-    await session.commit()
-    models = [
-        AIModel(
-            id=uuid4(),
-            version=0,
-            name=f"Model_{i}",
-            model_tag=f"tag_{i}_For_Test",
-            source=ModelSource.LOCAL,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        for i in range(dbobjectcount)
-    ]
-    session.add_all(models)
-    await session.commit()
-    last_pagenum = math.ceil(dbobjectcount / DEFAULT_PAGE_SIZE)
-    expected_last_page_items = dbobjectcount % DEFAULT_PAGE_SIZE or DEFAULT_PAGE_SIZE
+    """Test pagination with non-default parameters, assuming DB is already seeded."""
+    last_pagenum = math.ceil(SEEDED_MODEL_COUNT / DEFAULT_PAGE_SIZE)
+    expected_last_page_items = SEEDED_MODEL_COUNT % DEFAULT_PAGE_SIZE or DEFAULT_PAGE_SIZE
 
     # First page
     route = f"/models?page={DEFAULT_PAGE_NUMBER}&size={DEFAULT_PAGE_SIZE}"
@@ -68,31 +46,12 @@ async def test_list_models_pagination_non_default_params(
 
 
 @pytest.mark.asyncio
-async def test_list_models_pagination_default_params(
-    session: AsyncSession,
+def test_list_models_pagination_default_params(
     client: TestClient,
 ) -> None:
-    """Tests the all models endpoint."""
-    dbobjectcount: int = 23
-    last_pagenum = math.ceil(dbobjectcount / DEFAULT_PAGE_SIZE)
-    expected_last_page_items = dbobjectcount % DEFAULT_PAGE_SIZE or DEFAULT_PAGE_SIZE
-    # TODO check default seed as this implementation deletes previously seeded data for other test cases  # noqa: E501, TD002, TD003, TD004
-    await session.exec(delete(AIModel))
-    await session.commit()
-    models = [
-        AIModel(
-            id=uuid4(),
-            version=0,
-            name=f"Model_{i}",
-            model_tag=f"tag_{i}_For_Test_DEFAULT",
-            source=ModelSource.LOCAL,
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-        for i in range(dbobjectcount)
-    ]
-    session.add_all(models)
-    await session.commit()
+    """Test pagination with default parameters, assuming DB is already seeded."""
+    last_pagenum = math.ceil(SEEDED_MODEL_COUNT / DEFAULT_PAGE_SIZE)
+    expected_last_page_items = SEEDED_MODEL_COUNT % DEFAULT_PAGE_SIZE or DEFAULT_PAGE_SIZE
 
     # First page
     route = f"/models?page={DEFAULT_PAGE_NUMBER}&size={DEFAULT_PAGE_SIZE}"

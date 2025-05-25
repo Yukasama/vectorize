@@ -1,6 +1,6 @@
 """Seed the database with initial data."""
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -118,6 +118,47 @@ async def seed_db(session: AsyncSession) -> None:
             name="Huge Model",
             source=ModelSource.LOCAL,
             model_tag="huge_model",
+        ),
+    )
+# For Paged Models
+    session.add(
+        AIModel(
+            id=uuid4(),
+            name="Any Paged Model 01",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_01",
+        ),
+    )
+    session.add(
+        AIModel(
+            id=uuid4(),
+            name="Any Paged Model 02",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_02",
+        ),
+    )
+    session.add(
+        AIModel(
+            id=uuid4(),
+            name="Any Paged Model 03",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_03",
+        ),
+    )
+    session.add(
+        AIModel(
+            id=uuid4(),
+            name="Any Paged Model 04",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_04",
+        ),
+    )
+    session.add(
+        AIModel(
+            id=uuid4(),
+            name="Any Paged Model 05",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_05",
         ),
     )
     await session.commit()
