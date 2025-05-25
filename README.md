@@ -59,43 +59,17 @@ uv add <package>
 uv remove <package>
 ```
 
-##### Spawn a Shell
-
-You can open an interactive shell with your project’s virtual environment activated — this ensures your venv’s Python, pip, and CLI tools are on your PATH and enabled:
-
-```bash
-# Linux
-uv run -- bash   # launch Bash
-uv run -- sh     # launch POSIX sh
-
-# macOS (default shell is zsh)
-uv run -- zsh
-
-# Windows PowerShell
-uv run -- pwsh -NoExit
-```
-
-##### Create .env file
+##### Copy .env.example file and rename it to .env
 
 ```bash
 # .env
 DATABASE_URL=sqlite+aiosqlite:///./app.db
+SONAR_TOKEN=your-sonar-token
 CLEAR_DB_ON_RESTART=1
 LOG_LEVEL=DEBUG
 ```
 
-##### Generate SSL certificate for HTTPS
-
-```sh
-# Generate a private key
-openssl genrsa -out key.pem 2048
-
-# Generate a self-signed certificate
-# You can leave all the inputs blank (only press Enter everywhere)
-openssl req -new -x509 -key key.pem -out cert.pem -days 365
-```
-
-Then, put `key.pem` and `cert.pem` into `src/vectorize/config/resources`
+Note: Do **not** remove the `.env.example`-File.
 
 #### Fix lock file
 
