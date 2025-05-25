@@ -14,7 +14,8 @@ from fastapi import (
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.config.db import get_session
+from txt2vec.ai_model.repository import get_models_paged_db
+from txt2vec.config.db import get_session
 
 from .models import AIModelPublic, AIModelUpdate, PagedResponse
 from .service import delete_model_svc, get_ai_model_svc, update_ai_model_svc
