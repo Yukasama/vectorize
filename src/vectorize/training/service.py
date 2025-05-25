@@ -16,6 +16,16 @@ from .exceptions import TrainingDatasetNotFoundError
 from .schemas import TrainRequest
 
 
+def _find_hf_model_dir(base_path: Path) -> Path:
+    """Suche rekursiv nach einem Unterordner mit config.json (Huggingface-Format)."""
+    if (base_path / "config.json").is_file():
+        return base_path
+    for subdir in base_path.rglob(""):
+        if (subdir / "config.json").is_file():
+            return subdir
+    raise FileNotFoundError(f"Kein Unterordner mit config.json in {base_path}")
+
+
 def train_model_service(train_request: TrainRequest) -> None:
     """Training logic for local or Huggingface models.
 
@@ -25,7 +35,7 @@ def train_model_service(train_request: TrainRequest) -> None:
     # Zielverzeichnis: data/models/trained_models/<model_tag>-finetuned
     base_dir = settings.model_upload_dir / "trained_models"
     base_dir.mkdir(parents=True, exist_ok=True)
-    model_dir_name = f"{train_request.model_tag}-finetuned"
+    model_dir_name = f"{Path(train_request.model_tag).name}-finetuned"
     output_dir = base_dir / model_dir_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -39,11 +49,22 @@ def train_model_service(train_request: TrainRequest) -> None:
         )
         raise TrainingDatasetNotFoundError(train_request.dataset_path)
 
+    # Prüfe, ob model_tag ein existierender Ordner ist (lokales Modell)
+    model_path = Path(train_request.model_tag)
+    if model_path.exists() and model_path.is_dir():
+        try:
+            model_load_path = str(_find_hf_model_dir(model_path).resolve())
+        except FileNotFoundError as e:
+            from loguru import logger
+
+            logger.error(str(e))
+            raise TrainingDatasetNotFoundError(f"Kein Huggingface-Modelldir gefunden: {e}")
+    else:
+        model_load_path = train_request.model_tag  # Huggingface Hub Name
+
     # Load model and tokenizer (local or Huggingface)
-    model = AutoModelForSequenceClassification.from_pretrained(
-        train_request.model_tag
-    )
-    tokenizer = AutoTokenizer.from_pretrained(train_request.model_tag)
+    model = AutoModelForSequenceClassification.from_pretrained(model_load_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_load_path)
 
     # Load dataset (CSV, expects columns: text & label)
     data_files = {"train": train_request.dataset_path}
