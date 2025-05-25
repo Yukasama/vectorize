@@ -5,10 +5,15 @@ services:
       dockerfile: Dockerfile
     container_name: vectorize
     volumes:
-      - ~/volumes/vectorize/data/datasets:/app/data/datasets
-      - ~/volumes/vectorize/data/models:/app/data/models
-      - ~/volumes/vectorize/db:/app/db
-    env_file: .env
+      - ${HOME}/volumes/vectorize/data/datasets:/app/data/datasets
+      - ${HOME}/volumes/vectorize/data/models:/app/data/models
+      - ${HOME}/volumes/vectorize/db:/app/db
+    environment:
+      ENV: production
+      DATABASE_URL: sqlite+aiosqlite:///./db/app.db
+      UPLOAD_DIR: /app/data/datasets
+      MODELS_DIR: /app/data/models
+      DB_DIR: /app/db
     networks: [vectorize-network]
     restart: unless-stopped
     cap_drop: [ALL]

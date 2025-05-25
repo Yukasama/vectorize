@@ -67,6 +67,7 @@ DATABASE_URL=sqlite+aiosqlite:///./app.db
 SONAR_TOKEN=your-sonar-token
 CLEAR_DB_ON_RESTART=1
 LOG_LEVEL=DEBUG
+COMPOSE_BAKE=true
 ```
 
 Note: Do **not** remove the `.env.example`-File.
