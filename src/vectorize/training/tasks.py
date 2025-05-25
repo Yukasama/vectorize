@@ -3,7 +3,7 @@
 from loguru import logger
 
 from .schemas import TrainRequest
-from .service import train_model_service
+from .service import train_model_service_svc
 
 
 def train_model_task(train_request: TrainRequest) -> None:
@@ -14,7 +14,7 @@ def train_model_task(train_request: TrainRequest) -> None:
         train_request.dataset_path,
     )
     try:
-        train_model_service(train_request)
+        train_model_service_svc(train_request)
         logger.info(
             "[BG] Training finished successfully for model_tag=%s",
             train_request.model_tag,
