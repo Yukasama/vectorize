@@ -9,12 +9,14 @@ __all__ = ["run"]
 
 def run() -> None:
     """Run the FastAPI application using Uvicorn."""
+    is_production = settings.app_env == "production"
+
     uvicorn.run(
         "vectorize:app",
         port=settings.port,
         reload=settings.reload,
         reload_dirs=["src/vectorize"],
         server_header=settings.server_header,
-        log_config=None,
-        log_level=None,
+        log_config=None if is_production else uvicorn.config.LOGGING_CONFIG,
+        log_level=None if is_production else "info",
     )

@@ -6,9 +6,13 @@ Run headless with: uvx locust -f scripts/locust.py --host=https://localhost/v1 -
 
 from pathlib import Path
 
+import urllib3
 from locust import HttpUser, constant_throughput, task
 
 from tests.dataset.utils import build_files
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 _DATASET_IDS = [
     "8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b",

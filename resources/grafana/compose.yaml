@@ -4,8 +4,7 @@ services:
     container_name: prometheus
     volumes:
       - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yaml"
+    command: "--config.file=/etc/prometheus/prometheus.yaml"
     networks: [vectorize-network]
     restart: unless-stopped
     cap_drop: [ALL]
@@ -19,51 +18,14 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     volumes:
-      - ${HOME}/volumes/vectorize/grafana:/var/lib/grafana
-      - ${HOME}/volumes/vectorize/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+      - ./config/provisioning:/etc/grafana/provisioning
       - ./config/dashboard.json:/var/lib/grafana/dashboards/dashboard.json
-    env_file: .env
-    entrypoint:
-      - sh
-      - -euc
-      - |
-        mkdir -p /etc/grafana/provisioning/datasources
-        mkdir -p /etc/grafana/provisioning/dashboards
-        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
-        apiVersion: 1
-        datasources:
-        - name: Loki
-          type: loki
-          access: proxy
-          orgId: 1
-          url: http://loki:3100
-          basicAuth: false
-          isDefault: false
-          version: 1
-          editable: false
-        - name: Prometheus
-          type: prometheus
-          orgId: 1
-          url: http://prometheus:9090
-          basicAuth: false
-          isDefault: true
-          version: 1
-          editable: false
-        EOF
-
-        cat <<EOF > /etc/grafana/provisioning/dashboards/fastapi.yaml
-        apiVersion: 1
-        providers:
-          - name: FastAPI
-            folder: FastAPI
-            type: file
-            updateIntervalSeconds: 30
-            allowUiUpdates: true
-            options:
-              path: /var/lib/grafana/dashboards
-              foldersFromFilesStructure: true
-        EOF
-        /run.sh
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/monitoring"
+      GF_SERVER_SERVE_FROM_SUB_PATH: true
     networks: [vectorize-network]
     cap_drop: [ALL]
     restart: unless-stopped
@@ -72,9 +34,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    depends_on:
-      - loki
-      - prometheus
+    depends_on: [loki, prometheus]
 
   alloy:
     image: grafana/alloy:latest
@@ -90,15 +50,14 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    depends_on:
-      - loki
+    depends_on: [loki]
 
   loki:
     image: grafana/loki:latest
     container_name: loki
     volumes:
       - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
-      - ${HOME}/volumes/vectorize/loki:/loki
+      - loki_data:/loki
     command: -config.file=/etc/loki/loki-config.yaml
     networks: [vectorize-network]
     cap_drop: [ALL]
@@ -108,3 +67,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+volumes:
+  grafana_data:
+  loki_data:
