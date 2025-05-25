@@ -9,6 +9,7 @@ from uuid import uuid4
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from sqlmodel import delete
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.ai_model import AIModel, ModelSource
@@ -24,7 +25,9 @@ async def test_list_models_pagination_non_default_params(
 ) -> None:
     """Tests the all models endpoint."""
     dbobjectcount: int = 23
-
+    # TODO check default seed as this implementation deletes previously seeded data for other test cases
+    await session.exec(delete(AIModel))
+    await session.commit()
     models = [
         AIModel(
             id=uuid4(),
@@ -73,7 +76,9 @@ async def test_list_models_pagination_default_params(
     dbobjectcount: int = 23
     last_pagenum = math.ceil(dbobjectcount / DEFAULT_PAGE_SIZE)
     expected_last_page_items = dbobjectcount % DEFAULT_PAGE_SIZE or DEFAULT_PAGE_SIZE
-
+    # TODO check default seed as this implementation deletes previously seeded data for other test cases
+    await session.exec(delete(AIModel))
+    await session.commit()
     models = [
         AIModel(
             id=uuid4(),
