@@ -1,0 +1,22 @@
+"""Paged Response Model."""
+from typing import TypeVar
+
+from pydantic import BaseModel
+
+T = TypeVar('T')
+
+
+class PagedResponse[T](BaseModel):
+    """Paged response class."""
+    page: int
+    size: int
+    totalpages: int
+    items: list[T]
+
+    @classmethod
+    def from_query(
+        cls, *, items: list[T], page: int, size: int, total: int
+    ) -> "PagedResponse[T]":
+        """Factory method to create a PagedResponse from query results."""
+        totalpages = (total + size - 1) // size
+        return cls(page=page, size=size, totalpages=totalpages, items=items)

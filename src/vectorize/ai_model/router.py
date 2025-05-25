@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import (
     APIRouter,
     Depends,
+    Query,
     Request,
     Response,
     status,
@@ -13,6 +14,8 @@ from fastapi import (
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from vectorize.ai_model.repository import get_models_paged_db
+from vectorize.ai_model.schemas import PagedResponse
 from vectorize.config.db import get_session
 
 from .models import AIModelPublic, AIModelUpdate
@@ -115,3 +118,54 @@ async def delete_model(
     logger.debug("Model deleted", modelId=model_id)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("", summary="Return all models")
+async def list_models(
+    db: Annotated[AsyncSession, Depends(get_session)],
+    page: Annotated[int, Query(ge=1, description="Page number, starts at 1")] = 1,
+    size: Annotated[int, Query(ge=5, le=100, description="Items per page")] = 5
+) -> PagedResponse:
+    """Returns a paged response of AI models.
+
+    Args:
+        page (int, optional): The page number. Defaults to 1.
+        size (int, optional): The page size. Defaults to 5.
+        db: Database session.
+
+    Returns:
+        PagedResponse: Paginated list of AI models for the requested page.
+
+    Raises:
+        NoModelFoundError: If no models exist in the database.
+    """
+    items, total = await get_models_paged_db(db, page, size)
+    logger.debug("db fetch complete", extra={
+        "event": "db_fetch_complete",
+        "items_fetched": len(items),
+        "total_items": total,
+    })
+    totalpages = (total + size - 1) // size
+    logger.debug("pagination calculated", extra={
+        "event": "pagination_calculated",
+        "page": page,
+        "size": size,
+        "totalpages": totalpages,
+    })
+    response = PagedResponse(
+        page=page,
+        size=size,
+        totalpages=totalpages,
+        items=items
+    )
+
+    logger.info("response ready", extra={
+        "event": "response_ready",
+        "response_preview": {
+            "page": response.page,
+            "size": response.size,
+            "totalpages": response.totalpages,
+            "items_count": len(response.items),
+        }
+    })
+    return response

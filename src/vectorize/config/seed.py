@@ -120,4 +120,40 @@ async def seed_db(session: AsyncSession) -> None:
             model_tag="huge_model",
         ),
     )
+# For Paged Models
+    session.add(
+        AIModel(
+            name="Any Paged Model 01",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_01",
+        ),
+    )
+    session.add(
+        AIModel(
+            name="Any Paged Model 02",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_02",
+        ),
+    )
+    session.add(
+        AIModel(
+            name="Any Paged Model 03",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_03",
+        ),
+    )
+    session.add(
+        AIModel(
+            name="Any Paged Model 04",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_04",
+        ),
+    )
+    session.add(
+        AIModel(
+            name="Any Paged Model 05",
+            source=ModelSource.LOCAL,
+            model_tag="any_model_05",
+        ),
+    )
     await session.commit()
