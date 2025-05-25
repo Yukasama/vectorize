@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from datasets import load_dataset
+from loguru import logger
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -16,7 +17,7 @@ from .exceptions import TrainingDatasetNotFoundError
 from .schemas import TrainRequest
 
 
-def _find_hf_model_dir(base_path: Path) -> Path:
+def _find_hf_model_dir_svc(base_path: Path) -> Path:
     """Suche rekursiv nach einem Unterordner mit config.json (Huggingface-Format)."""
     if (base_path / "config.json").is_file():
         return base_path
@@ -26,7 +27,7 @@ def _find_hf_model_dir(base_path: Path) -> Path:
     raise FileNotFoundError(f"Kein Unterordner mit config.json in {base_path}")
 
 
-def train_model_service(train_request: TrainRequest) -> None:
+def train_model_service_svc(train_request: TrainRequest) -> None:
     """Training logic for local or Huggingface models.
 
     Loads model and dataset, starts training with Huggingface Trainer.
@@ -42,10 +43,9 @@ def train_model_service(train_request: TrainRequest) -> None:
     # Check if dataset file exists before loading
     dataset_path = Path(train_request.dataset_path)
     if not dataset_path.is_file():
-        from loguru import logger
-
         logger.error(
-            "Training failed: Dataset file not found: {}", train_request.dataset_path
+            "Training failed: Dataset file not found: %s",
+            train_request.dataset_path,
         )
         raise TrainingDatasetNotFoundError(train_request.dataset_path)
 
@@ -53,12 +53,12 @@ def train_model_service(train_request: TrainRequest) -> None:
     model_path = Path(train_request.model_tag)
     if model_path.exists() and model_path.is_dir():
         try:
-            model_load_path = str(_find_hf_model_dir(model_path).resolve())
+            model_load_path = str(_find_hf_model_dir_svc(model_path).resolve())
         except FileNotFoundError as e:
-            from loguru import logger
-
             logger.error(str(e))
-            raise TrainingDatasetNotFoundError(f"Kein Huggingface-Modelldir gefunden: {e}")
+            raise TrainingDatasetNotFoundError(
+                f"Kein Huggingface-Modelldir gefunden: {e}"
+            ) from e
     else:
         model_load_path = train_request.model_tag  # Huggingface Hub Name
 
