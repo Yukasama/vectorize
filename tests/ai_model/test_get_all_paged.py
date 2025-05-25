@@ -1,4 +1,4 @@
-"""Test."""
+"""Test to check the default and non default returns of the paged models endpoint."""
 # ruff: noqa: S101
 # ruff noqa: PLR2004
 
@@ -22,7 +22,7 @@ async def test_list_models_pagination_non_default_params(
     session: AsyncSession,
     client: TestClient,
 ) -> None:
-    """Test models paged."""
+    """Tests the all models endpoint."""
     dbobjectcount: int = 23
 
     models = [
@@ -69,7 +69,7 @@ async def test_list_models_pagination_default_params(
     session: AsyncSession,
     client: TestClient,
 ) -> None:
-    """Test models paged."""
+    """Tests the all models endpoint."""
     dbobjectcount: int = 23
     last_pagenum = math.ceil(dbobjectcount / DEFAULT_PAGE_SIZE)
     expected_last_page_items = dbobjectcount % DEFAULT_PAGE_SIZE or DEFAULT_PAGE_SIZE
