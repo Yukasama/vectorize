@@ -39,7 +39,6 @@ async def test_list_models_pagination_non_default_params(
     ]
     session.add_all(models)
     await session.commit()
-
     last_pagenum = math.ceil(dbobjectcount / DEFAULT_PAGE_SIZE)
     expected_last_page_items = dbobjectcount % DEFAULT_PAGE_SIZE or DEFAULT_PAGE_SIZE
 
@@ -75,7 +74,6 @@ async def test_list_models_pagination_default_params(
     last_pagenum = math.ceil(dbobjectcount / DEFAULT_PAGE_SIZE)
     expected_last_page_items = dbobjectcount % DEFAULT_PAGE_SIZE or DEFAULT_PAGE_SIZE
 
-    # Die Seeddaten müssen wie im oberen Test vorbereitet werden!
     models = [
         AIModel(
             id=uuid4(),
