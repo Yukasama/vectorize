@@ -1,6 +1,6 @@
 {
   "uid": "fastapi-overview",
-  "title": "FastAPI - Service Overview",
+  "title": "Vectorize - Service Dashboard",
   "tags": ["FastAPI", "Prometheus"],
   "schemaVersion": 38,
   "version": 7,

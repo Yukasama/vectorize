@@ -3,14 +3,12 @@ services:
     build:
       context: ../../
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
+    container_name: vectorize
     volumes:
       - ~/volumes/vectorize/data/datasets:/app/data/datasets
       - ~/volumes/vectorize/data/models:/app/data/models
       - ~/volumes/vectorize/db:/app/db
+    env_file: .env
     networks: [vectorize-network]
     restart: unless-stopped
     cap_drop: [ALL]
