@@ -1051,16 +1051,6 @@ wheels = [
 ]
 
 [[package]]
-name = "loki-handler"
-version = "0.1.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "requests" },
-    { name = "rfc3339" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/93/fa/d24eee108ddf340d44ec4b381d056b569bfefc92883e19f63f48b5eb11ef/loki-handler-0.1.1.tar.gz", hash = "sha256:69bb3a27bff49adcfb974494349060f9763bc9839ef19cc50eb77c3657d4b7cd", size = 6212, upload-time = "2021-07-29T17:43:04.398Z" }
-
-[[package]]
 name = "loki-logger-handler"
 version = "1.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -2117,19 +2107,6 @@ wheels = [
 ]
 
 [[package]]
-name = "python-logging-loki"
-version = "0.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "requests" },
-    { name = "rfc3339" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/39/e2/b1ca91524530e5c7d73e70c4a2df952e5b7f1519977c7c51b3966b0332a8/python-logging-loki-0.3.1.tar.gz", hash = "sha256:b83610c8a3adc99fbab072493b91dfb25ced69be4874fefe3ab457b391adbf60", size = 5214, upload-time = "2019-11-28T22:34:38.273Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e9/ca/1f5660fbda815ed04839d657cab77605337e32c224c03c780cd383c7bcd6/python_logging_loki-0.3.1-py3-none-any.whl", hash = "sha256:8a9131db037fbea3d390089c4c32dbe7ed233944905079615a9fb6f669b0f4e6", size = 7004, upload-time = "2019-11-28T22:34:36.635Z" },
-]
-
-[[package]]
 name = "python-multipart"
 version = "0.0.20"
 source = { registry = "https://pypi.org/simple" }
@@ -2280,15 +2257,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/63/70/2bf7780ad2d390a8d301ad0b550f1581eadbd9a20f896afe06353c2a2913/requests-2.32.3.tar.gz", hash = "sha256:55365417734eb18255590a9ff9eb97e9e1da868d4ccd6402399eaf68af20a760", size = 131218, upload-time = "2024-05-29T15:37:49.536Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f9/9b/335f9764261e915ed497fcdeb11df5dfd6f7bf257d4a6a2a686d80da4d54/requests-2.32.3-py3-none-any.whl", hash = "sha256:70761cfe03c773ceb22aa2f671b4757976145175cdfca038c02654d061d6dcc6", size = 64928, upload-time = "2024-05-29T15:37:47.027Z" },
-]
-
-[[package]]
-name = "rfc3339"
-version = "6.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/91/fb/2835a62f2de226796fce76411daec6b9831eaf6d2fd04994ac1de055dc13/rfc3339-6.2.tar.gz", hash = "sha256:d53c3b5eefaef892b7240ba2a91fef012e86faa4d0a0ca782359c490e00ad4d0", size = 4144, upload-time = "2019-09-24T16:46:18.176Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/2e/48d6cf57dec789c90a7b1cb59a21c3cad509f0ec1284632152f33bb1d88d/rfc3339-6.2-py3-none-any.whl", hash = "sha256:f44316b21b21db90a625cde04ebb0d46268f153e6093021fa5893e92a96f58a3", size = 5515, upload-time = "2019-09-24T16:46:16.63Z" },
 ]
 
 [[package]]
@@ -2917,7 +2885,6 @@ dependencies = [
     { name = "huggingface-hub" },
     { name = "hypercorn" },
     { name = "loguru" },
-    { name = "loki-handler" },
     { name = "loki-logger-handler" },
     { name = "lxml" },
     { name = "numpy" },
@@ -2973,7 +2940,6 @@ requires-dist = [
     { name = "huggingface-hub", specifier = ">=0.30.2" },
     { name = "hypercorn", specifier = ">=0.17.3" },
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "loki-handler", specifier = ">=0.1.1" },
     { name = "loki-logger-handler", specifier = ">=1.1.1" },
     { name = "lxml", specifier = ">=5.3.2" },
     { name = "numpy", specifier = ">=2.2.4" },
