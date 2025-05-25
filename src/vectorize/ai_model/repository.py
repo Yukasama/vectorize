@@ -9,7 +9,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.common.exceptions import VersionMismatchError
 
 from .exceptions import ModelNotFoundError, NoModelFoundError
-from .models import AIModel, AIModelUpdate, PagedResponse
+from .models import AIModel, AIModelUpdate
 
 __all__ = ["get_ai_model_db", "save_ai_model_db", "update_ai_model_db"]
 
@@ -120,26 +120,17 @@ async def get_models_paged_db(
     db: AsyncSession,
     page: int = 1,
     size: int = 5,
-) -> PagedResponse[AIModel]:
-    """Gibt alle AIModel-Einträge paged zurück.
-
-    Raises:
-        ModelNotFoundError: wenn es überhaupt keinen Eintrag gibt.
-    """
+) -> tuple[list[AIModel], int]:
+    """Holt paginierte AIModel-Einträge und gibt auch die Gesamtanzahl zurück."""
     total_stmt = select(func.count()).select_from(AIModel)
-    total_result = await db.exec(total_stmt)
-    total = total_result.scalar_one()
+    total = await db.scalar(total_stmt)
 
-    if total == 0:
+    if not total:
         raise NoModelFoundError()
 
     offset = (page - 1) * size
-    stmt = (
-        select(AIModel)
-        .offset(offset)
-        .limit(size)
-    )
+    stmt = select(AIModel).offset(offset).limit(size)
     result = await db.exec(stmt)
-    items: list[AIModel] = result.scalars().all()
+    items = result.all()
 
-    return PagedResponse.from_query(items=items, page=page, size=size, total=total)
+    return items, total

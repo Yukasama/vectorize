@@ -15,9 +15,10 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.ai_model.repository import get_models_paged_db
+from vectorize.ai_model.schemas import PagedResponse
 from vectorize.config.db import get_session
 
-from .models import AIModelPublic, AIModelUpdate, PagedResponse
+from .models import AIModelPublic, AIModelUpdate
 from .service import delete_model_svc, get_ai_model_svc, update_ai_model_svc
 
 __all__ = ["router"]
@@ -119,7 +120,7 @@ async def delete_model(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("/models", summary="Returns all models")
+@router.get("", summary="Returns all models")
 async def list_models(
     db: Annotated[AsyncSession, Depends(get_session)],
     page: Annotated[int, Query(ge=1, description="Page number, starts at 1")] = 1,
@@ -137,4 +138,11 @@ async def list_models(
     Returns:
         PagedResponse: _description_
     """
-    return await get_models_paged_db(db, page, size)
+    items, total = await get_models_paged_db(db, page, size)
+    totalpages = (total + size - 1) // size
+    return PagedResponse(
+        page=page,
+        size=size,
+        totalpages=totalpages,
+        items=items
+    )
