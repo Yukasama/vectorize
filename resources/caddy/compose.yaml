@@ -18,7 +18,7 @@ services:
       - alloy
       - loki
     cap_add:
-      - NET_ADMIN
+      - NET_BIND_SERVICE
     healthcheck:
       test: ["CMD", "caddy", "version"]
       interval: 30s
