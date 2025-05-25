@@ -51,4 +51,4 @@ class NoModelFoundError(AppError):
     """Exception raised when no model is found."""
 
     error_code = ErrorCode.NOT_FOUND
-    status_code = status.HTTP_303_SEE_OTHER
+    status_code = status.HTTP_404_NOT_FOUND

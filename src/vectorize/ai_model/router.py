@@ -126,17 +126,18 @@ async def list_models(
     page: Annotated[int, Query(ge=1, description="Page number, starts at 1")] = 1,
     size: Annotated[int, Query(ge=5, le=100, description="Items per page")] = 5
 ) -> PagedResponse:
-    """Summary.
+    """Returns a paged response of AI models.
 
     Args:
-        page (int, optional): _description_. Defaults to Query(1, ge=1,
-        description="Page number, starts at 1").
-        size (int, optional): _description_. Defaults to Query(5, ge=5, le=100,
-        description="Items per page").
+        page (int, optional): The page number. Defaults to 1.
+        size (int, optional): The page size. Defaults to 5.
         db: Database session.
 
     Returns:
-        PagedResponse: _description_
+        PagedResponse: Paginated list of AI models for the requested page.
+
+    Raises:
+        NoModelFoundError: If no models exist in the database.
     """
     items, total = await get_models_paged_db(db, page, size)
     logger.debug("db fetch complete", extra={

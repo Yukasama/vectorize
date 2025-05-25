@@ -121,7 +121,21 @@ async def get_models_paged_db(
     page: int = 1,
     size: int = 5,
 ) -> tuple[list[AIModel], int]:
-    """Holt paginierte AIModel-Einträge und gibt auch die Gesamtanzahl zurück."""
+    """Fetches a page of AIModel entries from the database.
+
+    Args:
+        db (AsyncSession): The database session.
+        page (int, optional): Page number, starts at 1. Defaults to 1.
+        size (int, optional): Number of items per page. Defaults to 5.
+
+    Returns:
+        tuple[list[AIModel], int]: A tuple containing the list of AIModel
+        objects for the requested page,
+        and the total number of models in the database.
+
+    Raises:
+        NoModelFoundError: If there are no models in the database.
+    """
     total_stmt = select(func.count()).select_from(AIModel)
     total = await db.scalar(total_stmt)
 
