@@ -10,6 +10,8 @@ from transformers import (
     TrainingArguments,
 )
 
+from vectorize.config import settings
+
 from .exceptions import TrainingDatasetNotFoundError
 from .schemas import TrainRequest
 
@@ -20,9 +22,12 @@ def train_model_service(train_request: TrainRequest) -> None:
     Loads model and dataset, starts training with Huggingface Trainer.
     Saves trained models under data/models/trained_models.
     """
-    base_dir = Path("data/models/trained_models")
+    # Zielverzeichnis: data/models/trained_models/<model_tag>-finetuned
+    base_dir = settings.model_upload_dir / "trained_models"
     base_dir.mkdir(parents=True, exist_ok=True)
-    output_dir = base_dir / Path(train_request.output_dir).name
+    model_dir_name = f"{train_request.model_tag}-finetuned"
+    output_dir = base_dir / model_dir_name
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Check if dataset file exists before loading
     dataset_path = Path(train_request.dataset_path)
