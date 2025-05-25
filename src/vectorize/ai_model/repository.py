@@ -119,7 +119,7 @@ async def delete_model_db(db: AsyncSession, model_id: UUID) -> None:
 async def get_models_paged_db(
     db: AsyncSession,
     page: int = 1,
-    size: int = 10,
+    size: int = 5,
 ) -> PagedResponse[AIModel]:
     """Gibt alle AIModel-Einträge paged zurück.
 
@@ -142,4 +142,4 @@ async def get_models_paged_db(
     result = await db.exec(stmt)
     items: list[AIModel] = result.scalars().all()
 
-    return PagedResponse.from_query(data=items, page=page, size=size, total=total)
+    return PagedResponse.from_query(items=items, page=page, size=size, total=total)
