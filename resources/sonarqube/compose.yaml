@@ -7,8 +7,8 @@ services:
       - "9000:9000"
       - "9092:9092"
     volumes:
-      - ${HOME}/volumes/sonarqube/data:/opt/sonarqube/data
-      - ${HOME}/volumes/sonarqube/logs:/opt/sonarqube/logs:ro
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs:ro
     environment:
       TZ: Europe/Berlin
     cap_drop: [ALL]
@@ -20,3 +20,7 @@ services:
         reservations:
           cpus: "2.0"
           memory: 2048M
+
+volumes:
+  sonarqube_data:
+  sonarqube_logs:

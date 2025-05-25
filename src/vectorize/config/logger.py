@@ -18,18 +18,17 @@ def config_logger() -> None:
     """Logger configuration."""
     is_production = settings.app_env == "production"
 
-    logging.root.handlers = [InterceptHandler()]
-    logging.root.setLevel(logging.INFO)
+    if is_production:
+        logging.root.handlers = [InterceptHandler()]
+        logging.root.setLevel(logging.INFO)
 
-    logging.getLogger("watchfiles").setLevel(logging.ERROR)
-    logging.getLogger("watchfiles.main").setLevel(logging.ERROR)
+        loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+        for logger_instance in loggers:
+            logger_instance.handlers = []
+            logger_instance.propagate = True
 
-    loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
-    for logger_instance in loggers:
-        logger_instance.handlers = []
-        logger_instance.propagate = True
+        logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
 
-    logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
     logger.remove()
 
     if not is_production:
