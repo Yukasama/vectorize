@@ -116,15 +116,15 @@ class PagedResponse[T](GenericModel):
     page: int
     size: int
     totalpages: int
-    data: list[T]
+    items: list[T]
 
     @classmethod
-    def from_query(cls, *, data: list[T],
+    def from_query(cls, *, items: list[T],
                     page: int, size: int, total: int) -> "PagedResponse[T]":
         """Ctor.
 
         Args:
-            data (list[T]): _description_
+            items (list[T]): _description_
             page (int): _description_
             size (int): _description_
             total (int): _description_
@@ -133,4 +133,4 @@ class PagedResponse[T](GenericModel):
             PagedResponse[T]: _description_
         """
         pages = (total + size - 1) // size
-        return cls(page=page, size=size, total=total, pages=pages, data=data)
+        return cls(page=page, size=size, total=total, pages=pages, items=items)

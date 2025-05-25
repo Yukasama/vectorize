@@ -123,14 +123,14 @@ async def delete_model(
 async def list_models(
     db: Annotated[AsyncSession, Depends(get_session)],
     page: Annotated[int, Query(ge=1, description="Page number, starts at 1")] = 1,
-    size: Annotated[int, Query(ge=1, le=100, description="Items per page")] = 10
+    size: Annotated[int, Query(ge=5, le=100, description="Items per page")] = 5
 ) -> PagedResponse:
     """Summary.
 
     Args:
         page (int, optional): _description_. Defaults to Query(1, ge=1,
         description="Page number, starts at 1").
-        size (int, optional): _description_. Defaults to Query(10, ge=1, le=100,
+        size (int, optional): _description_. Defaults to Query(5, ge=5, le=100,
         description="Items per page").
         db: Database session.
 
