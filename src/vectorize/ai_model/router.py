@@ -139,10 +139,32 @@ async def list_models(
         PagedResponse: _description_
     """
     items, total = await get_models_paged_db(db, page, size)
+    logger.debug("db fetch complete", extra={
+        "event": "db_fetch_complete",
+        "items_fetched": len(items),
+        "total_items": total,
+    })
     totalpages = (total + size - 1) // size
-    return PagedResponse(
+    logger.debug("pagination calculated", extra={
+        "event": "pagination_calculated",
+        "page": page,
+        "size": size,
+        "totalpages": totalpages,
+    })
+    response = PagedResponse(
         page=page,
         size=size,
         totalpages=totalpages,
         items=items
     )
+
+    logger.info("response ready", extra={
+        "event": "response_ready",
+        "response_preview": {
+            "page": response.page,
+            "size": response.size,
+            "totalpages": response.totalpages,
+            "items_count": len(response.items),
+        }
+    })
+    return response
