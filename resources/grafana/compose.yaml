@@ -2,8 +2,6 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
-    ports:
-      - "9090:9090"
     volumes:
       - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml
     command:
@@ -20,14 +18,11 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
-    ports:
-      - "3001:3000"
     volumes:
       - ${HOME}/volumes/vectorize/grafana:/var/lib/grafana
       - ${HOME}/volumes/vectorize/grafana/provisioning:/etc/grafana/provisioning
       - ./config/dashboard.json:/var/lib/grafana/dashboards/dashboard.json
-    env_file:
-      - .env
+    env_file: .env
     entrypoint:
       - sh
       - -euc
@@ -84,16 +79,9 @@ services:
   alloy:
     image: grafana/alloy:latest
     container_name: alloy
-    ports:
-      - "9999:9999"
-      - "12345:12345"
     volumes:
       - ./config/config.alloy:/etc/alloy/config.alloy
-    command:
-      - run
-      - --server.http.listen-addr=0.0.0.0:12345
-      - --stability.level=experimental
-      - /etc/alloy/config.alloy
+    command: ["run", "--stability.level=experimental", "/etc/alloy/config.alloy"]
     networks: [vectorize-network]
     cap_drop: [ALL]
     restart: unless-stopped
@@ -108,8 +96,6 @@ services:
   loki:
     image: grafana/loki:latest
     container_name: loki
-    ports:
-      - "3100:3100"
     volumes:
       - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
       - ${HOME}/volumes/vectorize/loki:/loki

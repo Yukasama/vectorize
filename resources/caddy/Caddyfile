@@ -1,0 +1,26 @@
+{
+    admin off
+    log {
+        format json
+    }
+}
+
+localhost {
+	@noSlash path /monitoring
+	redir @noSlash /monitoring/ 308
+
+	handle /monitoring/* {
+		reverse_proxy grafana:3000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up Connection {header.Connection}
+			header_up Upgrade    {header.Upgrade}
+		}
+	}
+
+	handle {
+		reverse_proxy vectorize:8000
+	}
+}

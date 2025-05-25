@@ -34,10 +34,6 @@ venv.bak/
 instance/
 *.pid
 
-# === Certs ===
-key.pem
-cert.pem
-
 # === OS files ===
 .DS_Store
 Thumbs.db

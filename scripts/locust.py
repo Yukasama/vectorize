@@ -1,8 +1,8 @@
 """Load testing with Locust.
 
 Run with: uvx locust -f scripts/locust.py
-Run headless with: uvx locust -f scripts/locust.py --headless -u 1 -r 1
-"""
+Run headless with: uvx locust -f scripts/locust.py --host=https://localhost/v1 --headless -u 1 -r 1
+"""  # noqa: E501
 
 from pathlib import Path
 
@@ -29,6 +29,10 @@ class AppLoadTests(HttpUser):
     wait_time = constant_throughput(0.1)
 
     base_path = Path(__file__).parent.parent / "test_data" / "datasets"
+
+    def on_start(self) -> None:
+        """Set up the client to ignore SSL certificate validation."""
+        self.client.verify = False
 
     @task
     def get_all_datasets(self) -> None:
