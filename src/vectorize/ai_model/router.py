@@ -120,7 +120,7 @@ async def delete_model(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get("", summary="Returns all models")
+@router.get("", summary="Return all models")
 async def list_models(
     db: Annotated[AsyncSession, Depends(get_session)],
     page: Annotated[int, Query(ge=1, description="Page number, starts at 1")] = 1,

@@ -25,7 +25,7 @@ async def test_list_models_pagination_non_default_params(
 ) -> None:
     """Tests the all models endpoint."""
     dbobjectcount: int = 23
-    # TODO check default seed as this implementation deletes previously seeded data for other test cases
+    # TODO check default seed as this implementation deletes previously seeded data for other test cases  # noqa: E501, TD002, TD003, TD004
     await session.exec(delete(AIModel))
     await session.commit()
     models = [
@@ -76,7 +76,7 @@ async def test_list_models_pagination_default_params(
     dbobjectcount: int = 23
     last_pagenum = math.ceil(dbobjectcount / DEFAULT_PAGE_SIZE)
     expected_last_page_items = dbobjectcount % DEFAULT_PAGE_SIZE or DEFAULT_PAGE_SIZE
-    # TODO check default seed as this implementation deletes previously seeded data for other test cases
+    # TODO check default seed as this implementation deletes previously seeded data for other test cases  # noqa: E501, TD002, TD003, TD004
     await session.exec(delete(AIModel))
     await session.commit()
     models = [
