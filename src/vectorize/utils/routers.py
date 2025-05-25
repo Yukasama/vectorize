@@ -6,6 +6,7 @@ from vectorize.ai_model.router import router as models_router
 from vectorize.config.config import settings
 from vectorize.datasets.router import router as dataset_router
 from vectorize.inference.router import router as embeddings_router
+from vectorize.training.router import router as training_router
 from vectorize.upload.router import router as upload_router
 
 
@@ -20,5 +21,6 @@ def register_routers(app: FastAPI) -> None:
     base_router.include_router(upload_router, prefix="/uploads")
     base_router.include_router(embeddings_router, prefix="/embeddings")
     base_router.include_router(models_router, prefix="/models")
+    base_router.include_router(training_router, prefix="/training")
 
     app.include_router(base_router)
