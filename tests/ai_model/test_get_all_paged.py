@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.ai_model import AIModel, ModelSource
+from vectorize.app import app
 
 DEFAULT_PAGE_SIZE: int = 10
 DEFAULT_PAGE_NUMBER: int = 1
@@ -23,6 +24,8 @@ async def test_list_models_pagination_non_default_params(
     client: TestClient,
 ) -> None:
     """"Test models paged."""
+    # TODO move seeding to seed_db() for client fixture
+    client = TestClient(app)
     dbobjectcount: int = 23
 
     models = [
@@ -42,7 +45,9 @@ async def test_list_models_pagination_non_default_params(
 
     last_pagenum = math.ceil(dbobjectcount / DEFAULT_PAGE_SIZE)
 
-    resp = client.get(f"/AIModel/models?page={DEFAULT_PAGE_NUMBER}&size={DEFAULT_PAGE_SIZE}")  # noqa: E501
+    route = f"models?page={DEFAULT_PAGE_NUMBER}&size={DEFAULT_PAGE_SIZE}"
+
+    resp = client.get(route)
     assert resp.status_code == status.HTTP_200_OK
     payload = resp.json()
     assert payload["page"] == DEFAULT_PAGE_SIZE
@@ -50,7 +55,9 @@ async def test_list_models_pagination_non_default_params(
     assert payload["pages"] == last_pagenum
     assert len(payload["items"]) == DEFAULT_PAGE_SIZE
 
-    resp = client.get(f"/AIModel/models?page={last_pagenum}&size={DEFAULT_PAGE_SIZE}")
+    route = f"/models?page={last_pagenum}&size={DEFAULT_PAGE_SIZE}"
+
+    resp = client.get(route)
     assert resp.status_code == status.HTTP_200_OK
     payload = resp.json()
     assert payload["page"] == last_pagenum
@@ -60,15 +67,14 @@ async def test_list_models_pagination_non_default_params(
     assert names[0].startswith("Model_")
 
 
-DEFAULT_PAGE_SIZE: int = 5
-
-
 @pytest.mark.asyncio
 async def test_list_models_pagination_default_params(
     session: AsyncSession,
     client: TestClient,
 ) -> None:
     """"Test models paged."""
+    client = TestClient(app)
+    # TODO move seeding to seed_db() for client fixture
     dbobjectcount: int = 23
 
     models = [
@@ -88,7 +94,9 @@ async def test_list_models_pagination_default_params(
 
     last_pagenum = math.ceil(dbobjectcount / DEFAULT_PAGE_SIZE)
 
-    resp = client.get(f"/AIModel/models?page={DEFAULT_PAGE_NUMBER}&size={DEFAULT_PAGE_SIZE}")  # noqa: E501
+    route = f"models?page={DEFAULT_PAGE_NUMBER}&size={DEFAULT_PAGE_SIZE}"
+
+    resp = client.get(route)
     assert resp.status_code == status.HTTP_200_OK
     payload = resp.json()
     assert payload["page"] == DEFAULT_PAGE_SIZE
@@ -96,7 +104,9 @@ async def test_list_models_pagination_default_params(
     assert payload["pages"] == last_pagenum
     assert len(payload["items"]) == DEFAULT_PAGE_SIZE
 
-    resp = client.get(f"/AIModel/models?page={last_pagenum}&size={DEFAULT_PAGE_SIZE}")
+    route = f"/models?page={last_pagenum}&size={DEFAULT_PAGE_SIZE}"
+
+    resp = client.get(route)
     assert resp.status_code == status.HTTP_200_OK
     payload = resp.json()
     assert payload["page"] == last_pagenum
