@@ -12,7 +12,7 @@ from transformers import AutoModel, AutoTokenizer
 
 from vectorize.config import settings
 
-from .exceptions import TrainingDatasetNotFoundError
+from .exceptions import TrainingDatasetNotFoundError, TrainingModelNotFoundError, TrainingModelWeightsNotFoundError
 from .schemas import TrainRequest
 
 
@@ -48,19 +48,20 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
             raise TrainingDatasetNotFoundError(dataset_path_str)
 
     model_path = Path(train_request.model_path)
-    if model_path.exists() and model_path.is_dir():
-        try:
-            model_load_path = str(_find_hf_model_dir_svc(model_path).resolve())
-        except FileNotFoundError as e:
-            logger.error(str(e))
-            raise TrainingDatasetNotFoundError(
-                f"No Huggingface model dir found: {e}"
-            ) from e
-    else:
-        logger.error("Model loading from Huggingface Hub is not allowed. Only local models supported.")
-        raise TrainingDatasetNotFoundError("Only local model directories are allowed.")
+    if not model_path.exists() or not model_path.is_dir():
+        logger.error(f"Model directory not found or not a directory: {model_path}")
+        raise TrainingModelNotFoundError(str(model_path))
+    try:
+        model_load_path = str(_find_hf_model_dir_svc(model_path).resolve())
+    except FileNotFoundError as e:
+        logger.error(f"No Huggingface model dir (config.json) found in: {model_path}")
+        raise TrainingModelNotFoundError(f"No Huggingface model dir (config.json) found in: {model_path}") from e
 
-    model = AutoModel.from_pretrained(model_load_path)
+    try:
+        model = AutoModel.from_pretrained(model_load_path)
+    except OSError as e:
+        logger.error(f"Model weights not found or invalid in {model_load_path}: {e}")
+        raise TrainingModelWeightsNotFoundError(model_load_path) from e
     tokenizer = AutoTokenizer.from_pretrained(model_load_path)
 
     data_files = {"train": train_request.dataset_paths}
