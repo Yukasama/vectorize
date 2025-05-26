@@ -13,15 +13,16 @@ from ..datasets import TripletDataset, preprocess_triplet_batch
 from ..exceptions import TrainingModelNotFoundError, TrainingModelWeightsNotFoundError
 
 __all__ = [
-    "_find_hf_model_dir_svc",
-    "_load_and_tokenize_datasets",
-    "_load_model_and_tokenizer",
-    "_prepare_output_dir",
-    "_train",
+    "find_hf_model_dir_svc",
+    "load_and_tokenize_datasets",
+    "load_model_and_tokenizer",
+    "prepare_output_dir",
+    "train",
 ]
 
 
-def _prepare_output_dir(model_path: str) -> Path:
+def prepare_output_dir(model_path: str) -> Path:
+    """Create and return the output directory for the trained model."""
     base_dir = settings.model_upload_dir / "trained_models"
     base_dir.mkdir(parents=True, exist_ok=True)
     model_dir_name = f"{Path(model_path).name}-finetuned"
@@ -30,12 +31,13 @@ def _prepare_output_dir(model_path: str) -> Path:
     return output_dir
 
 
-def _load_model_and_tokenizer(model_path: str) -> tuple:
+def load_model_and_tokenizer(model_path: str) -> tuple:
+    """Load a Huggingface model and tokenizer from the given path."""
     model_path = Path(model_path)
     if not model_path.exists() or not model_path.is_dir():
         raise TrainingModelNotFoundError(str(model_path))
     try:
-        model_load_path = str(_find_hf_model_dir_svc(model_path).resolve())
+        model_load_path = str(find_hf_model_dir_svc(model_path).resolve())
     except FileNotFoundError as e:
         raise TrainingModelNotFoundError(
             f"No Huggingface model dir (config.json) found in: {model_path}"
@@ -48,9 +50,10 @@ def _load_model_and_tokenizer(model_path: str) -> tuple:
     return model, tokenizer
 
 
-def _load_and_tokenize_datasets(
+def load_and_tokenize_datasets(
     dataset_paths: list[str], tokenizer: object, batch_size: int
 ) -> DataLoader:
+    """Load datasets and return a DataLoader for triplet training."""
     paths = [Path(p) for p in dataset_paths]
     datasets_list = [
         load_dataset("csv", data_files={"train": str(p)})["train"] for p in paths
@@ -65,10 +68,11 @@ def _load_and_tokenize_datasets(
     )
 
 
-def _train(
+def train(
     train_ctx: dict,
     epochs: int,
 ) -> None:
+    """Run the training loop for the model, dataloader, optimizer, and criterion."""
     model = train_ctx["model"]
     dataloader = train_ctx["dataloader"]
     optimizer = train_ctx["optimizer"]
@@ -99,7 +103,7 @@ def _train(
         logger.info(f"Epoch {epoch + 1} loss: {epoch_loss / len(dataloader):.4f}")
 
 
-def _find_hf_model_dir_svc(base_path: Path) -> Path:
+def find_hf_model_dir_svc(base_path: Path) -> Path:
     """Suche rekursiv nach einem Unterordner mit config.json (Huggingface-Format)."""
     if (base_path / "config.json").is_file():
         return base_path

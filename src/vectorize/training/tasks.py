@@ -21,7 +21,7 @@ def train_model_task(train_request: TrainRequest) -> None:
         )
     except Exception as e:
         logger.error(
-            "[BG] Training failed for model_path=%s: %s",
+            "[BG] Traåçining failed for model_path=%s: %s",
             train_request.model_path,
             str(e),
         )

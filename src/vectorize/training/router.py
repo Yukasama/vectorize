@@ -1,5 +1,6 @@
 """Training router."""
 
+
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Response, status

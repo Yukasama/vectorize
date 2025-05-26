@@ -43,10 +43,17 @@ class TripletDataset(Dataset):
 
 
 def preprocess_triplet_batch(tokenizer: object, examples: dict) -> dict:
-    """Tokenisiert ein Batch von Triplet-Beispielen für das Training."""
-    anchor = tokenizer(examples["question"], truncation=True, padding=True)
-    positive = tokenizer(examples["positive"], truncation=True, padding=True)
-    negative = tokenizer(examples["negative"], truncation=True, padding=True)
+    """Tokenisiert ein Batch von Triplet-Beispielen für das Training.
+
+    Raises:
+        ValueError: Wenn ein erforderlicher Key fehlt.
+    """
+    try:
+        anchor = tokenizer(examples["question"], truncation=True, padding=True)
+        positive = tokenizer(examples["positive"], truncation=True, padding=True)
+        negative = tokenizer(examples["negative"], truncation=True, padding=True)
+    except KeyError as e:
+        raise ValueError(f"Missing key in input batch: {e}") from e
     return {
         "anchor_input_ids": anchor["input_ids"],
         "anchor_attention_mask": anchor["attention_mask"],
