@@ -42,6 +42,13 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
             lr=train_request.learning_rate,
         )
         criterion = TripletMarginLoss(margin=1.0, p=2)
-        _train(model, dataloader, optimizer, criterion, device, train_request.epochs)
+        train_ctx = {
+            "model": model,
+            "dataloader": dataloader,
+            "optimizer": optimizer,
+            "criterion": criterion,
+            "device": device,
+        }
+        _train(train_ctx, train_request.epochs)
         model.save_pretrained(str(output_dir))
         tokenizer.save_pretrained(str(output_dir))
