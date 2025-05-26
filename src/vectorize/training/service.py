@@ -11,10 +11,10 @@ from .exceptions import (
 )
 from .schemas import TrainRequest
 from .utils.helpers import (
-    _load_and_tokenize_datasets,
-    _load_model_and_tokenizer,
-    _prepare_output_dir,
-    _train,
+    load_and_tokenize_datasets,
+    load_model_and_tokenizer,
+    prepare_output_dir,
+    train,
 )
 
 
@@ -29,9 +29,9 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
         if missing := [p for p in train_request.dataset_paths if not Path(p).is_file()]:
             logger.error("Training failed: Dataset file(s) not found: %s", missing)
             raise TrainingDatasetNotFoundError(", ".join(missing))
-        output_dir = _prepare_output_dir(train_request.model_path)
-        model, tokenizer = _load_model_and_tokenizer(train_request.model_path)
-        dataloader = _load_and_tokenize_datasets(
+        output_dir = prepare_output_dir(train_request.model_path)
+        model, tokenizer = load_model_and_tokenizer(train_request.model_path)
+        dataloader = load_and_tokenize_datasets(
             train_request.dataset_paths,
             tokenizer,
             train_request.per_device_train_batch_size,
@@ -49,6 +49,6 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
             "criterion": criterion,
             "device": device,
         }
-        _train(train_ctx, train_request.epochs)
+        train(train_ctx, train_request.epochs)
         model.save_pretrained(str(output_dir))
         tokenizer.save_pretrained(str(output_dir))
