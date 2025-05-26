@@ -2,14 +2,13 @@
 
 from pathlib import Path
 
+import torch
 from datasets import load_dataset
 from loguru import logger
-from transformers import (
-    AutoModelForSequenceClassification,
-    AutoTokenizer,
-    Trainer,
-    TrainingArguments,
-)
+from torch.nn import TripletMarginLoss
+from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
+from transformers import AutoModel, AutoTokenizer
 
 from vectorize.config import settings
 
@@ -30,17 +29,15 @@ def _find_hf_model_dir_svc(base_path: Path) -> Path:
 def train_model_service_svc(train_request: TrainRequest) -> None:
     """Training logic for local models only (no Huggingface download).
 
-    Loads model and dataset, starts training with Huggingface Trainer.
+    Loads model and dataset, starts training with Triplet-Loss.
     Saves trained models under data/models/trained_models.
     """
-    # Zielverzeichnis: data/models/trained_models/<model_path>-finetuned
     base_dir = settings.model_upload_dir / "trained_models"
     base_dir.mkdir(parents=True, exist_ok=True)
     model_dir_name = f"{Path(train_request.model_path).name}-finetuned"
     output_dir = base_dir / model_dir_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Check if all dataset files exist before loading
     for dataset_path_str in train_request.dataset_paths:
         dataset_path = Path(dataset_path_str)
         if not dataset_path.is_file():
@@ -50,7 +47,6 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
             )
             raise TrainingDatasetNotFoundError(dataset_path_str)
 
-    # Only allow local model directories
     model_path = Path(train_request.model_path)
     if model_path.exists() and model_path.is_dir():
         try:
@@ -64,34 +60,77 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
         logger.error("Model loading from Huggingface Hub is not allowed. Only local models supported.")
         raise TrainingDatasetNotFoundError("Only local model directories are allowed.")
 
-    # Load model and tokenizer (local only)
-    model = AutoModelForSequenceClassification.from_pretrained(model_load_path)
+    model = AutoModel.from_pretrained(model_load_path)
     tokenizer = AutoTokenizer.from_pretrained(model_load_path)
 
-    # Load dataset (CSV, expects columns: text & label)
     data_files = {"train": train_request.dataset_paths}
     dataset = load_dataset("csv", data_files=data_files)
 
-    def preprocess_function(examples: dict) -> dict:
-        return tokenizer(examples["text"], truncation=True, padding=True)
+    def preprocess_function_svc(examples: dict) -> dict:
+        anchor = tokenizer(examples["question"], truncation=True, padding=True)
+        positive = tokenizer(examples["positive"], truncation=True, padding=True)
+        negative = tokenizer(examples["negative"], truncation=True, padding=True)
+        return {
+            "anchor_input_ids": anchor["input_ids"],
+            "anchor_attention_mask": anchor["attention_mask"],
+            "positive_input_ids": positive["input_ids"],
+            "positive_attention_mask": positive["attention_mask"],
+            "negative_input_ids": negative["input_ids"],
+            "negative_attention_mask": negative["attention_mask"],
+        }
 
-    tokenized_datasets = dataset.map(preprocess_function, batched=True)
+    tokenized = dataset.map(preprocess_function_svc, batched=True)
+    train_data = tokenized["train"]
 
-    training_args = TrainingArguments(
-        output_dir=str(output_dir),
-        num_train_epochs=train_request.epochs,
-        learning_rate=train_request.learning_rate,
-        per_device_train_batch_size=train_request.per_device_train_batch_size,
-        save_total_limit=1,
-        logging_steps=10,
-        report_to=[],
+    class TripletDataset(Dataset):
+        def __init__(self, data):
+            self.data = data
+        def __len__(self):
+            return len(self.data["anchor_input_ids"])
+        def __getitem__(self, idx):
+            return {
+                "anchor_input_ids": torch.tensor(self.data["anchor_input_ids"][idx]),
+                "anchor_attention_mask": torch.tensor(self.data["anchor_attention_mask"][idx]),
+                "positive_input_ids": torch.tensor(self.data["positive_input_ids"][idx]),
+                "positive_attention_mask": torch.tensor(self.data["positive_attention_mask"][idx]),
+                "negative_input_ids": torch.tensor(self.data["negative_input_ids"][idx]),
+                "negative_attention_mask": torch.tensor(self.data["negative_attention_mask"][idx]),
+            }
+
+    train_dataset = TripletDataset(train_data)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=train_request.per_device_train_batch_size,
+        shuffle=True,
     )
 
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=tokenized_datasets["train"],
-    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    model.train()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=train_request.learning_rate)
+    criterion = TripletMarginLoss(margin=1.0, p=2)
 
-    trainer.train()
-    trainer.save_model(str(output_dir))
+    for epoch in range(train_request.epochs):
+        epoch_loss = 0.0
+        for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}"):
+            optimizer.zero_grad()
+            anchor = model(
+                input_ids=batch["anchor_input_ids"].to(device),
+                attention_mask=batch["anchor_attention_mask"].to(device),
+            )[0][:, 0, :]
+            positive = model(
+                input_ids=batch["positive_input_ids"].to(device),
+                attention_mask=batch["positive_attention_mask"].to(device),
+            )[0][:, 0, :]
+            negative = model(
+                input_ids=batch["negative_input_ids"].to(device),
+                attention_mask=batch["negative_attention_mask"].to(device),
+            )[0][:, 0, :]
+            loss = criterion(anchor, positive, negative)
+            loss.backward()
+            optimizer.step()
+            epoch_loss += loss.item()
+        logger.info(f"Epoch {epoch+1} loss: {epoch_loss/len(train_loader):.4f}")
+
+    model.save_pretrained(str(output_dir))
+    tokenizer.save_pretrained(str(output_dir))
