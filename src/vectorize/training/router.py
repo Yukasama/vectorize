@@ -20,14 +20,11 @@ async def train_model(
     background_tasks: BackgroundTasks,
 ) -> Response:
     """Start model training as a background task."""
-    for dataset_path in train_request.dataset_paths:
-        path = Path(dataset_path)
-        if not path.is_file():
-            logger.error(
-                "Training request failed: Dataset file not found: %s",
-                dataset_path,
-            )
-            raise TrainingDatasetNotFoundError(dataset_path)
+    missing = [p for p in train_request.dataset_paths if not Path(p).is_file()]
+    if missing:
+        for p in missing:
+            logger.error("Training request failed: Dataset file not found: %s", p)
+        raise TrainingDatasetNotFoundError(missing[0])
     logger.info(
         "Training requested for model_path=%s, dataset_paths=%s",
         train_request.model_path,
