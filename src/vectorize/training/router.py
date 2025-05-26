@@ -1,13 +1,9 @@
 """Training router."""
 
 from pathlib import Path
-from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
+from fastapi import APIRouter, BackgroundTasks, Response, status
 from loguru import logger
-from sqlmodel.ext.asyncio.session import AsyncSession
-
-from vectorize.config.db import get_session
 
 from .exceptions import TrainingDatasetNotFoundError
 from .schemas import TrainRequest
@@ -24,29 +20,29 @@ async def train_model(
     background_tasks: BackgroundTasks,
 ) -> Response:
     """Start model training as a background task."""
-    # Check if dataset file exists before starting background task
-    dataset_path = Path(train_request.dataset_path)
-    if not dataset_path.is_file():
-        logger.error(
-            "Training request failed: Dataset file not found: %s",
-            train_request.dataset_path,
-        )
-        raise TrainingDatasetNotFoundError(train_request.dataset_path)
+    for dataset_path in train_request.dataset_paths:
+        path = Path(dataset_path)
+        if not path.is_file():
+            logger.error(
+                "Training request failed: Dataset file not found: %s",
+                dataset_path,
+            )
+            raise TrainingDatasetNotFoundError(dataset_path)
     logger.info(
-        "Training requested for model_tag=%s, dataset_path=%s",
-        train_request.model_tag,
-        train_request.dataset_path,
+        "Training requested for model_path=%s, dataset_paths=%s",
+        train_request.model_path,
+        train_request.dataset_paths,
     )
     background_tasks.add_task(train_model_task, train_request)
     logger.info(
-        "Training started in background for model_tag=%s",
-        train_request.model_tag,
+        "Training started in background for model_path=%s",
+        train_request.model_path,
     )
     return Response(
         content=(
             "{" +
             '"message": "Training started", ' +
-            '"model_tag": "' + train_request.model_tag + '"' +
+            '"model_path": "' + train_request.model_path + '"' +
             "}"
         ),
         status_code=status.HTTP_202_ACCEPTED,
