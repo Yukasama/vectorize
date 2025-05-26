@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Response, status
+from fastapi.responses import JSONResponse
 from loguru import logger
 
 from .exceptions import TrainingDatasetNotFoundError
@@ -35,13 +36,7 @@ async def train_model(
         "Training started in background for model_path=%s",
         train_request.model_path,
     )
-    return Response(
-        content=(
-            "{" +
-            '"message": "Training started", ' +
-            '"model_path": "' + train_request.model_path + '"' +
-            "}"
-        ),
+    return JSONResponse(
+        content={"message": "Training started", "model_path": train_request.model_path},
         status_code=status.HTTP_202_ACCEPTED,
-        media_type="application/json",
     )
