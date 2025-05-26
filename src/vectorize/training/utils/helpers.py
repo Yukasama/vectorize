@@ -66,13 +66,14 @@ def _load_and_tokenize_datasets(
 
 
 def _train(
-    model: object,
-    dataloader: DataLoader,
-    optimizer: object,
-    criterion: object,
-    device: object,
+    train_ctx: dict,
     epochs: int,
 ) -> None:
+    model = train_ctx["model"]
+    dataloader = train_ctx["dataloader"]
+    optimizer = train_ctx["optimizer"]
+    criterion = train_ctx["criterion"]
+    device = train_ctx["device"]
     model.to(device)
     model.train()
     for epoch in range(epochs):
