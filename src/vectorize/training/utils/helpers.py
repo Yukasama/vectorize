@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from datasets import concatenate_datasets, load_dataset
+from datasets import Dataset, DatasetDict, IterableDataset, concatenate_datasets, load_dataset
 from loguru import logger
 from torch.utils.data import DataLoader, default_collate
 from transformers import AutoModel, AutoTokenizer
@@ -33,14 +33,14 @@ def prepare_output_dir(model_path: str) -> Path:
 
 def load_model_and_tokenizer(model_path: str) -> tuple:
     """Load a Huggingface model and tokenizer from the given path."""
-    model_path = Path(model_path)
-    if not model_path.exists() or not model_path.is_dir():
-        raise TrainingModelNotFoundError(str(model_path))
+    model_path_obj = Path(model_path)
+    if not model_path_obj.exists() or not model_path_obj.is_dir():
+        raise TrainingModelNotFoundError(str(model_path_obj))
     try:
-        model_load_path = str(find_hf_model_dir_svc(model_path).resolve())
+        model_load_path = str(find_hf_model_dir_svc(model_path_obj).resolve())
     except FileNotFoundError as e:
         raise TrainingModelNotFoundError(
-            f"No Huggingface model dir (config.json) found in: {model_path}"
+            f"No Huggingface model dir (config.json) found in: {model_path_obj}"
         ) from e
     try:
         model = AutoModel.from_pretrained(model_load_path)
@@ -55,9 +55,19 @@ def load_and_tokenize_datasets(
 ) -> DataLoader:
     """Load datasets and return a DataLoader for triplet training."""
     paths = [Path(p) for p in dataset_paths]
-    datasets_list = [
-        load_dataset("csv", data_files={"train": str(p)})["train"] for p in paths
-    ]
+    datasets_list = []
+    for p in paths:
+        ds_raw = load_dataset("csv", data_files={"train": str(p)})
+        if isinstance(ds_raw, dict) or isinstance(ds_raw, DatasetDict):
+            ds = ds_raw["train"]
+        elif isinstance(ds_raw, IterableDataset):
+            raise TypeError(f"IterableDataset not supported for {p}")
+        else:
+            raise TypeError(f"Unexpected dataset type: {type(ds_raw)} for {p}")
+        if isinstance(ds, Dataset):
+            datasets_list.append(ds)
+        else:
+            raise TypeError(f"Expected a Dataset, got {type(ds)} for {p}")
     train_data = concatenate_datasets(datasets_list)
     tokenized = train_data.map(
         lambda ex: preprocess_triplet_batch(tokenizer, ex), batched=True
@@ -104,10 +114,10 @@ def train(
 
 
 def find_hf_model_dir_svc(base_path: Path) -> Path:
-    """Suche rekursiv nach einem Unterordner mit config.json (Huggingface-Format)."""
+    """Recursively search for a subfolder with config.json (Huggingface format)."""
     if (base_path / "config.json").is_file():
         return base_path
     for subdir in base_path.rglob(""):
         if (subdir / "config.json").is_file():
             return subdir
-    raise FileNotFoundError(f"Kein Unterordner mit config.json in {base_path}")
+    raise FileNotFoundError(f"No subfolder with config.json found in {base_path}")
