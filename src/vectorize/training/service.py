@@ -19,10 +19,10 @@ from .utils.helpers import (
 
 
 def train_model_service_svc(train_request: TrainRequest) -> None:
-    """Trainiert ein Modell mit Triplet-Loss auf lokalen CSV-Datensätzen.
+    """Trains a model with triplet loss on local CSV datasets.
 
-    Lädt Modell und Tokenizer, verarbeitet mehrere Datasets, führt das Training
-    mit TripletMarginLoss durch und speichert das Modell.
+    Loads model and tokenizer, processes multiple datasets, performs training
+    with TripletMarginLoss, and saves the model.
     """
     with logger.contextualize(model_path=train_request.model_path):
         logger.info("Training started.")

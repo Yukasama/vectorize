@@ -122,8 +122,10 @@ markers = [
     "ai_model: mark test as ai model related",
     "ai_model_read: mark test as ai model read related",
     "ai_model_write: mark test as ai model write related",
+    "training: mark test as training related",
     "synthesis: marks test as synthesis related",
 ]
+filterwarnings = ["ignore:co_lnotab is deprecated"]
 minversion = "8.3.5"
 testpaths = ["tests"]
 addopts = "--cov=vectorize --cov-report=term-missing --cov-report=html --html=report.html"
