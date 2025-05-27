@@ -54,13 +54,13 @@ async def get_datasets(
     return datasets
 
 
-@router.get("/{dataset_id}")
+@router.get("/{dataset_id}", response_model=None)
 async def get_dataset(
     dataset_id: UUID,
     request: Request,
     response: Response,
     db: Annotated[AsyncSession, Depends(get_session)],
-) -> DatasetPublic | None:
+) -> DatasetPublic | Response:
     """Retrieve a single dataset by its ID.
 
     Args:
@@ -121,9 +121,9 @@ async def upload_dataset(
     dataset_ids = []
     failed_uploads = []
 
-    if len(files) == 1 and first.filename.lower().endswith(".zip"):
+    if len(files) == 1 and first.filename and first.filename.lower().endswith(".zip"):
         zip_files = await _handle_zip_upload(first)
-    elif any(f.filename.lower().endswith(".zip") for f in files):
+    elif any(f.filename and f.filename.lower().endswith(".zip") for f in files):
         raise InvalidFileError("Cannot mix ZIP and individual files")
 
     files_for_upload = (

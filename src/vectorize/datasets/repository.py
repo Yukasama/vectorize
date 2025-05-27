@@ -1,5 +1,6 @@
 """Dataset repository."""
 
+from collections.abc import Sequence
 from uuid import UUID
 
 from loguru import logger
@@ -19,7 +20,7 @@ __all__ = [
 ]
 
 
-async def get_datasets_db(db: AsyncSession) -> list[Dataset]:
+async def get_datasets_db(db: AsyncSession) -> Sequence[Dataset]:
     """Retrieve all datasets from the database.
 
     Args:
@@ -54,7 +55,7 @@ async def get_dataset_db(db: AsyncSession, dataset_id: UUID) -> Dataset:
     dataset = result.first()
 
     if dataset is None:
-        raise DatasetNotFoundError(str(dataset_id))
+        raise DatasetNotFoundError(dataset_id)
 
     return dataset
 
@@ -132,7 +133,7 @@ async def delete_dataset_db(db: AsyncSession, dataset_id: UUID) -> None:
     dataset = result.first()
 
     if dataset is None:
-        raise DatasetNotFoundError(str(dataset_id))
+        raise DatasetNotFoundError(dataset_id)
 
     await db.delete(dataset)
     await db.commit()

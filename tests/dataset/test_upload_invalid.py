@@ -4,7 +4,6 @@
 
 from pathlib import Path
 from typing import Any
-from uuid import UUID
 
 import pytest
 from fastapi import status
@@ -44,7 +43,7 @@ class TestInvalidDatasets:
         expected_status: int,
         expected_code: ErrorCode,
         extra_data: dict[str, Any] | None = None,
-    ) -> UUID:
+    ) -> None:
         """Upload a file and verify the dataset is created."""
         response = client.post(
             "/datasets", files=build_files(file_path), data=extra_data or {}

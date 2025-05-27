@@ -8,11 +8,10 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config import settings
-from vectorize.config.errors import ErrorNames
+from vectorize.datasets.column_mapper import ColumnMapping
 from vectorize.utils.etag_parser import parse_etag
 from vectorize.utils.file_sanitizer import sanitize_filename
 
-from .exceptions import InvalidFileError
 from .models import Dataset, DatasetAll, DatasetPublic, DatasetUpdate
 from .repository import (
     delete_dataset_db,
@@ -91,18 +90,17 @@ async def upload_dataset_svc(
         InvalidCSVFormatError: If the DataFrame lacks required columns.
         FileTooLargeError: If the uploaded file exceeds the maximum size limit.
     """
-    if file is None:
-        raise InvalidFileError(ErrorNames.FILE_MISSING_ERROR)
+    safe_name, ext = sanitize_filename(file, list(settings.allowed_extensions))
 
-    safe_name, ext = sanitize_filename(file, settings.allowed_extensions)
+    column_mapping: ColumnMapping | None = None
+    if options:
+        column_mapping = ColumnMapping(
+            question=options.question_name,
+            positive=options.positive_name,
+            negative=options.negative_name,
+        )
 
-    column_mapping = {
-        "question": options.question_name,
-        "positive": options.positive_name,
-        "negative": options.negative_name,
-    }
-
-    raw_df = await _convert_file_to_df(file, ext, options.sheet_index)
+    raw_df = await _convert_file_to_df(file, ext, options.sheet_index if options else 0)
     escaped_df = _escape_csv_formulas(raw_df)
     df, classification = _classify_dataset(escaped_df, column_mapping)
 

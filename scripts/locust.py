@@ -29,10 +29,9 @@ _PRECONDITION_FAILED = 412
 class AppLoadTests(HttpUser):
     """Load tests for the API."""
 
+    base_path = Path(__file__).parent.parent / "test_data" / "datasets"
     host = "http://localhost:8000/v1"
     wait_time = constant_throughput(0.1)
-
-    base_path = Path(__file__).parent.parent / "test_data" / "datasets"
 
     def on_start(self) -> None:
         """Set up the client to ignore SSL certificate validation."""
@@ -61,7 +60,7 @@ class AppLoadTests(HttpUser):
                 headers={"If-Match": etag},
             ) as response:
                 if response.status_code == _PRECONDITION_FAILED:
-                    response.success()
+                    response.success()  # type: ignore[attr-defined]
 
     @task
     def upload_dataset(self) -> None:
@@ -90,7 +89,7 @@ class AppLoadTests(HttpUser):
                 _DATASET_PATH, files=build_files(file_path), catch_response=True
             ) as response:
                 if response.status_code in {400, 422}:
-                    response.success()
+                    response.success()  # type: ignore[attr-defined]
 
     @task
     def get_embeddings(self) -> None:

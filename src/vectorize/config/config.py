@@ -104,7 +104,9 @@ class Settings(BaseSettings):
 
     # Database configuration
     db_url: str = Field(
-        description="Database connection URL.", validation_alias="DATABASE_URL"
+        default="sqlite+aiosqlite:///./app.db",
+        description="Database connection URL.",
+        validation_alias="DATABASE_URL",
     )
 
     db_logging: bool = Field(

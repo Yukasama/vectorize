@@ -87,9 +87,9 @@ class TestUpdateAIModels:
     @classmethod
     async def test_delete(cls, client: TestClient) -> None:
         """Test successful deletion of a model."""
-        # response = client.get("/models")
-        # assert response.status_code == status.HTTP_200_OK
-        # models_length = len(response.json())
+        response = client.get("/models?size=100")
+        assert response.status_code == status.HTTP_200_OK
+        models_length = len(response.json()["items"])
 
         response = client.delete(f"/models/{_DELETE_ID}")
         assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -97,20 +97,20 @@ class TestUpdateAIModels:
         model = client.get(f"/models/{_DELETE_TAG}")
         assert model.status_code == status.HTTP_404_NOT_FOUND
 
-        # response = client.get("/models")
-        # assert len(response.json()) == models_length - 1
+        response = client.get("/models?size=100")
+        assert len(response.json()["items"]) == models_length - 1
 
     @classmethod
     async def test_delete_not_exist(cls, client: TestClient) -> None:
         """Test deletion of a non-existent model."""
-        # response = client.get("/models")
-        # assert response.status_code == status.HTTP_200_OK
-        # models_length = len(response.json())
+        response = client.get("/models?size=100")
+        assert response.status_code == status.HTTP_200_OK
+        models_length = len(response.json()["items"])
 
         response = client.delete(f"/models/{_NON_EXISTENT_ID}")
         assert response.status_code == status.HTTP_404_NOT_FOUND
         response_body = response.json()
         assert response_body["code"] == "NOT_FOUND"
 
-        # response = client.get("/models")
-        # assert len(response.json()) == models_length
+        response = client.get("/models?size=100")
+        assert len(response.json()["items"]) == models_length

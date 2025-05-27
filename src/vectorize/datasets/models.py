@@ -111,14 +111,12 @@ class Dataset(SQLModel, table=True):
 
     rows: int = Field(description="Number of rows in the dataset", gt=0)
 
-    created_at: datetime | None = Field(
-        default=None,
+    created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
         description="Timestamp when the dataset was created",
     )
 
-    updated_at: datetime | None = Field(
-        default=None,
+    updated_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), onupdate=func.now(), insert_default=func.now()
         ),

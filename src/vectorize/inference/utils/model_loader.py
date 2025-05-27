@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Any, cast
 
 import torch
 from loguru import logger
@@ -24,7 +25,7 @@ _DEVICE = torch.device(settings.inference_device)
 _IS_TORCH_NEW = torch.__version__ >= "2.7"
 _MODEL_NAME = "model.bin"
 
-_COMMON_KWARGS = {
+_COMMON_MODEL_KWARGS = {
     "trust_remote_code": True,
     "torch_dtype": "auto",
     "low_cpu_mem_usage": True,
@@ -62,22 +63,22 @@ def _load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
 
     try:
         if cfg.model_type == "t5":
-            model = T5EncoderModel.from_pretrained(folder, **_COMMON_KWARGS)
+            model = T5EncoderModel.from_pretrained(folder, **_COMMON_MODEL_KWARGS)
         elif (
             "architectures" in cfg.to_dict()
             and cfg.architectures
             and "MaskedLM" in cfg.architectures[0]
         ):
-            model = AutoModelForMaskedLM.from_pretrained(folder, **_COMMON_KWARGS)
+            model = AutoModelForMaskedLM.from_pretrained(folder, **_COMMON_MODEL_KWARGS)
         else:
-            model = AutoModel.from_pretrained(folder, **_COMMON_KWARGS)
+            model = AutoModel.from_pretrained(folder, **_COMMON_MODEL_KWARGS)
 
     except OSError:
         model = _instantiate_from_weights(folder, cfg)
     except Exception as exc:
         raise ModelLoadError(model_tag) from exc
 
-    model = model.to(_DEVICE).eval().requires_grad_(False)
+    model = model.to(_DEVICE).eval().requires_grad_(False)  # type: ignore
 
     try:
         tok = AutoTokenizer.from_pretrained(folder, trust_remote_code=True)
@@ -110,12 +111,12 @@ def _instantiate_from_weights(folder: Path, cfg: AutoConfig) -> torch.nn.Module:
     Raises:
         ModelNotFoundError: If neither pytorch_model.bin nor model.bin exist
     """
-    if cfg.model_type == "t5":
-        model = T5EncoderModel.from_config(cfg)
+    if cast(Any, cfg) == "t5":
+        model = T5EncoderModel.from_config(cfg)  # type: ignore
     elif (
-        "architectures" in cfg.to_dict()
-        and cfg.architectures
-        and "MaskedLM" in cfg.architectures[0]
+        "architectures" in cfg.to_dict()  # type: ignore
+        and cfg.architectures  # type: ignore
+        and "MaskedLM" in cfg.architectures[0]  # type: ignore
     ):
         model = AutoModelForMaskedLM.from_config(cfg)
     else:
@@ -125,7 +126,7 @@ def _instantiate_from_weights(folder: Path, cfg: AutoConfig) -> torch.nn.Module:
     st_path = next(folder.glob("*.safetensors"), None)
     if st_path:
         logger.debug("Loading weights from {}", st_path)
-        state = load_file(st_path, device=_DEVICE)
+        state = load_file(st_path, device=str(_DEVICE))
         model.load_state_dict(state, strict=False)
         return model.eval()
 
@@ -140,4 +141,4 @@ def _instantiate_from_weights(folder: Path, cfg: AutoConfig) -> torch.nn.Module:
         model.load_state_dict(state, strict=False)
         return model.eval()
 
-    raise ModelNotFoundError(folder)
+    raise ModelNotFoundError(str(folder))

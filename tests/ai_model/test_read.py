@@ -16,25 +16,6 @@ _VALID_TAG = "pytorch_model"
 class TestGetAIModels:
     """Tests for GET /models and GET /models/{ai_model_id} endpoints."""
 
-    # @classmethod
-    # async def test_get_all_models(cls, client: TestClient) -> None:
-    #     """Test retrieving all AI models."""
-    #     response = client.get("/models")
-    #     assert response.status_code == status.HTTP_200_OK
-
-    #     models = response.json()
-    #     assert isinstance(models, list)
-    #     assert len(models) > 0
-
-    #     for model in models:
-    #         assert "id" in model
-    #         assert "name" in model
-    #         assert "model_tag" in model
-    #         assert "source" in model
-    #         assert "created_at" in model
-    #         assert "version" in model
-    #         assert "updated_at" not in model
-
     @classmethod
     async def test_get_model_by_id(cls, client: TestClient) -> None:
         """Test retrieving a single AI model by ID."""

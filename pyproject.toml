@@ -66,6 +66,7 @@ dependencies = [
     "prometheus-fastapi-instrumentator>=7.1.0",
     "gitpython>=3.1.44",
     "loki-logger-handler>=1.1.1",
+    "pyfiglet>=1.0.2",
 ]
 
 [project.scripts]
@@ -90,6 +91,7 @@ dev = [
     "pytest-github-actions-annotate-failures>=0.3.0",
     "pytest-asyncio>=0.26.0",
     "snakeviz>=2.2.2",
+    "pyright>=1.1.401",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -169,6 +171,11 @@ ignore = [
 
 [tool.ruff.lint.isort]
 case-sensitive = true
+
+[tool.pyright]
+pythonVersion = "3.13"
+include = ["src"]
+exclude = ["**/__pycache__"]
 
 [tool.uv]
 default-groups = "all"

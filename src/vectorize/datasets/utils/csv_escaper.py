@@ -37,7 +37,8 @@ def _escape_csv_formulas(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in result.columns:
         if pd.api.types.is_string_dtype(result[col]):
-            _process_column(result[col])
+            column_series: pd.Series = result[col]
+            _process_column(column_series)
 
             for i, value in enumerate(result[col]):
                 if isinstance(value, str):

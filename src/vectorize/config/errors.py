@@ -40,6 +40,4 @@ class ErrorNames(StrEnum):
     DETECT_MALICIOUS_CONTENT = "Detected invalid formulas or malicious in CSV file"
     DOUBLE_QUOTES_ERROR = "Double-quotes within value must be properly escaped"
     SPECIAL_CHARS_ERROR = "Special characters must be properly quoted"
-
-    # Inference errors
-    ENCODING_FORMAT_ERROR = "encoding_format must be either 'float' or 'base64'"
+    INVALID_COLUMN_TYPE = "Column name must be a string"

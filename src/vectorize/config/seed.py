@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from loguru import logger
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -120,7 +121,7 @@ async def seed_db(session: AsyncSession) -> None:
             model_tag="huge_model",
         ),
     )
-# For Paged Models
+    # For Paged Models
     session.add(
         AIModel(
             name="Any Paged Model 01",
@@ -157,3 +158,4 @@ async def seed_db(session: AsyncSession) -> None:
         ),
     )
     await session.commit()
+    logger.debug("Database seeded with initial data")

@@ -120,3 +120,15 @@ class TooManyFilesError(AppError):
         super().__init__(
             f"Zip file is too large: {formatted_size}. Max: {self._MAX_LENGTH} files"
         )
+
+
+class InvalidXMLFormatError(AppError):
+    """Exception raised when the XML format is invalid."""
+
+    error_code = ErrorCode.INVALID_FILE
+    message = "Invalid XML format"
+    status_code = status.HTTP_400_BAD_REQUEST
+
+    def __init__(self) -> None:
+        """Initialize with the error details."""
+        super().__init__("XML format error, root element is missing or empty")

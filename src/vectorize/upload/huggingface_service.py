@@ -7,9 +7,10 @@ in the database if they are not already present.
 from pathlib import Path
 
 from huggingface_hub import snapshot_download
-from huggingface_hub.utils import EntryNotFoundError
+from huggingface_hub.errors import EntryNotFoundError
 from loguru import logger
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers.pipelines import pipeline
 
 from .exceptions import (
     InvalidModelError,

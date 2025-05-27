@@ -179,7 +179,7 @@ def _handle_results(
 
 async def upload_zip_model(
     file: UploadFile,
-    model_name: str,
+    model_name: str | None,
     db: AsyncSession,
     multi_model: bool = False,
 ) -> dict[str, Any]:

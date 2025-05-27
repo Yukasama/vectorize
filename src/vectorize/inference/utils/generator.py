@@ -93,7 +93,7 @@ def _generate_embeddings(
 
 
 def _extract_embedding_vector(
-    model_output: any,
+    model_output: any,  # type: ignore
     model: torch.nn.Module,
     attn_mask: torch.Tensor,
     ids: torch.Tensor,

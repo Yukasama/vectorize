@@ -1,8 +1,11 @@
 """Classification utilities and strict column validation."""
 
 from collections.abc import Mapping
+from typing import cast
 
 import pandas as pd
+
+from vectorize.config.errors import ErrorNames
 
 from ..classification import Classification
 from ..column_mapper import ColumnMapping
@@ -24,8 +27,7 @@ _ROLES = ("question", "positive", "negative")
 
 
 def _classify_dataset(
-    df: pd.DataFrame,
-    mapping: ColumnMapping | None = None,
+    df: pd.DataFrame, mapping: ColumnMapping | None = None
 ) -> tuple[pd.DataFrame, Classification]:
     """Validate, clean, and classify a sentence dataset.
 
@@ -59,12 +61,11 @@ def _classify_dataset(
         if "negative" in header_map
         else Classification.SENTENCE_DUPLES
     )
-    return cleaned, cls
+    return cast(pd.DataFrame, cleaned), cls
 
 
 def _resolve_headers(
-    df_cols_lc: dict[str, str],
-    mapping: ColumnMapping | None = None,
+    df_cols_lc: dict[str, str], mapping: ColumnMapping | None = None
 ) -> dict[str, str]:
     """Resolve dataset column headers to standardized role names.
 
@@ -89,9 +90,11 @@ def _resolve_headers(
         for role, explicit in mapping.items():
             if explicit is None:
                 continue
+            if not isinstance(explicit, str):
+                raise InvalidCSVColumnError(ErrorNames.INVALID_COLUMN_TYPE)
             col_lc = explicit.lower()
             if col_lc not in df_cols_lc:
-                raise InvalidCSVColumnError(explicit)
+                raise InvalidCSVColumnError(str(explicit))
             resolved[role] = df_cols_lc[col_lc]
 
     for role in _ROLES:

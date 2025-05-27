@@ -20,6 +20,7 @@ from vectorize.config import (
     seed_db,
     settings,
 )
+from vectorize.utils.banner import create_banner
 from vectorize.utils.error_handler import register_exception_handlers
 from vectorize.utils.routers import register_routers
 
@@ -31,6 +32,8 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
     """Initialize resources on startup."""
     await makedirs(settings.dataset_upload_dir, exist_ok=True)
     await makedirs(settings.model_upload_dir, exist_ok=True)
+
+    create_banner(settings)
 
     async with engine.begin() as conn:
         if settings.clear_db_on_restart:

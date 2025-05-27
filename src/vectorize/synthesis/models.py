@@ -44,14 +44,12 @@ class SynthesisTask(SQLModel, table=True):
         back_populates="synthesis_task"
     )
 
-    created_at: datetime | None = Field(
-        default=None,
+    created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
         description="Timestamp when the synthesis generation was created.",
     )
 
-    updated_at: datetime | None = Field(
-        default=None,
+    updated_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), onupdate=func.now(), insert_default=func.now()
         ),
