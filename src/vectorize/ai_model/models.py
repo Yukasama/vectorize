@@ -1,7 +1,7 @@
 """AIModel models."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
@@ -84,14 +84,25 @@ class AIModel(SQLModel, table=True):
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
 
-    created_at: datetime | None = Field(
+    trained_from_id: UUID | None = Field(
         default=None,
+        foreign_key="ai_model.id",
+        description="ID of the model this was trained from",
+    )
+
+    trained_from: Optional["AIModel"] = Relationship(
+        back_populates="trained_children",
+        sa_relationship_kwargs={"remote_side": "AIModel.id"},
+    )
+
+    trained_children: list["AIModel"] = Relationship(back_populates="trained_from")
+
+    created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
         description="Timestamp when the AI model was created.",
     )
 
-    updated_at: datetime | None = Field(
-        default=None,
+    updated_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), onupdate=func.now(), insert_default=func.now()
         ),
