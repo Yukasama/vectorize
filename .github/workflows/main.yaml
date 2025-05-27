@@ -54,6 +54,22 @@ jobs:
       - name: Run lint with ruff
         uses: astral-sh/ruff-action@v3
 
+  pyright:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Python venv from cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-venv-
+
+      - name: Run type checking with pyright
+        uses: jakebailey/pyright-action@v2
+
   outdated:
     needs: build
     runs-on: ubuntu-latest
