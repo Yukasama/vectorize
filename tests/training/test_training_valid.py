@@ -1,30 +1,32 @@
-"""Tests für den Trainings-Endpunkt (/training/train) mit gültigen Daten."""
+# ruff: noqa: S101
 
-# import pytest
-# from fastapi import status
-# from fastapi.testclient import TestClient
+"""Tests for the training endpoint (/training/train) with valid data."""
+
+import pytest
+from fastapi import status
+from fastapi.testclient import TestClient
 
 
-# @pytest.mark.training
-# class TestTrainingValid:
-#     """Tests für den Trainings-Endpunkt (/training/train) mit gültigen Daten."""
+@pytest.mark.training
+class TestTrainingValid:
+    """Tests for the training endpoint (/training/train) with valid data."""
 
-#     @staticmethod
-#     def test_valid_training(client: TestClient) -> None:
-#         """Testet das Training mit gültigen Daten und prüft die Response."""
-#         payload = {
-#             "model_path": "data/models/localmodel",
-#             "dataset_paths": [
-#                 "data/dataset_training/classification_test.csv",
-#                 "data/dataset_training/classification_test2.csv"
-#             ],
-#             "output_dir": "data/models/trained_models/test_finetuned_model",
-#             "epochs": 1,
-#             "learning_rate": 5e-5,
-#             "per_device_train_batch_size": 2
-#         }
-#         response = client.post("/training/train", json=payload)
-#         assert response.status_code == status.HTTP_202_ACCEPTED
-#         data = response.json()
-#         assert data["message"] == "Training started"
-#         assert data["model_path"] == payload["model_path"]
+    @staticmethod
+    def test_valid_training(client: TestClient) -> None:
+        """Tests training with valid data and checks the response."""
+        payload = {
+            "model_path": "data/models/localmodel",
+            "dataset_paths": [
+                "data/datasets/__rm_-rf__2F_0b30b284-f7fe-4e6c-a270-17cafc5b5bcb.csv",
+                "data/datasets/__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv"
+            ],
+            "output_dir": "data/models/trained_models/my_finetuned_model",
+            "epochs": 3,
+            "learning_rate": 0.00005,
+            "per_device_train_batch_size": 8
+        }
+        response = client.post("/training/train", json=payload)
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        data = response.json()
+        assert data["message"] == "Training started"
+        assert data["model_path"] == payload["model_path"]
