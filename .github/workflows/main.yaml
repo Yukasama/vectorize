@@ -69,6 +69,10 @@ jobs:
 
       - name: Run type checking with pyright
         uses: jakebailey/pyright-action@v2
+        with:
+          python-path: ".venv/bin/python"
+          python-platform: "Linux"
+          python-version: "3.13"
 
   outdated:
     needs: build
