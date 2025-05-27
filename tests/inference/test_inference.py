@@ -33,7 +33,7 @@ class TestEmbeddings:
         client: TestClient,
         payload: dict[str, Any],
         expected_status: int = status.HTTP_200_OK,
-        expected_error: ErrorCode = None,
+        expected_error: ErrorCode | None = None,
     ) -> dict[str, Any]:
         """Make a request to the embeddings endpoint and verify response."""
         response = client.post("/embeddings", json=payload)

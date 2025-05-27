@@ -35,7 +35,7 @@ class VersionMismatchError(ETagError):
     def __init__(self, resource_id: str | int | UUID, version: int) -> None:
         """Initialize with the resource ID and version."""
         super().__init__(
-            version, f"Resource with ID {resource_id} has version {version}"
+            str(version), f"Resource with ID {resource_id} has version {version}"
         )
 
 

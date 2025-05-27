@@ -1,6 +1,4 @@
-# AWP Projekt für Text Embedding Service
-
-Table of contents
+# Vectorize | AWP Text Embedding Service for Robert Bosch GmbH
 
 ## Table of Contents
 
@@ -37,7 +35,7 @@ The project uses the `uv` tool for seamless dependency management and environmen
 
 #### Installation
 
-```bash
+```sh
 # Install uv for command line (MacOS/Linux)
 curl -LsSf https://astral.sh/uv/install.sh
 
@@ -45,7 +43,7 @@ curl -LsSf https://astral.sh/uv/install.sh
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-```bash
+```sh
 # Install dependencies and generate lock file
 uv sync
 
@@ -61,12 +59,13 @@ uv remove <package>
 
 ##### Copy .env.example file and rename it to .env
 
-```bash
+```sh
 # .env
 DATABASE_URL=sqlite+aiosqlite:///./app.db
 SONAR_TOKEN=your-sonar-token
 CLEAR_DB_ON_RESTART=1
 LOG_LEVEL=DEBUG
+TZ=Europe/Berlin
 ```
 
 Note: Do **not** remove the `.env.example`-File.
@@ -82,73 +81,71 @@ Note: Do **not** edit the `uv.lock`-File yourself.
 
 ### Start server
 
-```bash
+```sh
 uv run app
 ```
 
 ### Run linter
 
-```bash
+```sh
 # Run ruff over everything
 ruff check .
 
 # Run ruff over specific folder
 ruff check src/vectorize/datasets
+
+# Run pyright (Pylance)
+pyright
 ```
 
 #### Run SonarQube
 
-````bash
-# 0. Install sonar-scanner (for Mac/Linux)
-brew install sonar-scanner
-
-# 0. Install sonar-scanner (for Windows)
-Go to https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner and install
-
-# Only once: Create .env under resources/sonarqube
-
 ```bash
-# .env
-TZ=Europe/Berlin
-```
+# 0. Install sonar-scanner
+brew install sonar-scanner # (for Mac/Linux)
+https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner # (for Windows)
 
 # 1. Run docker container
-
 cd resources/sonarqube
 docker compose up
 
 # Only once: Get token from SonarQube
-
 # 1. Go to http://localhost:9000
-
 # 2. Account > Settings
-
 # 3. Generate Global Token with 'No expiration'
-
 # 4. Copy into .env under SONAR_TOKEN
 
 # 2. Run sonar scan
-
 uv run scripts/sonar_scan.py
-
-````
+```
 
 ### Run tests
 
-```bash
+```sh
 # Run all tests
 uv run pytest
 
 # Run loadtest with locust
 # It's recommended to put LOG_LEVEL=INFO in your .env
 uvx locust -f scripts/locust.py
+
+# Run headless locust
+# -u for users, -r for rate of spawning users until max
+uvx locust -f scripts/locust.py --host=https://localhost/v1 --headless -u 1 -r 1
 ```
 
 ### Build Docker Image
 
-```bash
+```sh
 # Build Docker image
 docker build -t vectorize:1.0.0-prod .
+```
+
+### Run Grafana
+
+```sh
+# --build flag so that newest image is used. If you already have the newest, you can remove the flag.
+docker compose up --build
 ```
 
 ## Workflow
@@ -157,7 +154,7 @@ docker build -t vectorize:1.0.0-prod .
 
 #### Install act
 
-```bash
+```sh
 # Install uv for command line (MacOS/Linux)
 brew install act
 
@@ -167,7 +164,7 @@ scoop install act
 
 #### Run act
 
-```bash
+```sh
 # Run all CI workflows locally
 act
 
@@ -177,7 +174,7 @@ act -W '.github/workflows/main.yaml'
 
 Note: If a CI relies on `GITHUB_TOKEN`, you need to run:
 
-```bash
+```sh
 # You need to have the GitHub CLI installed
 act -s GITHUB_TOKEN="$(gh auth token)"
 # Plus other arguments
@@ -185,20 +182,20 @@ act -s GITHUB_TOKEN="$(gh auth token)"
 
 Note 2: If a CI uploads or downloads artifacts, you need this flag:
 
-```bash
+```sh
 # This will create the artifacts on your file system
 act --artifact-server-path $PWD/.artifacts.
 # Plus other arguments
 ```
 
-```bash
+```sh
 # This is an example showing how to run the Main CI
 act -s GITHUB_TOKEN="$(gh auth token)" --artifact-server-path $PWD/.artifacts. -W '.github/workflows/main.yaml'
 ```
 
 #### Analyze server start with startup.prof
 
-```bash
+```sh
 # Create startup.prof file
 python -m cProfile -o startup.prof src/vectorize/app.py
 

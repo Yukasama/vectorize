@@ -27,13 +27,13 @@ __all__ = ["router"]
 router = APIRouter(tags=["AIModel"])
 
 
-@router.get("/{ai_model_tag}")
+@router.get("/{ai_model_tag}", response_model=None)
 async def get_ai_model(
     ai_model_tag: str,
     request: Request,
     response: Response,
     db: Annotated[AsyncSession, Depends(get_session)],
-) -> AIModelPublic | None:
+) -> AIModelPublic | Response:
     """Retrieve a single AI model by its ID.
 
     Args:
@@ -124,7 +124,7 @@ async def delete_model(
 async def list_models(
     db: Annotated[AsyncSession, Depends(get_session)],
     page: Annotated[int, Query(ge=1, description="Page number, starts at 1")] = 1,
-    size: Annotated[int, Query(ge=5, le=100, description="Items per page")] = 5
+    size: Annotated[int, Query(ge=5, le=100, description="Items per page")] = 5,
 ) -> PagedResponse:
     """Returns a paged response of AI models.
 
@@ -140,32 +140,36 @@ async def list_models(
         NoModelFoundError: If no models exist in the database.
     """
     items, total = await get_models_paged_db(db, page, size)
-    logger.debug("db fetch complete", extra={
-        "event": "db_fetch_complete",
-        "items_fetched": len(items),
-        "total_items": total,
-    })
-    totalpages = (total + size - 1) // size
-    logger.debug("pagination calculated", extra={
-        "event": "pagination_calculated",
-        "page": page,
-        "size": size,
-        "totalpages": totalpages,
-    })
-    response = PagedResponse(
-        page=page,
-        size=size,
-        totalpages=totalpages,
-        items=items
+    logger.debug(
+        "db fetch complete",
+        extra={
+            "event": "db_fetch_complete",
+            "items_fetched": len(items),
+            "total_items": total,
+        },
     )
+    totalpages = (total + size - 1) // size
+    logger.debug(
+        "pagination calculated",
+        extra={
+            "event": "pagination_calculated",
+            "page": page,
+            "size": size,
+            "totalpages": totalpages,
+        },
+    )
+    response = PagedResponse(page=page, size=size, totalpages=totalpages, items=items)
 
-    logger.info("response ready", extra={
-        "event": "response_ready",
-        "response_preview": {
-            "page": response.page,
-            "size": response.size,
-            "totalpages": response.totalpages,
-            "items_count": len(response.items),
-        }
-    })
+    logger.info(
+        "response ready",
+        extra={
+            "event": "response_ready",
+            "response_preview": {
+                "page": response.page,
+                "size": response.size,
+                "totalpages": response.totalpages,
+                "items_count": len(response.items),
+            },
+        },
+    )
     return response

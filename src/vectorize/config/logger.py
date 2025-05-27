@@ -64,7 +64,7 @@ def config_logger() -> None:
                 },
                 timeout=10,
                 enable_structured_loki_metadata=True,
-                default_formatter=LoguruFormatter(),
+                default_formatter=LoguruFormatter(),  # type: ignore[arg-type]
             ),
             serialize=True,
             enqueue=True,
@@ -74,7 +74,7 @@ def config_logger() -> None:
 
 class InterceptHandler(logging.Handler):
     @staticmethod
-    def emit(record: object) -> None:
+    def emit(record: logging.LogRecord) -> None:
         """Intercepts standard logging and sends it to Loguru."""
         if "changes detected" in record.getMessage():
             return

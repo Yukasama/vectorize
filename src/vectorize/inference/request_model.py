@@ -2,9 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, ValidationError, field_validator
-
-from vectorize.config.errors import ErrorNames
+from pydantic import BaseModel, Field
 
 __all__ = ["EmbeddingRequest"]
 
@@ -31,7 +29,7 @@ class EmbeddingRequest(BaseModel):
         ge=1,
     )
 
-    encoding_format: str = Field(
+    encoding_format: Literal["float", "base64"] = Field(
         default="float",
         description="Either `float` (default) or `base64` for the embedding values.",
     )
@@ -40,11 +38,3 @@ class EmbeddingRequest(BaseModel):
         None,
         description="An identifier for your end-user (helps OpenAI monitor for abuse).",
     )
-
-    @field_validator("encoding_format")
-    @classmethod
-    def validate_encoding_format(cls, v: str) -> Literal["float", "base64"]:
-        """Validate that encoding_format is either 'float' or 'base64'."""
-        if v not in {"float", "base64"}:
-            raise ValidationError(ErrorNames.ENCODING_FORMAT_ERROR)
-        return v

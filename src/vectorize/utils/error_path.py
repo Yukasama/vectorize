@@ -2,10 +2,10 @@
 
 import traceback
 
-from vectorize.common.app_error import AppError
+from vectorize.common.app_error import AppError, ETagError
 
 
-def get_error_path(err: AppError) -> str:
+def get_error_path(err: AppError | ETagError | Exception) -> str:
     """Extract formatted source location from AppError traceback.
 
     Extracts and formats the source code location where an AppError occurred,

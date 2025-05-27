@@ -15,12 +15,12 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from huggingface_hub import model_info
-from huggingface_hub.utils import EntryNotFoundError, HfHubHTTPError
+from huggingface_hub.errors import EntryNotFoundError, HfHubHTTPError
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.ai_model.exceptions import ModelNotFoundError
-from vectorize.ai_model.model_source import ModelSource
+from vectorize.ai_model.model_source import RemoteModelSource
 from vectorize.ai_model.service import get_ai_model_svc
 from vectorize.common.exceptions import InternalServerError
 from vectorize.common.task_status import TaskStatus
@@ -89,7 +89,7 @@ async def load_model_huggingface(
     upload_task = UploadTask(
         model_tag=key,
         task_status=TaskStatus.PENDING,
-        source=ModelSource.HUGGINGFACE,
+        source=RemoteModelSource.HUGGINGFACE,
     )
     await save_upload_task(db, upload_task)
 
@@ -153,7 +153,7 @@ async def load_model_github(
         raise InternalServerError("Error checking GitHub repository") from e
 
     task = UploadTask(
-        model_tag=key, task_status=TaskStatus.PENDING, source=ModelSource.GITHUB
+        model_tag=key, task_status=TaskStatus.PENDING, source=RemoteModelSource.GITHUB
     )
     await save_upload_task(db, task)
     background_tasks.add_task(
@@ -193,9 +193,6 @@ async def load_multiple_models(
         InvalidFileError: If no file is provided or format is invalid
         HTTPException: If an error occurs during processing
     """
-    if not file:
-        raise InvalidFileError("No file uploaded")
-
     if not file.filename or not file.filename.lower().endswith(".zip"):
         raise InvalidFileError("Only ZIP archives are supported")
 

@@ -1,6 +1,7 @@
 """ASGI server for the FastAPI application."""
 
 import uvicorn
+from uvicorn.config import LOGGING_CONFIG
 
 from vectorize.config import settings
 
@@ -17,6 +18,6 @@ def run() -> None:
         reload=settings.reload,
         reload_dirs=["src/vectorize"],
         server_header=settings.server_header,
-        log_config=None if is_production else uvicorn.config.LOGGING_CONFIG,
+        log_config=None if is_production else LOGGING_CONFIG,
         log_level=None if is_production else "info",
     )

@@ -86,7 +86,7 @@ def _make_response(
     status_code: int,
     code: ErrorCode,
     message: str,
-    version: int | None = None,
+    version: str | None = None,
 ) -> JSONResponse:
     """Create a standardized JSON error response.
 

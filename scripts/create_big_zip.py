@@ -61,7 +61,7 @@ def create_test_zip(
 
         print(f"Total files created: {file_count}")  # noqa: T201
 
-        output_path = Path(output_path)
+        output_path = str(Path(output_path))
         print(f"Creating ZIP archive: {output_path}")  # noqa: T201
 
         with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zipf:
@@ -71,9 +71,9 @@ def create_test_zip(
                     arcname = os.path.relpath(file_path, temp_dir)
                     zipf.write(file_path, arcname)
 
-        zip_size = output_path.stat().st_size
+        zip_size = output_path.stat().st_size  # type: ignore
         print(f"ZIP file created: {output_path} ({zip_size / (1024 * 1024):.2f} MB)")  # noqa: T201
-        return output_path
+        return Path(output_path)
 
     finally:
         if not preserve_temp:

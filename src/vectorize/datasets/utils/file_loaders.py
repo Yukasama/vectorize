@@ -10,6 +10,7 @@ from defusedxml import ElementTree
 from loguru import logger
 
 from vectorize.config import settings
+from vectorize.datasets.exceptions import InvalidXMLFormatError
 
 from ..file_format import FileFormat
 
@@ -84,7 +85,11 @@ def _load_xml(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
     """
     tree = ElementTree.parse(path)
     root = tree.getroot()
-    return pd.DataFrame([{child.tag: child.text for child in elem} for elem in root])
+    if root is not None and len(root) > 0:
+        return pd.DataFrame([
+            {child.tag: child.text or "" for child in elem} for elem in root
+        ])
+    raise InvalidXMLFormatError
 
 
 def _load_excel(path: Path, sheet_name: int = 0) -> pd.DataFrame:

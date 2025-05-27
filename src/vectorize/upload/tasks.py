@@ -102,7 +102,7 @@ async def process_github_model_background(  # noqa: D417, PLR0913, PLR0917
 
     try:
         logger.info("[BG] Starting model upload for task", taskId=task_id)
-        await load_github_model_and_cache_only(repo_url)
+        load_github_model_and_cache_only(repo_url)
 
         ai_model = AIModel(
             model_tag=key,

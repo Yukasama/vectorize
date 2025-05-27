@@ -35,8 +35,7 @@ class InferenceCounter(SQLModel, table=True):
         sa_relationship_kwargs={"cascade": "all, delete"},
     )
 
-    created_at: datetime | None = Field(
-        default=None,
+    created_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), insert_default=func.now(), index=True
         ),

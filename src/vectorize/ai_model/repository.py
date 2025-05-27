@@ -1,5 +1,6 @@
 """AIModel repository."""
 
+from collections.abc import Sequence
 from uuid import UUID
 
 from loguru import logger
@@ -120,7 +121,7 @@ async def get_models_paged_db(
     db: AsyncSession,
     page: int = 1,
     size: int = 5,
-) -> tuple[list[AIModel], int]:
+) -> tuple[Sequence[AIModel], int]:
     """Fetches a page of AIModel entries from the database.
 
     Args:
