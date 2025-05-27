@@ -7,15 +7,15 @@ from torch.utils.data import Dataset
 class TripletDataset(Dataset):
     """PyTorch Dataset for triplet (anchor, positive, negative) training."""
     def __init__(self, data: dict) -> None:
-        """Initialisiert das TripletDataset mit den gegebenen Daten."""
+        """Initializes the TripletDataset with the given data."""
         self.data = data
 
     def __len__(self) -> int:
-        """Gibt die Anzahl der Triplets im Dataset zurück."""
+        """Returns the number of triplets in the dataset."""
         return len(self.data["anchor_input_ids"])
 
     def __getitem__(self, idx: int) -> dict:
-        """Gibt das Triplet an Index idx als Dictionary mit Tensors zurück."""
+        """Returns the triplet at index idx as a dictionary of tensors."""
         return {
             "anchor_input_ids": torch.tensor(
                 self.data["anchor_input_ids"][idx]
@@ -38,15 +38,15 @@ class TripletDataset(Dataset):
         }
 
     def __repr__(self) -> str:
-        """String-Repräsentation des TripletDataset."""
+        """String representation of the TripletDataset."""
         return f"<TripletDataset samples={len(self)}>"
 
 
 def preprocess_triplet_batch(tokenizer: object, examples: dict) -> dict:
-    """Tokenisiert ein Batch von Triplet-Beispielen für das Training.
+    """Tokenizes a batch of triplet examples for training.
 
     Raises:
-        ValueError: Wenn ein erforderlicher Key fehlt.
+        ValueError: If a required key is missing.
     """
     try:
         anchor = tokenizer(examples["question"], truncation=True, padding=True)

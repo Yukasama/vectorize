@@ -41,7 +41,7 @@ class TrainingModelWeightsNotFoundError(AppError):
     status_code = status.HTTP_404_NOT_FOUND
 
     def __init__(self, model_path: str) -> None:
-        """Initialisiert die Exception für fehlende oder ungültige Modellgewichte."""
+        """Initialize the exception for missing or invalid model weights."""
         super().__init__(
             f"Model weights (.bin/.safetensors) not found or invalid in: {model_path}"
         )
