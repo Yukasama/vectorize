@@ -71,11 +71,13 @@ async def get_training_status(
     return JSONResponse(
         content={
             "task_id": str(task.id),
-            "status": task.task_status,
+            "status": task.task_status.name,
             "created_at": task.created_at.isoformat() if task.created_at else None,
             "end_date": task.end_date.isoformat() if task.end_date else None,
             "error_msg": task.error_msg,
-            "trained_model_id": str(task.trained_model_id) if task.trained_model_id else None,
+            "trained_model_id": str(task.trained_model_id)
+            if task.trained_model_id
+            else None,
         },
         status_code=status.HTTP_200_OK,
     )
