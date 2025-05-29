@@ -62,7 +62,7 @@ class TestTrainingInvalid:
             "per_device_train_batch_size": 8
         }
         response = client.post("/training/train", json=payload)
-        assert response.status_code in (status.HTTP_404_NOT_FOUND, status.HTTP_422_UNPROCESSABLE_ENTITY)
+        assert response.status_code == 422
         data = response.json()
         assert "model path" in str(data).lower() or "not found" in str(data).lower()
 
@@ -135,3 +135,65 @@ class TestTrainingInvalid:
         assert response.status_code == 422
         data = response.json()
         assert "learning" in str(data).lower() or "negative" in str(data).lower()
+
+    @staticmethod
+    def test_task_status_failed(client: TestClient, session) -> None:
+        """Test that a training request with an invalid model path returns 422 and a clear error message."""
+        payload = {
+            "model_path": "data/models/does_not_exist",  # Invalid path to force failure
+            "dataset_paths": [
+                "data/datasets/__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv"
+            ],
+            "output_dir": "data/models/trained_models/should_not_exist",
+            "epochs": 3,
+            "learning_rate": 0.00005,
+            "per_device_train_batch_size": 8
+        }
+        response = client.post("/training/train", json=payload)
+        assert response.status_code == 422
+        data = response.json()
+        assert "model path" in str(data).lower() or "not found" in str(data).lower()
+
+    @staticmethod
+    @pytest.mark.asyncio
+    async def test_task_status_failed_runtime(client: TestClient, session, tmp_path) -> None:
+        """Test that a training task fails at runtime (invalid CSV content), and status is FAILED in DB."""
+        import uuid
+        # Create an empty CSV file (valid path, invalid content for training)
+        bad_csv = tmp_path / "empty.csv"
+        bad_csv.write_text("")
+        payload = {
+            "model_path": "data/models/localmodel",  # Valid model path
+            "dataset_paths": [str(bad_csv)],  # Exists, but is empty
+            "output_dir": str(tmp_path / "should_not_exist"),
+            "epochs": 3,
+            "learning_rate": 0.00005,
+            "per_device_train_batch_size": 8
+        }
+        response = client.post("/training/train", json=payload)
+        assert response.status_code == 202
+        task_id = uuid.UUID(response.json()["task_id"])
+
+        # Poll the DB for the task status (wait for background task to finish)
+        import time
+        from vectorize.training.models import TrainingTask
+        from vectorize.common.task_status import TaskStatus
+        for _ in range(20):
+            session.expire_all()
+            task = await session.get(TrainingTask, task_id)
+            if task and task.task_status == TaskStatus.FAILED:
+                break
+            time.sleep(0.5)
+        else:
+            assert False, "Task did not reach FAILED status in time"
+
+        assert task.error_msg
+        # Accept any of the following in the error message for robustness
+        err = task.error_msg.lower()
+        assert (
+            "csv" in err
+            or "empty" in err
+            or "failed" in err
+            or "datasetgenerationerror" in err
+            or "generating the dataset" in err
+        )
