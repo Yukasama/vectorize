@@ -176,8 +176,9 @@ class TestTrainingInvalid:
 
         # Poll the DB for the task status (wait for background task to finish)
         import time
-        from vectorize.training.models import TrainingTask
+
         from vectorize.common.task_status import TaskStatus
+        from vectorize.training.models import TrainingTask
         for _ in range(20):
             session.expire_all()
             task = await session.get(TrainingTask, task_id)

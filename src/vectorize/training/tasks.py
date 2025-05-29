@@ -15,8 +15,8 @@ from .service import train_model_service_svc
 
 def train_model_task(db: AsyncSession, train_request: TrainRequest, task_id: UUID) -> None:
     """Background task: trains the model and updates TrainingTask status."""
-    from asyncio import run as asyncio_run
     import traceback
+    from asyncio import run as asyncio_run
 
     logger.info(
         "[BG] Training started for model_path={}, dataset_paths={}, task_id={}",
