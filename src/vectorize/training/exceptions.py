@@ -58,6 +58,7 @@ class EmptyDatasetListError(AppError):
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def __init__(self) -> None:
+        """Initialize the exception for an empty dataset list."""
         super().__init__("No dataset files provided: dataset_paths list is empty.")
 
 
@@ -68,6 +69,7 @@ class InvalidEpochsError(AppError):
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def __init__(self, value: int) -> None:
+        """Initialize the exception for an invalid number of epochs."""
         super().__init__(f"Number of epochs must be positive (got {value}).")
 
 
@@ -78,6 +80,7 @@ class InvalidBatchSizeError(AppError):
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def __init__(self, value: int) -> None:
+        """Initialize the exception for an invalid batch size."""
         super().__init__(f"Batch size must be positive (got {value}).")
 
 
@@ -88,4 +91,5 @@ class InvalidLearningRateError(AppError):
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def __init__(self, value: float) -> None:
+        """Initialize the exception for an invalid learning rate."""
         super().__init__(f"Learning rate must be positive (got {value}).")

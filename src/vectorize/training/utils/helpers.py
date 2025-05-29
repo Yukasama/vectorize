@@ -58,7 +58,7 @@ def load_model_and_tokenizer(model_path: str) -> tuple:
     return model, tokenizer
 
 
-def collate_fn(batch):
+def collate_fn(batch: list[dict]) -> dict:
     """Custom collate function that stacks tensors in a batch."""
     return {k: stack([d[k] for d in batch]) for k in batch[0]}
 
@@ -132,14 +132,18 @@ def train(
             loss.backward()
             optimizer.step()
             epoch_loss += loss.item()
-        logger.info(f"Epoch {epoch + 1} loss: {epoch_loss / len(dataloader):.4f}")
-        # Save checkpoint every N epochs if requested
-        if output_dir and checkpoint_interval > 0 and (epoch + 1) % checkpoint_interval == 0:
+        logger.info(
+            f"Epoch {epoch + 1} loss: {epoch_loss / len(dataloader):.4f}"
+        )
+        if (
+            output_dir
+            and checkpoint_interval > 0
+            and (epoch + 1) % checkpoint_interval == 0
+        ):
             checkpoint_path = output_dir / f"checkpoint_epoch_{epoch + 1}"
             with torch.no_grad():
                 model.save_pretrained(str(checkpoint_path))
                 logger.info(f"Checkpoint saved: {checkpoint_path}")
-        # Optionally log GPU memory usage
         if torch.cuda.is_available():
             logger.info(torch.cuda.memory_summary())
 
@@ -151,4 +155,6 @@ def find_hf_model_dir_svc(base_path: Path) -> Path:
     for subdir in base_path.rglob("*"):
         if (subdir / "config.json").is_file():
             return subdir
-    raise FileNotFoundError(f"No subfolder with config.json found in {base_path}")
+    raise FileNotFoundError(
+        f"No subfolder with config.json found in {base_path}"
+    )
