@@ -188,3 +188,12 @@ class TestTrainingInvalid:
                 "generating the dataset",
             ]
         )
+
+    @staticmethod
+    def test_get_training_status_not_found(client: TestClient) -> None:
+        """Tests the GET /training/{task_id}/status endpoint with an invalid task ID."""
+        invalid_task_id = str(uuid.uuid4())
+        response = client.get(f"/training/{invalid_task_id}/status")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        data = response.json()
+        assert "not found" in str(data).lower()
