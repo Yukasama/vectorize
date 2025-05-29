@@ -22,6 +22,9 @@ class ErrorCode(StrEnum):
     INVALID_CSV_FORMAT = "INVALID_CSV_FORMAT"
     EMPTY_FILE = "EMPTY_FILE"
 
+    # training errors
+    INVALID_EPOCHS = "INVALID_EPOCHS"
+
     INVALID_URL = "INVALID_URL"
 
 
