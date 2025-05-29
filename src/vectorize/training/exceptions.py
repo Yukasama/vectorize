@@ -74,7 +74,7 @@ class InvalidEpochsError(AppError):
 class InvalidBatchSizeError(AppError):
     """Exception raised when the batch size is not positive."""
 
-    error_code = ErrorCode.INVALID_FILE  # Or define a new ErrorCode if desired
+    error_code = ErrorCode.INVALID_BATCH_SIZE
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def __init__(self, value: int) -> None:
@@ -84,7 +84,7 @@ class InvalidBatchSizeError(AppError):
 class InvalidLearningRateError(AppError):
     """Exception raised when the learning rate is not positive."""
 
-    error_code = ErrorCode.INVALID_FILE  # Or define a new ErrorCode if desired
+    error_code = ErrorCode.INVALID_LEARNING_RATE
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def __init__(self, value: float) -> None:
