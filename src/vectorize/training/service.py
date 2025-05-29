@@ -1,7 +1,9 @@
 """Service for model training (Transformers Trainer API)."""
 
+import random
 from pathlib import Path
 
+import numpy as np
 import torch
 from loguru import logger
 from torch.nn import TripletMarginLoss
@@ -18,6 +20,15 @@ from .utils.helpers import (
 )
 
 
+def set_seed(seed=42):
+    """Set random seed for reproducibility."""
+    torch.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+
 def train_model_service_svc(train_request: TrainRequest) -> None:
     """Trains a model with triplet loss on local CSV datasets.
 
@@ -25,6 +36,7 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
     with TripletMarginLoss, and saves the model.
     """
     with logger.contextualize(model_path=train_request.model_path):
+        set_seed()
         logger.info("Training started.")
         if missing := [p for p in train_request.dataset_paths if not Path(p).is_file()]:
             logger.error("Training failed: Dataset file(s) not found: %s", missing)
@@ -49,6 +61,12 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
             "criterion": criterion,
             "device": device,
         }
-        train(train_ctx, train_request.epochs)
-        model.save_pretrained(str(output_dir))
-        tokenizer.save_pretrained(str(output_dir))
+        train(
+            train_ctx,
+            train_request.epochs,
+            output_dir=output_dir,
+            checkpoint_interval=1,  # Save checkpoint every epoch (customize as needed)
+        )
+        with torch.no_grad():
+            model.save_pretrained(str(output_dir))
+            tokenizer.save_pretrained(str(output_dir))
