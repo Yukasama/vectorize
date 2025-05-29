@@ -2,6 +2,9 @@
 
 """Tests for the training endpoint (/training/train) with valid data."""
 
+import shutil
+from pathlib import Path
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -13,7 +16,10 @@ class TestTrainingValid:
 
     @staticmethod
     def test_valid_training(client: TestClient) -> None:
-        """Tests training with valid data and checks the response."""
+        """Tests training with valid data and checks the response.
+
+        Also deletes the trained model after test.
+        """
         payload = {
             "model_path": "data/models/localmodel",
             "dataset_paths": [
@@ -30,3 +36,7 @@ class TestTrainingValid:
         data = response.json()
         assert data["message"] == "Training started"
         assert data["model_path"] == payload["model_path"]
+
+        trained_model_dir = Path(payload["output_dir"])
+        if trained_model_dir.exists() and trained_model_dir.is_dir():
+            shutil.rmtree(trained_model_dir)

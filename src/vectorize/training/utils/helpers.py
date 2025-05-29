@@ -2,7 +2,13 @@
 
 from pathlib import Path
 
-from datasets import Dataset, DatasetDict, IterableDataset, concatenate_datasets, load_dataset
+from datasets import (
+    Dataset,
+    DatasetDict,
+    IterableDataset,
+    concatenate_datasets,
+    load_dataset,
+)
 from loguru import logger
 from torch.utils.data import DataLoader, default_collate
 from transformers import AutoModel, AutoTokenizer
@@ -58,7 +64,7 @@ def load_and_tokenize_datasets(
     datasets_list = []
     for p in paths:
         ds_raw = load_dataset("csv", data_files={"train": str(p)})
-        if isinstance(ds_raw, dict) or isinstance(ds_raw, DatasetDict):
+        if isinstance(ds_raw, (dict, DatasetDict)):
             ds = ds_raw["train"]
         elif isinstance(ds_raw, IterableDataset):
             raise TypeError(f"IterableDataset not supported for {p}")
