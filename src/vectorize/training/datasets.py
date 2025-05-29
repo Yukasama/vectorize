@@ -49,16 +49,34 @@ def preprocess_triplet_batch(tokenizer: object, examples: dict) -> dict:
         ValueError: If a required key is missing.
     """
     try:
-        anchor = tokenizer(examples["question"], truncation=True, padding=True)
-        positive = tokenizer(examples["positive"], truncation=True, padding=True)
-        negative = tokenizer(examples["negative"], truncation=True, padding=True)
+        anchor = tokenizer(
+            examples["question"],
+            truncation=True,
+            padding="max_length",
+            return_tensors="pt",
+            max_length=128,
+        )
+        positive = tokenizer(
+            examples["positive"],
+            truncation=True,
+            padding="max_length",
+            return_tensors="pt",
+            max_length=128,
+        )
+        negative = tokenizer(
+            examples["negative"],
+            truncation=True,
+            padding="max_length",
+            return_tensors="pt",
+            max_length=128,
+        )
     except KeyError as e:
         raise ValueError(f"Missing key in input batch: {e}") from e
     return {
-        "anchor_input_ids": anchor["input_ids"],
-        "anchor_attention_mask": anchor["attention_mask"],
-        "positive_input_ids": positive["input_ids"],
-        "positive_attention_mask": positive["attention_mask"],
-        "negative_input_ids": negative["input_ids"],
-        "negative_attention_mask": negative["attention_mask"],
+        "anchor_input_ids": anchor["input_ids"].tolist(),
+        "anchor_attention_mask": anchor["attention_mask"].tolist(),
+        "positive_input_ids": positive["input_ids"].tolist(),
+        "positive_attention_mask": positive["attention_mask"].tolist(),
+        "negative_input_ids": negative["input_ids"].tolist(),
+        "negative_attention_mask": negative["attention_mask"].tolist(),
     }
