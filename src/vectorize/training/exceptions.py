@@ -6,6 +6,10 @@ from vectorize.common.app_error import AppError
 from vectorize.config.errors import ErrorCode
 
 __all__ = [
+    "EmptyDatasetListError",
+    "InvalidBatchSizeError",
+    "InvalidEpochsError",
+    "InvalidLearningRateError",
     "TrainingDatasetNotFoundError",
     "TrainingModelNotFoundError",
     "TrainingModelWeightsNotFoundError",
@@ -45,3 +49,43 @@ class TrainingModelWeightsNotFoundError(AppError):
         super().__init__(
             f"Model weights (.bin/.safetensors) not found or invalid in: {model_path}"
         )
+
+
+class EmptyDatasetListError(AppError):
+    """Exception raised when the dataset_paths list is empty for training."""
+
+    error_code = ErrorCode.EMPTY_FILE
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self) -> None:
+        super().__init__("No dataset files provided: dataset_paths list is empty.")
+
+
+class InvalidEpochsError(AppError):
+    """Exception raised when the number of epochs is not positive."""
+
+    error_code = ErrorCode.INVALID_EPOCHS
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, value: int) -> None:
+        super().__init__(f"Number of epochs must be positive (got {value}).")
+
+
+class InvalidBatchSizeError(AppError):
+    """Exception raised when the batch size is not positive."""
+
+    error_code = ErrorCode.INVALID_FILE  # Or define a new ErrorCode if desired
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, value: int) -> None:
+        super().__init__(f"Batch size must be positive (got {value}).")
+
+
+class InvalidLearningRateError(AppError):
+    """Exception raised when the learning rate is not positive."""
+
+    error_code = ErrorCode.INVALID_FILE  # Or define a new ErrorCode if desired
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, value: float) -> None:
+        super().__init__(f"Learning rate must be positive (got {value}).")
