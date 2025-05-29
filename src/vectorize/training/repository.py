@@ -10,7 +10,11 @@ from vectorize.common.task_status import TaskStatus
 
 from .models import TrainingTask
 
-__all__ = ["get_training_task_by_id", "save_training_task", "update_training_task_status"]
+__all__ = [
+    "get_training_task_by_id",
+    "save_training_task",
+    "update_training_task_status",
+]
 
 
 async def save_training_task(db: AsyncSession, task: TrainingTask) -> None:
@@ -28,7 +32,7 @@ async def update_training_task_status(
     task = result.first()
     if task:
         task.task_status = status
-        if status in (TaskStatus.DONE, TaskStatus.FAILED, TaskStatus.CANCELED):
+        if status in {TaskStatus.DONE, TaskStatus.FAILED, TaskStatus.CANCELED}:
             task.end_date = datetime.now(UTC)
         if error_msg:
             task.error_msg = error_msg
@@ -36,7 +40,9 @@ async def update_training_task_status(
         await db.refresh(task)
 
 
-async def get_training_task_by_id(db: AsyncSession, task_id: UUID) -> TrainingTask | None:
+async def get_training_task_by_id(
+    db: AsyncSession, task_id: UUID
+) -> TrainingTask | None:
     """Fetch a TrainingTask by its ID."""
     result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
     return result.first()

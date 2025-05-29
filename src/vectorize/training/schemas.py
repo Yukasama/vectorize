@@ -2,7 +2,15 @@
 
 from pathlib import Path
 
+from loguru import logger
 from pydantic import BaseModel, Field, field_validator
+
+from .exceptions import (
+    EmptyDatasetListError,
+    InvalidBatchSizeError,
+    InvalidEpochsError,
+    InvalidLearningRateError,
+)
 
 
 class TrainConfig(BaseModel):
@@ -35,8 +43,6 @@ class TrainRequest(BaseModel):
     def check_paths(cls, paths: list[str]) -> list[str]:
         """Validate that all dataset paths end with .csv and list is not empty."""
         if not paths:
-            from .exceptions import EmptyDatasetListError
-
             raise EmptyDatasetListError()
         for p in paths:
             if not p.endswith(".csv"):
@@ -48,14 +54,18 @@ class TrainRequest(BaseModel):
     def check_model_path(cls, path: str) -> str:
         """Validate that the model path exists and is a directory."""
         if not Path(path).is_dir():
-            raise ValueError(f"Model path does not exist or is not a directory: {path}")
+            raise ValueError(
+                f"Model path does not exist or is not a directory: {path}"
+            )
         return path
 
     @field_validator("epochs")
     @classmethod
     def check_epochs(cls, value: int) -> int:
-        """Raise InvalidEpochsError if epochs is not positive, and log as debug and error."""
-        from loguru import logger
+        """Raise InvalidEpochsError if epochs is not positive.
+
+        Also logs as debug and error.
+        """
         if value <= 0:
             logger.debug(
                 "Validation failed: Number of epochs must be positive (got {}).",
@@ -65,7 +75,6 @@ class TrainRequest(BaseModel):
                 "Training request failed: Number of epochs must be positive (got {}).",
                 value,
             )
-            from .exceptions import InvalidEpochsError
             raise InvalidEpochsError(value)
         return value
 
@@ -74,7 +83,6 @@ class TrainRequest(BaseModel):
     def check_batch_size(cls, value: int) -> int:
         """Raise InvalidBatchSizeError if batch size is not positive."""
         if value <= 0:
-            from .exceptions import InvalidBatchSizeError
             raise InvalidBatchSizeError(value)
         return value
 
@@ -83,6 +91,5 @@ class TrainRequest(BaseModel):
     def check_learning_rate(cls, value: float) -> float:
         """Raise InvalidLearningRateError if learning rate is not positive."""
         if value <= 0:
-            from .exceptions import InvalidLearningRateError
             raise InvalidLearningRateError(value)
         return value
