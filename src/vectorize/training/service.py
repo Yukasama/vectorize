@@ -20,7 +20,7 @@ from .utils.helpers import (
 )
 
 
-def set_seed(seed=42):
+def set_seed(seed: int = 42) -> None:
     """Set random seed for reproducibility."""
     torch.manual_seed(seed)
     random.seed(seed)
@@ -65,7 +65,7 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
             train_ctx,
             train_request.epochs,
             output_dir=output_dir,
-            checkpoint_interval=1,  # Save checkpoint every epoch (customize as needed)
+            checkpoint_interval=1,
         )
         with torch.no_grad():
             model.save_pretrained(str(output_dir))
