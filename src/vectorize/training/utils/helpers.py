@@ -1,7 +1,8 @@
-"""Hilfsfunktionen für das Training (Modell, Tokenizer, Daten, Training)."""
+"""Helper functions for training (model, tokenizer, data, training)."""
 
 from pathlib import Path
 
+import torch
 from datasets import (
     Dataset,
     DatasetDict,
@@ -10,7 +11,8 @@ from datasets import (
     load_dataset,
 )
 from loguru import logger
-from torch.utils.data import DataLoader, default_collate
+from torch import stack
+from torch.utils.data import DataLoader
 from transformers import AutoModel, AutoTokenizer
 
 from vectorize.config import settings
@@ -56,6 +58,11 @@ def load_model_and_tokenizer(model_path: str) -> tuple:
     return model, tokenizer
 
 
+def collate_fn(batch):
+    """Custom collate function that stacks tensors in a batch."""
+    return {k: stack([d[k] for d in batch]) for k in batch[0]}
+
+
 def load_and_tokenize_datasets(
     dataset_paths: list[str], tokenizer: object, batch_size: int
 ) -> DataLoader:
@@ -80,15 +87,24 @@ def load_and_tokenize_datasets(
     )
     dataset = TripletDataset(tokenized)
     return DataLoader(
-        dataset, batch_size=batch_size, shuffle=True, collate_fn=default_collate
+        dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn
     )
 
 
 def train(
     train_ctx: dict,
     epochs: int,
+    output_dir: Path | None = None,
+    checkpoint_interval: int = 0,
 ) -> None:
-    """Run the training loop for the model, dataloader, optimizer, and criterion."""
+    """Run the training loop for the model, dataloader, optimizer, and criterion.
+
+    Args:
+        train_ctx: Dict with model, dataloader, optimizer, criterion, device.
+        epochs: Number of epochs to train.
+        output_dir: Optional path to save checkpoints.
+        checkpoint_interval: Save model every N epochs (if > 0).
+    """
     model = train_ctx["model"]
     dataloader = train_ctx["dataloader"]
     optimizer = train_ctx["optimizer"]
@@ -117,13 +133,22 @@ def train(
             optimizer.step()
             epoch_loss += loss.item()
         logger.info(f"Epoch {epoch + 1} loss: {epoch_loss / len(dataloader):.4f}")
+        # Save checkpoint every N epochs if requested
+        if output_dir and checkpoint_interval > 0 and (epoch + 1) % checkpoint_interval == 0:
+            checkpoint_path = output_dir / f"checkpoint_epoch_{epoch + 1}"
+            with torch.no_grad():
+                model.save_pretrained(str(checkpoint_path))
+                logger.info(f"Checkpoint saved: {checkpoint_path}")
+        # Optionally log GPU memory usage
+        if torch.cuda.is_available():
+            logger.info(torch.cuda.memory_summary())
 
 
 def find_hf_model_dir_svc(base_path: Path) -> Path:
     """Recursively search for a subfolder with config.json (Huggingface format)."""
     if (base_path / "config.json").is_file():
         return base_path
-    for subdir in base_path.rglob(""):
+    for subdir in base_path.rglob("*"):
         if (subdir / "config.json").is_file():
             return subdir
     raise FileNotFoundError(f"No subfolder with config.json found in {base_path}")
