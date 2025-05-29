@@ -3,7 +3,7 @@
 
 from pathlib import Path
 from typing import Annotated
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from fastapi.responses import JSONResponse
@@ -13,9 +13,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
 
-from .exceptions import TrainingDatasetNotFoundError
+from .exceptions import TrainingDatasetNotFoundError, TrainingTaskNotFoundError
 from .models import TrainingTask
-from .repository import save_training_task
+from .repository import get_training_task_by_id, save_training_task
 from .schemas import TrainRequest
 from .tasks import train_model_task
 
@@ -56,4 +56,26 @@ async def train_model(
             "task_id": str(task.id),
         },
         status_code=status.HTTP_202_ACCEPTED,
+    )
+
+
+@router.get("/{task_id}/status")
+async def get_training_status(
+    task_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    """Get the status and metadata of a training task by its ID."""
+    task = await get_training_task_by_id(db, task_id)
+    if not task:
+        raise TrainingTaskNotFoundError(str(task_id))
+    return JSONResponse(
+        content={
+            "task_id": str(task.id),
+            "status": task.task_status,
+            "created_at": task.created_at.isoformat() if task.created_at else None,
+            "end_date": task.end_date.isoformat() if task.end_date else None,
+            "error_msg": task.error_msg,
+            "trained_model_id": str(task.trained_model_id) if task.trained_model_id else None,
+        },
+        status_code=status.HTTP_200_OK,
     )

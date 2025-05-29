@@ -13,6 +13,7 @@ __all__ = [
     "TrainingDatasetNotFoundError",
     "TrainingModelNotFoundError",
     "TrainingModelWeightsNotFoundError",
+    "TrainingTaskNotFoundError",
 ]
 
 
@@ -93,3 +94,14 @@ class InvalidLearningRateError(AppError):
     def __init__(self, value: float) -> None:
         """Initialize the exception for an invalid learning rate."""
         super().__init__(f"Learning rate must be positive (got {value}).")
+
+
+class TrainingTaskNotFoundError(AppError):
+    """Exception raised when a TrainingTask with the given ID is not found."""
+
+    error_code = ErrorCode.NOT_FOUND
+    status_code = status.HTTP_404_NOT_FOUND
+
+    def __init__(self, task_id: str) -> None:
+        """Initialize with the missing training task ID."""
+        super().__init__(f"Training task not found: {task_id}")
