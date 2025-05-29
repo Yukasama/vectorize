@@ -10,6 +10,7 @@ from .model_source import ModelSource
 
 if TYPE_CHECKING:
     from vectorize.inference.models import InferenceCounter
+    from vectorize.training.models import TrainingTask
 
 __all__ = ["AIModel", "AIModelAll", "AIModelCreate", "AIModelPublic", "AIModelUpdate"]
 
@@ -96,6 +97,8 @@ class AIModel(SQLModel, table=True):
     )
 
     trained_children: list["AIModel"] = Relationship(back_populates="trained_from")
+
+    training_tasks: list["TrainingTask"] = Relationship(back_populates="trained_model")
 
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), insert_default=func.now()),

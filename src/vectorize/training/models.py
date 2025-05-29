@@ -42,7 +42,8 @@ class TrainingTask(SQLModel, table=True):
         description="Optional error message encountered during training.",
     )
 
-    trained_model: Optional["AIModel"] = Relationship(back_populates="training_task")
+    trained_model_id: UUID | None = Field(default=None, foreign_key="ai_model.id")
+    trained_model: Optional["AIModel"] = Relationship(back_populates="training_tasks")
 
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
