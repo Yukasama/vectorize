@@ -149,3 +149,27 @@ async def get_models_paged_db(
     items = result.all()
 
     return items, total
+
+
+async def get_ai_model_by_id(db: AsyncSession, model_id: UUID) -> AIModel:
+    """Retrieve an AI model by its UUID.
+
+    Args:
+        db: Database session instance.
+        model_id: The UUID of the model to retrieve.
+
+    Returns:
+        AIModel: The AI model object corresponding to the given UUID.
+
+    Raises:
+        ModelNotFoundError: If the model is not found.
+    """
+    statement = select(AIModel).where(AIModel.id == model_id)
+    result = await db.exec(statement)
+    model = result.first()
+
+    if model is None:
+        raise ModelNotFoundError(str(model_id))
+
+    logger.debug("AI Model loaded from DB by ID", ai_model=model)
+    return model
