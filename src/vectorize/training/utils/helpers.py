@@ -17,8 +17,8 @@ from transformers import AutoModel, AutoTokenizer
 
 from vectorize.config import settings
 
-from ..datasets import TripletDataset, preprocess_triplet_batch
 from ..exceptions import TrainingModelNotFoundError, TrainingModelWeightsNotFoundError
+from ..triple_dataset import TripletDataset, preprocess_triplet_batch
 
 __all__ = [
     "find_hf_model_dir_svc",
@@ -86,10 +86,8 @@ def load_and_tokenize_datasets(
         lambda ex: preprocess_triplet_batch(tokenizer, ex), batched=True
     )
     dataset = TripletDataset(tokenized)
-    return DataLoader(
-        dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn
-    )
-
+    return DataLoader(dataset, batch_size, shuffle=True, collate_fn=collate_fn) 
+#  Parameter zu lange, die muss man nicht so übergeben, kann man diese 
 
 def train(
     train_ctx: dict,
