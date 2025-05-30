@@ -17,32 +17,23 @@ from .utils.helpers import (
     load_model_and_tokenizer,
     prepare_output_dir,
     train,
+    _set_seed,
 )
 
-#  Wenn ich Sie nur bei der FUnktion train_model_service_svc brauche, dann kann Sie auch in helpers.py rein.
-def _set_seed(seed: int = 42) -> None:
-    """Set random seed for reproducibility."""
-    torch.manual_seed(seed)
-    random.seed(seed)
-    np.random.seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
 
-
-def train_model_service_svc(train_request: TrainRequest) -> None:
+def train_model_service_svc(model_id: str, train_request: TrainRequest) -> None:
     """Trains a model with triplet loss on local CSV datasets.
 
     Loads model and tokenizer, processes multiple datasets, performs training
     with TripletMarginLoss, and saves the model.
     """
-    with logger.contextualize(model_path=train_request.model_path):
-        _set_seed()
+    with logger.contextualize(model_id=model_id):
         logger.info("Training started.")
         if missing := [p for p in train_request.dataset_paths if not Path(p).is_file()]:
             logger.error("Training failed: Dataset file(s) not found: %s", missing)
             raise TrainingDatasetNotFoundError(", ".join(missing))
-        output_dir = prepare_output_dir(train_request.model_path)
-        model, tokenizer = load_model_and_tokenizer(train_request.model_path)
+        output_dir = prepare_output_dir(model_id)
+        model, tokenizer = load_model_and_tokenizer(model_id)
         dataloader = load_and_tokenize_datasets(
             train_request.dataset_paths,
             tokenizer,
@@ -68,5 +59,5 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
             checkpoint_interval=1,
         )
         with torch.no_grad():
-            model.save_pretrained(str(output_dir)) 
-            tokenizer.save_pretrained(str(output_dir)) # Ich muss hier auf den Rückgabetyp achten, deshalb ist es weiß, siehe useages in helpers.py
+            model.save_pretrained(str(output_dir))
+            tokenizer.save_pretrained(str(output_dir))

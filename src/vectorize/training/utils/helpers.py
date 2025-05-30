@@ -1,6 +1,7 @@
 """Helper functions for training (model, tokenizer, data, training)."""
 
 from pathlib import Path
+from uuid import UUID
 
 import torch
 from datasets import (
@@ -11,13 +12,15 @@ from datasets import (
     load_dataset,
 )
 from loguru import logger
+from sqlmodel.ext.asyncio.session import AsyncSession
 from torch import stack
 from torch.utils.data import DataLoader
 from transformers import AutoModel, AutoTokenizer
 
-from vectorize.config import settings
+from vectorize.ai_model.repository import get_ai_model_by_id
+from vectorize.config.config import settings
 
-from ..exceptions import TrainingModelNotFoundError, TrainingModelWeightsNotFoundError
+from ..exceptions import TrainingModelWeightsNotFoundError
 from ..triple_dataset import TripletDataset, preprocess_triplet_batch
 
 __all__ = [
@@ -27,6 +30,18 @@ __all__ = [
     "prepare_output_dir",
     "train",
 ]
+
+
+def _set_seed(seed: int = 42) -> None:
+    """Set random seed for reproducibility."""
+    import random
+    import numpy as np
+    import torch
+    torch.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def prepare_output_dir(model_path: str) -> Path:
@@ -43,11 +58,11 @@ def load_model_and_tokenizer(model_path: str) -> tuple:
     """Load a Huggingface model and tokenizer from the given path."""
     model_path_obj = Path(model_path)
     if not model_path_obj.exists() or not model_path_obj.is_dir():
-        raise TrainingModelNotFoundError(str(model_path_obj))
+        raise FileNotFoundError(f"Model directory not found: {model_path_obj}")
     try:
         model_load_path = str(find_hf_model_dir_svc(model_path_obj).resolve())
     except FileNotFoundError as e:
-        raise TrainingModelNotFoundError(
+        raise FileNotFoundError(
             f"No Huggingface model dir (config.json) found in: {model_path_obj}"
         ) from e
     try:
@@ -86,8 +101,9 @@ def load_and_tokenize_datasets(
         lambda ex: preprocess_triplet_batch(tokenizer, ex), batched=True
     )
     dataset = TripletDataset(tokenized)
-    return DataLoader(dataset, batch_size, shuffle=True, collate_fn=collate_fn) 
-#  Parameter zu lange, die muss man nicht so übergeben, kann man diese 
+    return DataLoader(dataset, batch_size, shuffle=True, collate_fn=collate_fn)
+#  Parameter zu lange, die muss man nicht so übergeben, kann man diese
+
 
 def train(
     train_ctx: dict,
@@ -156,3 +172,12 @@ def find_hf_model_dir_svc(base_path: Path) -> Path:
     raise FileNotFoundError(
         f"No subfolder with config.json found in {base_path}"
     )
+
+
+async def get_model_path_by_id(db: AsyncSession, model_id: str | UUID) -> str:
+    """Lädt das Modell aus der DB und gibt den lokalen Modellpfad zurück (model_tag als Ordnername)."""
+    if not isinstance(model_id, UUID):
+        model_id = UUID(model_id)
+    model = await get_ai_model_by_id(db, model_id)
+    # Annahme: model_tag entspricht dem lokalen Modellverzeichnis
+    return str(settings.model_upload_dir / model.model_tag)

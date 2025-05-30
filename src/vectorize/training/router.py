@@ -6,7 +6,6 @@ from typing import Annotated
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
-from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -18,6 +17,7 @@ from .models import TrainingTask
 from .repository import get_training_task_by_id, save_training_task
 from .schemas import TrainRequest, TrainingStatusResponse
 from .tasks import train_model_task
+from .utils.helpers import get_model_path_by_id
 
 __all__ = ["router"]
 
@@ -36,29 +36,23 @@ async def train_model(
         for p in missing:
             logger.error("Training request failed: Dataset file not found: %s", p)
         raise TrainingDatasetNotFoundError(missing[0])
+    # Modellpfad aus der model_id ermitteln
+    model_path = await get_model_path_by_id(db, train_request.model_id)
     logger.info(
-        "Training requested for model_path=%s, dataset_paths=%s",
-        train_request.model_path,
+        "Training requested for model_id=%s, model_path=%s, dataset_paths=%s",
+        train_request.model_id,
+        model_path,
         train_request.dataset_paths,
     )
     task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     await save_training_task(db, task)
-    background_tasks.add_task(train_model_task, db, train_request, task.id)
+    background_tasks.add_task(train_model_task, db, train_request.model_id, train_request, task.id)
     logger.info(
-        "Training started in background for model_path=%s, task_id=%s",
-        train_request.model_path,
+        "Training started in background for model_id=%s, task_id=%s",
+        train_request.model_id,
         str(task.id),
     )
-    return JSONResponse(
-        content={
-            "message": "Training started",
-            "model_path": train_request.model_path,
-            "task_id": str(task.id),
-        },
-        status_code=status.HTTP_202_ACCEPTED,
-    )
-# Task ID in den Location Header und der Modelpath und den Tag brauche ich auch nicht, weil ich diesen über den Task ID bekomme
-# heißt, einfach einur ein 202 zurückgeben, d.h. ein leerer Body muss zurückgegeben werden.
+    return Response(status_code=status.HTTP_202_ACCEPTED)
 
 
 @router.get("/{task_id}/status")
