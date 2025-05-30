@@ -20,7 +20,7 @@ def train_model_task(
 ) -> None:
     """Background task: trains the model and updates TrainingTask status."""
     logger.info(
-        "[BG] Training started for model_path={}, dataset_paths={}, task_id={}",
+        "Training started for model_path={}, dataset_paths={}, task_id={}",
         train_request.model_path,
         train_request.dataset_paths,
         task_id,
@@ -28,15 +28,14 @@ def train_model_task(
     try:
         train_model_service_svc(train_request)
         logger.info(
-            "[BG] Training finished successfully for model_path={}, task_id={}",
+            "Training finished successfully for model_path={}, task_id={}",
             train_request.model_path,
             task_id,
         )
-        # Update status to DONE
         asyncio_run(update_training_task_status(db, task_id, TaskStatus.DONE))
     except TrainingModelNotFoundError:
         logger.error(
-            "[BG] Training failed: Invalid model path: {}, task_id={}",
+            "Training failed: Invalid model path: {}, task_id={}",
             train_request.model_path,
             task_id,
         )
@@ -46,10 +45,9 @@ def train_model_task(
             )
         )
     except Exception as e:
-        # Log and update DB with error, but do NOT re-raise
         error_msg = f"{e.__class__.__name__}: {e}"
         logger.error(
-            "[BG] Training failed for model_path={}, task_id={}: {}\n{}",
+            "Training failed for model_path={}, task_id={}: {}\n{}",
             train_request.model_path,
             task_id,
             e,
@@ -60,4 +58,3 @@ def train_model_task(
                 db, task_id, TaskStatus.FAILED, error_msg=error_msg
             )
         )
-        # Do NOT re-raise!

@@ -26,6 +26,7 @@ DATASET_BACKUP2_ID = UUID("9d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_READ_ID = UUID("7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_FAIL_ID = UUID("8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_DELETE_ID = UUID("2d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+AI_MODEL_LOCALTRAINMODEL_ID = UUID("3d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 
 
 async def seed_db(session: AsyncSession) -> None:
@@ -126,6 +127,14 @@ async def seed_db(session: AsyncSession) -> None:
             name="Huge Model",
             source=ModelSource.LOCAL,
             model_tag="huge_model",
+        ),
+    )
+    session.add(
+        AIModel(
+            id=AI_MODEL_LOCALTRAINMODEL_ID,
+            name="LocalTrainModel",
+            source=ModelSource.LOCAL,
+            model_tag="localtrainmodel",
         ),
     )
     session.add(

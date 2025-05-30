@@ -2,13 +2,13 @@
 
 from pathlib import Path
 
-from loguru import logger
 from pydantic import BaseModel, Field, field_validator
+
+from vectorize.training.models import TrainingTask
 
 from .exceptions import (
     EmptyDatasetListError,
     InvalidBatchSizeError,
-    InvalidEpochsError,
     InvalidLearningRateError,
 )
 
@@ -25,15 +25,13 @@ class TrainRequest(BaseModel):
     """Request body for model training."""
 
     model_path: str = Field(
-        ...,
         description=(
             "Path to the local model directory (no Huggingface download allowed)"
         ),
     )
-    dataset_paths: list[str] = Field(
-        ..., description="Paths to the training datasets (local, multiple allowed)"
+    dataset_paths: list[str] = Field(description="Paths to the training datasets (local, multiple allowed)"
     )
-    output_dir: str = Field(..., description="Path to save the trained model")
+    output_dir: str = Field(description="Path to save the trained model")
     epochs: int = Field(1, description="Number of training epochs", gt=0)
     learning_rate: float = Field(5e-5, description="Learning rate for training")
     per_device_train_batch_size: int = Field(8, description="Batch size per device")
@@ -59,24 +57,10 @@ class TrainRequest(BaseModel):
             )
         return path
 
-    @field_validator("epochs")
-    @classmethod
-    def check_epochs(cls, value: int) -> int:
-        """Raise InvalidEpochsError if epochs is not positive.
-
-        Also logs as debug and error.
-        """
-        if value <= 0:
-            logger.debug(
-                "Validation failed: Number of epochs must be positive (got {}).",
-                value,
-            )
-            logger.error(
-                "Training request failed: Number of epochs must be positive (got {}).",
-                value,
-            )
-            raise InvalidEpochsError(value)
-        return value
+ #  Nutzer soll nicht den Pfad, sondern die ID angeben.
+ #  Im Router wird dann der Pfad ermittelt,
+ #  aber der Router muss auf den Service zugreifen können.
+ #  Field Validator müssen alle raus, die brauche ich nicht, weil Pydantic automatisch validiert.
 
     @field_validator("per_device_train_batch_size")
     @classmethod
@@ -93,3 +77,23 @@ class TrainRequest(BaseModel):
         if value <= 0:
             raise InvalidLearningRateError(value)
         return value
+
+
+class TrainingStatusResponse(BaseModel):
+    task_id: str
+    status: str
+    created_at: str | None = None
+    end_date: str | None = None
+    error_msg: str | None = None
+    trained_model_id: str | None = None
+
+    @classmethod
+    def from_task(cls, task: TrainingTask) -> "TrainingStatusResponse":
+        return cls(
+            task_id=str(task.id),
+            status=task.task_status.name,
+            created_at=task.created_at.isoformat() if task.created_at else None,
+            end_date=task.end_date.isoformat() if task.end_date else None,
+            error_msg=task.error_msg,
+            trained_model_id=str(task.trained_model_id) if task.trained_model_id else None,
+        )

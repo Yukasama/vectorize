@@ -105,3 +105,5 @@ class TrainingTaskNotFoundError(AppError):
     def __init__(self, task_id: str) -> None:
         """Initialize with the missing training task ID."""
         super().__init__(f"Training task not found: {task_id}")
+
+#  Bei den Exceptions kein Custom Exceptions für Pydantic, den Code kann man sich sparen.

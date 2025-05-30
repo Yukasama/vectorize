@@ -19,8 +19,8 @@ from .utils.helpers import (
     train,
 )
 
-
-def set_seed(seed: int = 42) -> None:
+#  Wenn ich Sie nur bei der FUnktion train_model_service_svc brauche, dann kann Sie auch in helpers.py rein.
+def _set_seed(seed: int = 42) -> None:
     """Set random seed for reproducibility."""
     torch.manual_seed(seed)
     random.seed(seed)
@@ -36,7 +36,7 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
     with TripletMarginLoss, and saves the model.
     """
     with logger.contextualize(model_path=train_request.model_path):
-        set_seed()
+        _set_seed()
         logger.info("Training started.")
         if missing := [p for p in train_request.dataset_paths if not Path(p).is_file()]:
             logger.error("Training failed: Dataset file(s) not found: %s", missing)
@@ -68,5 +68,5 @@ def train_model_service_svc(train_request: TrainRequest) -> None:
             checkpoint_interval=1,
         )
         with torch.no_grad():
-            model.save_pretrained(str(output_dir))
-            tokenizer.save_pretrained(str(output_dir))
+            model.save_pretrained(str(output_dir)) 
+            tokenizer.save_pretrained(str(output_dir)) # Ich muss hier auf den Rückgabetyp achten, deshalb ist es weiß, siehe useages in helpers.py
