@@ -16,7 +16,7 @@ from vectorize.config.db import get_session
 from .exceptions import TrainingDatasetNotFoundError, TrainingTaskNotFoundError
 from .models import TrainingTask
 from .repository import get_training_task_by_id, save_training_task
-from .schemas import TrainRequest
+from .schemas import TrainRequest, TrainingStatusResponse
 from .tasks import train_model_task
 
 __all__ = ["router"]
@@ -57,27 +57,17 @@ async def train_model(
         },
         status_code=status.HTTP_202_ACCEPTED,
     )
+# Task ID in den Location Header und der Modelpath und den Tag brauche ich auch nicht, weil ich diesen über den Task ID bekomme
+# heißt, einfach einur ein 202 zurückgeben, d.h. ein leerer Body muss zurückgegeben werden.
 
 
 @router.get("/{task_id}/status")
 async def get_training_status(
     task_id: UUID,
     db: Annotated[AsyncSession, Depends(get_session)],
-) -> Response:
+) -> TrainingStatusResponse:
     """Get the status and metadata of a training task by its ID."""
     task = await get_training_task_by_id(db, task_id)
     if not task:
         raise TrainingTaskNotFoundError(str(task_id))
-    return JSONResponse(
-        content={
-            "task_id": str(task.id),
-            "status": task.task_status.name,
-            "created_at": task.created_at.isoformat() if task.created_at else None,
-            "end_date": task.end_date.isoformat() if task.end_date else None,
-            "error_msg": task.error_msg,
-            "trained_model_id": str(task.trained_model_id)
-            if task.trained_model_id
-            else None,
-        },
-        status_code=status.HTTP_200_OK,
-    )
+    return TrainingStatusResponse.from_task(task)
