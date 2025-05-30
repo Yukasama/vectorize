@@ -44,7 +44,6 @@ class TestTrainingValid:
     @staticmethod
     def test_get_training_status(client: TestClient) -> None:
         """Tests the GET /training/{task_id}/status endpoint with a valid task ID."""
-        # Starte ein Training, um eine gültige Task-ID zu erhalten
         payload = {
             "model_path": "data/models/localmodel",
             "dataset_paths": [
@@ -61,15 +60,12 @@ class TestTrainingValid:
         data = response.json()
         task_id = data["task_id"]
 
-        # Rufe den Status-Endpunkt ab
         status_response = client.get(f"/training/{task_id}/status")
         assert status_response.status_code == status.HTTP_200_OK
         status_data = status_response.json()
         assert status_data["task_id"] == task_id
         assert status_data["status"] in {"PENDING", "DONE", "FAILED", "CANCELED"}
         assert status_data["created_at"] is not None
-        # Enddatum und error_msg können None sein, je nach Status
-        # Aufräumen
         trained_model_dir = Path(payload["output_dir"])
         if trained_model_dir.exists() and trained_model_dir.is_dir():
             shutil.rmtree(trained_model_dir)
