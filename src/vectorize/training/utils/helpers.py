@@ -19,17 +19,18 @@ from transformers import AutoModel, AutoTokenizer
 
 from vectorize.ai_model.repository import get_ai_model_by_id
 from vectorize.config.config import settings
+from vectorize.datasets.repository import get_dataset_db
 
 from ..exceptions import TrainingModelWeightsNotFoundError
 from ..triple_dataset import TripletDataset, preprocess_triplet_batch
 
 __all__ = [
+    "_set_seed",
     "find_hf_model_dir_svc",
     "load_and_tokenize_datasets",
     "load_model_and_tokenizer",
     "prepare_output_dir",
     "train",
-    "_set_seed",
 ]
 
 
@@ -183,3 +184,12 @@ async def get_model_path_by_id(db: AsyncSession, model_id: str | UUID) -> str:
     model = await get_ai_model_by_id(db, model_id)
     # Annahme: model_tag entspricht dem lokalen Modellverzeichnis
     return str(settings.model_upload_dir / model.model_tag)
+
+
+async def get_dataset_paths_by_ids(db: AsyncSession, dataset_ids: list[str]) -> list[str]:
+    """Lädt die Datasets aus der DB und gibt die lokalen Dateipfade zurück."""
+    paths = []
+    for dataset_id in dataset_ids:
+        dataset = await get_dataset_db(db, UUID(dataset_id))
+        paths.append(str(Path("data/datasets") / dataset.file_name))
+    return paths
