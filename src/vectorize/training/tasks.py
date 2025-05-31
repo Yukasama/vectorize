@@ -1,22 +1,29 @@
 """Background task for model training."""
 
-from asyncio import run as asyncio_run
+from datetime import UTC, datetime
 from uuid import UUID
 
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from vectorize.ai_model.model_source import ModelSource
+from vectorize.ai_model.models import AIModel
+from vectorize.ai_model.repository import get_ai_model_by_id, save_ai_model_db
 from vectorize.common.task_status import TaskStatus
 
-from .repository import update_training_task_status
+from .repository import get_training_task_by_id, update_training_task_status
 from .schemas import TrainRequest
 from .service import train_model_service_svc
 
 
-def train_model_task(
-    db: AsyncSession, model_path: str, train_request: TrainRequest, task_id: UUID, dataset_paths: list[str]
+async def train_model_task(
+    db: AsyncSession,
+    model_path: str,
+    train_request: TrainRequest,
+    task_id: UUID,
+    dataset_paths: list[str],
 ) -> None:
-    """Background task: trains the model and updates TrainingTask status."""
+    """Background task: trains the model, saves new AIModel, updates TrainingTask."""
     logger.info(
         "Training started for model_path={}, dataset_paths={}, task_id={}",
         model_path,
@@ -24,15 +31,33 @@ def train_model_task(
         task_id,
     )
     try:
+        orig_model = await get_ai_model_by_id(db, UUID(train_request.model_id))
         train_model_service_svc(model_path, train_request, dataset_paths)
+
+        tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+        new_model_tag = f"{orig_model.model_tag}-finetuned-{tag_time}"
+        new_model = AIModel(
+            name=f"Fine-tuned: {orig_model.name} {tag_time}",
+            model_tag=new_model_tag,
+            source=ModelSource.LOCAL,
+            trained_from_id=orig_model.id,
+        )
+        new_model_id = await save_ai_model_db(db, new_model)
+        task = await get_training_task_by_id(db, task_id)
+        if task:
+            task.trained_model_id = new_model_id
+            await db.commit()
+            await db.refresh(task)
+        await update_training_task_status(db, task_id, TaskStatus.DONE)
         logger.info(
-            "Training finished successfully for model_path={}, task_id={}",
+            "Training finished successfully for model_path={}, task_id={}, "
+            "new_model_id={}",
             model_path,
             task_id,
+            new_model_id,
         )
-        asyncio_run(update_training_task_status(db, task_id, TaskStatus.DONE))
     except Exception as exc:
         logger.exception("Training failed: task_id={}", task_id)
-        asyncio_run(
-            update_training_task_status(db, task_id, TaskStatus.FAILED, error_msg=str(exc))
+        await update_training_task_status(
+            db, task_id, TaskStatus.FAILED, error_msg=str(exc)
         )

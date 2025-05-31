@@ -1,8 +1,10 @@
 """Helper functions for training (model, tokenizer, data, training)."""
 
+import random
 from pathlib import Path
 from uuid import UUID
 
+import numpy as np
 import torch
 from datasets import (
     Dataset,
@@ -36,10 +38,6 @@ __all__ = [
 
 def _set_seed(seed: int = 42) -> None:
     """Set random seed for reproducibility."""
-    import random
-
-    import numpy as np
-    import torch
     torch.manual_seed(seed)
     random.seed(seed)
     np.random.seed(seed)
@@ -105,7 +103,6 @@ def load_and_tokenize_datasets(
     )
     dataset = TripletDataset(tokenized)
     return DataLoader(dataset, batch_size, shuffle=True, collate_fn=collate_fn)
-#  Parameter zu lange, die muss man nicht so übergeben, kann man diese
 
 
 def train(
@@ -177,16 +174,19 @@ def find_hf_model_dir_svc(base_path: Path) -> Path:
     )
 
 
-async def get_model_path_by_id(db: AsyncSession, model_id: str | UUID) -> str:
-    """Lädt das Modell aus der DB und gibt den lokalen Modellpfad zurück (model_tag als Ordnername)."""
+async def get_model_path_by_id(
+    db: AsyncSession, model_id: str | UUID
+) -> str:
+    """Lädt das Modell aus der DB und gibt den lokalen Modellpfad zurück."""
     if not isinstance(model_id, UUID):
         model_id = UUID(model_id)
     model = await get_ai_model_by_id(db, model_id)
-    # Annahme: model_tag entspricht dem lokalen Modellverzeichnis
     return str(settings.model_upload_dir / model.model_tag)
 
 
-async def get_dataset_paths_by_ids(db: AsyncSession, dataset_ids: list[str]) -> list[str]:
+async def get_dataset_paths_by_ids(
+    db: AsyncSession, dataset_ids: list[str]
+) -> list[str]:
     """Lädt die Datasets aus der DB und gibt die lokalen Dateipfade zurück."""
     paths = []
     for dataset_id in dataset_ids:
