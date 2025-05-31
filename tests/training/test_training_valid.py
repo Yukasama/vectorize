@@ -42,6 +42,11 @@ class TestTrainingValid:
 
     @staticmethod
     def test_get_training_status(client: TestClient) -> None:
+        """Test the status endpoint for a training task.
+
+        Args:
+            client (TestClient): FastAPI test client for making API requests.
+        """
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
             "dataset_ids": [
@@ -55,5 +60,3 @@ class TestTrainingValid:
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_202_ACCEPTED
-        # Kein JSON-Body mehr erwartet
-        # Status-Check ist in anderen Tests abgedeckt

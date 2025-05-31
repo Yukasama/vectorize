@@ -31,7 +31,6 @@ async def train_model(
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
     """Start model training as a background task and persist TrainingTask."""
-    # Dataset-Pfade anhand der IDs auflösen
     dataset_paths = await get_dataset_paths_by_ids(db, train_request.dataset_ids)
     missing = [p for p in dataset_paths if not Path(p).is_file()]
     if missing:
@@ -47,8 +46,14 @@ async def train_model(
     )
     task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     await save_training_task(db, task)
-    # Übergibt model_path explizit an den Task (statt model_id)
-    background_tasks.add_task(train_model_task, db, model_path, train_request, task.id, dataset_paths)
+    background_tasks.add_task(
+        train_model_task,
+        db,
+        model_path,
+        train_request,
+        task.id,
+        dataset_paths,
+    )
     logger.info(
         "Training started in background for model_id={}, task_id={}",
         train_request.model_id,
