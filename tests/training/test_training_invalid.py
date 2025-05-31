@@ -21,7 +21,7 @@ class TestTrainingInvalid:
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
             "dataset_ids": [
-                str(uuid.uuid4())  # nicht existierende UUID
+                str(uuid.uuid4())
             ],
             "output_dir": "data/models/trained_models/my_finetuned_model",
             "epochs": 3,
@@ -30,13 +30,12 @@ class TestTrainingInvalid:
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        # Kein JSON-Body mehr erwartet
 
     @staticmethod
     def test_invalid_model_id(client: TestClient) -> None:
         """Tests training with an invalid model_id and checks the error response."""
         payload = {
-            "model_id": "00000000-0000-0000-0000-000000000000",  # ungültige ID
+            "model_id": "00000000-0000-0000-0000-000000000000",
             "dataset_ids": [
                 "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
                 "0a9d5e87-e497-4737-9829-2070780d10df"
@@ -48,7 +47,6 @@ class TestTrainingInvalid:
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code in {404, 422}
-        # Kein JSON-Body mehr erwartet
 
     @staticmethod
     def test_empty_dataset_list(client: TestClient) -> None:
