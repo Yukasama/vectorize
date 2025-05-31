@@ -28,6 +28,9 @@ AI_MODEL_FAIL_ID = UUID("8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_DELETE_ID = UUID("2d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_LOCALTRAINMODEL_ID = UUID("3d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 
+DATASET_TRAINING_1_ID = UUID("0a9d5e87-e497-4737-9829-2070780d10df")
+DATASET_TRAINING_2_ID = UUID("0b30b284-f7fe-4e6c-a270-17cafc5b5bcb")
+
 
 async def seed_db(session: AsyncSession) -> None:
     """Seed the database with initial test data.
@@ -102,6 +105,24 @@ async def seed_db(session: AsyncSession) -> None:
             file_name="fail_dataset.jsonl",
             classification=Classification.SENTENCE_DUPLES,
             source=DatasetSource.LOCAL,
+            rows=5,
+        ),
+    )
+    session.add(
+        Dataset(
+            id=DATASET_TRAINING_1_ID,
+            name="rm_dataset_1",
+            file_name="__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv",
+            classification=Classification.SENTENCE_DUPLES,
+            rows=5,
+        ),
+    )
+    session.add(
+        Dataset(
+            id=DATASET_TRAINING_2_ID,
+            name="rm_dataset_2",
+            file_name="__rm_-rf__2F_0b30b284-f7fe-4e6c-a270-17cafc5b5bcb.csv",
+            classification=Classification.SENTENCE_DUPLES,
             rows=5,
         ),
     )
