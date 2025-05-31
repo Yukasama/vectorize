@@ -18,7 +18,11 @@ from .utils.helpers import (
 )
 
 
-def train_model_service_svc(model_path: str, train_request: TrainRequest, dataset_paths: list[str]) -> None:
+def train_model_service_svc(
+    model_path: str,
+    train_request: TrainRequest,
+    dataset_paths: list[str],
+) -> None:
     """Trains a model with triplet loss on local CSV datasets.
 
     Loads model and tokenizer, processes multiple datasets, performs training
