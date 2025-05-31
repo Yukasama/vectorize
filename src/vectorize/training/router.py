@@ -36,7 +36,6 @@ async def train_model(
         for p in missing:
             logger.error("Training request failed: Dataset file not found: %s", p)
         raise TrainingDatasetNotFoundError(missing[0])
-    # Modellpfad aus der model_id ermitteln
     model_path = await get_model_path_by_id(db, train_request.model_id)
     logger.info(
         "Training requested for model_id=%s, model_path=%s, dataset_paths=%s",

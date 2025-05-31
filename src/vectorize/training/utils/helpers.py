@@ -29,12 +29,14 @@ __all__ = [
     "load_model_and_tokenizer",
     "prepare_output_dir",
     "train",
+    "_set_seed",
 ]
 
 
 def _set_seed(seed: int = 42) -> None:
     """Set random seed for reproducibility."""
     import random
+
     import numpy as np
     import torch
     torch.manual_seed(seed)

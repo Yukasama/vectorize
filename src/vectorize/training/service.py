@@ -1,9 +1,7 @@
 """Service for model training (Transformers Trainer API)."""
 
-import random
 from pathlib import Path
 
-import numpy as np
 import torch
 from loguru import logger
 from torch.nn import TripletMarginLoss
@@ -17,7 +15,6 @@ from .utils.helpers import (
     load_model_and_tokenizer,
     prepare_output_dir,
     train,
-    _set_seed,
 )
 
 
