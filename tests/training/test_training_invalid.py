@@ -16,12 +16,12 @@ class TestTrainingInvalid:
     """Tests for the training endpoint (/training/train) with invalid data."""
 
     @staticmethod
-    def test_invalid_dataset_path(client: TestClient) -> None:
-        """Tests training with an invalid dataset path and checks the error response."""
+    def test_invalid_dataset_id(client: TestClient) -> None:
+        """Tests training with an invalid dataset ID and checks the error response."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_paths": [
-                "data/datasets/does_not_exist.csv"
+            "dataset_ids": [
+                str(uuid.uuid4())  # nicht existierende UUID
             ],
             "output_dir": "data/models/trained_models/my_finetuned_model",
             "epochs": 3,
@@ -33,31 +33,13 @@ class TestTrainingInvalid:
         # Kein JSON-Body mehr erwartet
 
     @staticmethod
-    def test_invalid_dataset_path_csv(client: TestClient) -> None:
-        """Tests training with an invalid dataset path (wrong file extension)."""
-        payload = {
-            "model_id": LOCALTRAINMODEL_ID,
-            "dataset_paths": [
-                "data/datasets/__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.cs"
-            ],
-            "output_dir": "data/models/trained_models/my_finetuned_model",
-            "epochs": 3,
-            "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8
-        }
-        response = client.post("/training/train", json=payload)
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-        data = response.json()
-        assert "all dataset paths must be .csv files" in str(data).lower()
-
-    @staticmethod
-    def test_invalid_model_path(client: TestClient) -> None:
-        """Tests training with an invalid model_path and checks the error response."""
+    def test_invalid_model_id(client: TestClient) -> None:
+        """Tests training with an invalid model_id and checks the error response."""
         payload = {
             "model_id": "00000000-0000-0000-0000-000000000000",  # ungültige ID
-            "dataset_paths": [
-                "data/datasets/__rm_-rf__2F_0b30b284-f7fe-4e6c-a270-17cafc5b5bcb.csv",
-                "data/datasets/__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv"
+            "dataset_ids": [
+                "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
+                "0a9d5e87-e497-4737-9829-2070780d10df"
             ],
             "output_dir": "data/models/trained_models/should_not_exist",
             "epochs": 3,
@@ -73,7 +55,7 @@ class TestTrainingInvalid:
         """Tests training with an empty dataset_paths list."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_paths": [],
+            "dataset_ids": [],
             "output_dir": "data/models/trained_models/should_not_exist",
             "epochs": 3,
             "learning_rate": 0.00005,
@@ -89,8 +71,8 @@ class TestTrainingInvalid:
         """Tests training with a negative number of epochs (should fail validation)."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_paths": [
-                "data/datasets/__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv"
+            "dataset_ids": [
+                "0a9d5e87-e497-4737-9829-2070780d10df"
             ],
             "output_dir": "data/models/trained_models/should_not_exist",
             "epochs": -1,
@@ -107,8 +89,8 @@ class TestTrainingInvalid:
         """Tests training with a zero batch size (should fail validation)."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_paths": [
-                "data/datasets/__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv"
+            "dataset_ids": [
+                "0a9d5e87-e497-4737-9829-2070780d10df"
             ],
             "output_dir": "data/models/trained_models/should_not_exist",
             "epochs": 3,
@@ -125,8 +107,8 @@ class TestTrainingInvalid:
         """Tests training with a negative learning rate (should fail validation)."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_paths": [
-                "data/datasets/__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv"
+            "dataset_ids": [
+                "0a9d5e87-e497-4737-9829-2070780d10df"
             ],
             "output_dir": "data/models/trained_models/should_not_exist",
             "epochs": 3,
