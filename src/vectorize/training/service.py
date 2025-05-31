@@ -18,21 +18,21 @@ from .utils.helpers import (
 )
 
 
-def train_model_service_svc(model_id: str, train_request: TrainRequest) -> None:
+def train_model_service_svc(model_path: str, train_request: TrainRequest, dataset_paths: list[str]) -> None:
     """Trains a model with triplet loss on local CSV datasets.
 
     Loads model and tokenizer, processes multiple datasets, performs training
     with TripletMarginLoss, and saves the model.
     """
-    with logger.contextualize(model_id=model_id):
+    with logger.contextualize(model_path=model_path):
         logger.info("Training started.")
-        if missing := [p for p in train_request.dataset_paths if not Path(p).is_file()]:
-            logger.error("Training failed: Dataset file(s) not found: %s", missing)
+        if missing := [p for p in dataset_paths if not Path(p).is_file()]:
+            logger.exception("Training failed: Dataset file(s) not found: {}", missing)
             raise TrainingDatasetNotFoundError(", ".join(missing))
-        output_dir = prepare_output_dir(model_id)
-        model, tokenizer = load_model_and_tokenizer(model_id)
+        output_dir = prepare_output_dir(model_path)
+        model, tokenizer = load_model_and_tokenizer(model_path)
         dataloader = load_and_tokenize_datasets(
-            train_request.dataset_paths,
+            dataset_paths,
             tokenizer,
             train_request.per_device_train_batch_size,
         )

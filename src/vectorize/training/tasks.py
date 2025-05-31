@@ -14,31 +14,25 @@ from .service import train_model_service_svc
 
 
 def train_model_task(
-    db: AsyncSession, model_id: str, train_request: TrainRequest, task_id: UUID
+    db: AsyncSession, model_path: str, train_request: TrainRequest, task_id: UUID, dataset_paths: list[str]
 ) -> None:
     """Background task: trains the model and updates TrainingTask status."""
     logger.info(
-        "Training started for model_id=%s, dataset_paths=%s, task_id=%s",
-        model_id,
-        train_request.dataset_paths,
+        "Training started for model_path={}, dataset_paths={}, task_id={}",
+        model_path,
+        dataset_paths,
         task_id,
     )
     try:
-        train_model_service_svc(model_id, train_request)
+        train_model_service_svc(model_path, train_request, dataset_paths)
         logger.info(
-            "Training finished successfully for model_id=%s, task_id=%s",
-            model_id,
+            "Training finished successfully for model_path={}, task_id={}",
+            model_path,
             task_id,
         )
         asyncio_run(update_training_task_status(db, task_id, TaskStatus.DONE))
     except Exception as exc:
-        logger.error(
-            "Training failed: %s, task_id=%s",
-            str(exc),
-            task_id,
-        )
+        logger.exception("Training failed: task_id={}", task_id)
         asyncio_run(
-            update_training_task_status(
-                db, task_id, TaskStatus.FAILED, error_msg=str(exc)
-            )
+            update_training_task_status(db, task_id, TaskStatus.FAILED, error_msg=str(exc))
         )
