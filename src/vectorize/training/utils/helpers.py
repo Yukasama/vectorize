@@ -23,7 +23,11 @@ from vectorize.ai_model.repository import get_ai_model_by_id
 from vectorize.config.config import settings
 from vectorize.datasets.repository import get_dataset_db
 
-from ..exceptions import TrainingModelWeightsNotFoundError
+from ..exceptions import (
+    InvalidDatasetIdError,
+    InvalidModelIdError,
+    TrainingModelWeightsNotFoundError,
+)
 from ..triple_dataset import TripletDataset, preprocess_triplet_batch
 
 __all__ = [
@@ -178,8 +182,11 @@ async def get_model_path_by_id(
     db: AsyncSession, model_id: str | UUID
 ) -> str:
     """Lädt das Modell aus der DB und gibt den lokalen Modellpfad zurück."""
-    if not isinstance(model_id, UUID):
-        model_id = UUID(model_id)
+    try:
+        if not isinstance(model_id, UUID):
+            model_id = UUID(model_id)
+    except (ValueError, TypeError) as err:
+        raise InvalidModelIdError(str(model_id)) from err
     model = await get_ai_model_by_id(db, model_id)
     return str(settings.model_upload_dir / model.model_tag)
 
@@ -190,6 +197,10 @@ async def get_dataset_paths_by_ids(
     """Lädt die Datasets aus der DB und gibt die lokalen Dateipfade zurück."""
     paths = []
     for dataset_id in dataset_ids:
-        dataset = await get_dataset_db(db, UUID(dataset_id))
+        try:
+            uuid_val = UUID(dataset_id)
+        except (ValueError, TypeError) as err:
+            raise InvalidDatasetIdError(dataset_id) from err
+        dataset = await get_dataset_db(db, uuid_val)
         paths.append(str(Path("data/datasets") / dataset.file_name))
     return paths
