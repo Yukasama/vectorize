@@ -24,9 +24,9 @@ class TestTrainingValid:
         """
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_paths": [
-                "data/datasets/__rm_-rf__2F_0b30b284-f7fe-4e6c-a270-17cafc5b5bcb.csv",
-                "data/datasets/__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv"
+            "dataset_ids": [
+                "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
+                "0a9d5e87-e497-4737-9829-2070780d10df"
             ],
             "output_dir": "data/models/trained_models/my_finetuned_model",
             "epochs": 3,
@@ -44,9 +44,9 @@ class TestTrainingValid:
     def test_get_training_status(client: TestClient) -> None:
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_paths": [
-                "data/datasets/__rm_-rf__2F_0b30b284-f7fe-4e6c-a270-17cafc5b5bcb.csv",
-                "data/datasets/__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv"
+            "dataset_ids": [
+                "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
+                "0a9d5e87-e497-4737-9829-2070780d10df"
             ],
             "output_dir": "data/models/trained_models/my_finetuned_model_status_test",
             "epochs": 1,
