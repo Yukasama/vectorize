@@ -17,7 +17,7 @@ from .models import TrainingTask
 from .repository import get_training_task_by_id, save_training_task
 from .schemas import TrainRequest, TrainingStatusResponse
 from .tasks import train_model_task
-from .utils.helpers import get_model_path_by_id
+from .utils.helpers import get_dataset_paths_by_ids, get_model_path_by_id
 
 __all__ = ["router"]
 
@@ -31,23 +31,26 @@ async def train_model(
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
     """Start model training as a background task and persist TrainingTask."""
-    missing = [p for p in train_request.dataset_paths if not Path(p).is_file()]
+    # Dataset-Pfade anhand der IDs auflösen
+    dataset_paths = await get_dataset_paths_by_ids(db, train_request.dataset_ids)
+    missing = [p for p in dataset_paths if not Path(p).is_file()]
     if missing:
         for p in missing:
-            logger.error("Training request failed: Dataset file not found: %s", p)
+            logger.exception("Training request failed: Dataset file not found: {}", p)
         raise TrainingDatasetNotFoundError(missing[0])
     model_path = await get_model_path_by_id(db, train_request.model_id)
     logger.info(
-        "Training requested for model_id=%s, model_path=%s, dataset_paths=%s",
+        "Training requested for model_id={}, model_path={}, dataset_paths={}",
         train_request.model_id,
         model_path,
-        train_request.dataset_paths,
+        dataset_paths,
     )
     task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     await save_training_task(db, task)
-    background_tasks.add_task(train_model_task, db, train_request.model_id, train_request, task.id)
+    # Übergibt model_path explizit an den Task (statt model_id)
+    background_tasks.add_task(train_model_task, db, model_path, train_request, task.id, dataset_paths)
     logger.info(
-        "Training started in background for model_id=%s, task_id=%s",
+        "Training started in background for model_id={}, task_id={}",
         train_request.model_id,
         str(task.id),
     )
