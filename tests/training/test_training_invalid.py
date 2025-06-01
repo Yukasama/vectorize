@@ -20,12 +20,10 @@ class TestTrainingInvalid:
         """Tests training with an invalid model_id and checks the error response."""
         payload = {
             "model_id": "00000000-0000-0000-0000-000000000000",
-            "dataset_ids": [
-                "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
-            ],
+            "dataset_ids": ["0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"],
             "epochs": 1,
             "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code in {404, 422}
@@ -35,12 +33,10 @@ class TestTrainingInvalid:
         """Tests training with an invalid dataset_id and checks the error response."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_ids": [
-                "00000000-0000-0000-0000-000000000000"
-            ],
+            "dataset_ids": ["00000000-0000-0000-0000-000000000000"],
             "epochs": 1,
             "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code in {404, 422}
@@ -53,7 +49,7 @@ class TestTrainingInvalid:
             "dataset_ids": [],
             "epochs": 3,
             "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code in {422, 400}
@@ -65,12 +61,10 @@ class TestTrainingInvalid:
         """Tests training with a negative number of epochs (should fail validation)."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_ids": [
-                "0a9d5e87-e497-4737-9829-2070780d10df"
-            ],
+            "dataset_ids": ["0a9d5e87-e497-4737-9829-2070780d10df"],
             "epochs": -1,
             "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -82,12 +76,10 @@ class TestTrainingInvalid:
         """Tests training with a zero batch size (should fail validation)."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_ids": [
-                "0a9d5e87-e497-4737-9829-2070780d10df"
-            ],
+            "dataset_ids": ["0a9d5e87-e497-4737-9829-2070780d10df"],
             "epochs": 3,
             "learning_rate": 0.00005,
-            "per_device_train_batch_size": 0
+            "per_device_train_batch_size": 0,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -99,12 +91,10 @@ class TestTrainingInvalid:
         """Tests training with a negative learning rate (should fail validation)."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_ids": [
-                "0a9d5e87-e497-4737-9829-2070780d10df"
-            ],
+            "dataset_ids": ["0a9d5e87-e497-4737-9829-2070780d10df"],
             "epochs": 3,
             "learning_rate": -0.01,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -116,12 +106,10 @@ class TestTrainingInvalid:
         """Tests training with a learning rate of zero (should fail validation)."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_ids": [
-                "0a9d5e87-e497-4737-9829-2070780d10df"
-            ],
+            "dataset_ids": ["0a9d5e87-e497-4737-9829-2070780d10df"],
             "epochs": 3,
             "learning_rate": 0.0,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
