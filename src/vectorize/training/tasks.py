@@ -31,13 +31,15 @@ async def train_model_task(
     train_request: TrainRequest,
     task_id: UUID,
     dataset_paths: list[str],
+    output_dir: str,  # new argument
 ) -> None:
     """Background task: trains the model, saves new AIModel, updates TrainingTask."""
     logger.info(
-        "Training started for model_path={}, dataset_paths={}, task_id={}",
+        "Training started for model_path={}, dataset_paths={}, task_id={}, output_dir={}",
         model_path,
         dataset_paths,
         task_id,
+        output_dir,
     )
     try:
         # Validierung und Normalisierung der Modell-ID (defensiv)
@@ -49,7 +51,7 @@ async def train_model_task(
         # Training epochweise, Fortschritt nach jeder Epoche synchron updaten, jetzt mit Timeout
         try:
             await asyncio.wait_for(
-                _run_training_with_progress(db, model_path, train_request, task_id, dataset_paths, orig_model),
+                _run_training_with_progress(db, model_path, train_request, task_id, dataset_paths, orig_model, output_dir),
                 timeout=TRAINING_TIMEOUT_SECONDS,
             )
         except asyncio.TimeoutError:
@@ -88,7 +90,7 @@ async def train_model_task(
         )
 
 
-async def _run_training_with_progress(db, model_path, train_request, task_id, dataset_paths, orig_model):
+async def _run_training_with_progress(db, model_path, train_request, task_id, dataset_paths, orig_model, output_dir):
     from datasets import load_dataset
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from trl import DPOConfig, DPOTrainer
@@ -123,7 +125,7 @@ async def _run_training_with_progress(db, model_path, train_request, task_id, da
         trainer.train(resume_from_checkpoint=None)
         progress = ((epoch + 1) * steps_per_epoch) / total_steps
         await update_training_task_progress(db, task_id, progress)
-    output_dir = Path(train_request.output_dir)
+    output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(str(output_dir))
     tokenizer.save_pretrained(str(output_dir))
