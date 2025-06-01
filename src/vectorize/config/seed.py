@@ -112,7 +112,7 @@ async def seed_db(session: AsyncSession) -> None:
         Dataset(
             id=DATASET_TRAINING_1_ID,
             name="rm_dataset_1",
-            file_name="__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.csv",
+            file_name="__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.jsonl",
             classification=Classification.SENTENCE_DUPLES,
             rows=5,
         ),
@@ -121,7 +121,7 @@ async def seed_db(session: AsyncSession) -> None:
         Dataset(
             id=DATASET_TRAINING_2_ID,
             name="rm_dataset_2",
-            file_name="__rm_-rf__2F_0b30b284-f7fe-4e6c-a270-17cafc5b5bcb.csv",
+            file_name="__rm_-rf__2F_0b30b284-f7fe-4e6c-a270-17cafc5b5bcb.jsonl",
             classification=Classification.SENTENCE_DUPLES,
             rows=5,
         ),
