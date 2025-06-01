@@ -1,6 +1,5 @@
 """Schemas for DPO training (Hugging Face TRL)."""
 
-
 from pydantic import BaseModel, Field
 
 from vectorize.training.models import TrainingTask
@@ -37,7 +36,8 @@ class TrainingStatusResponse(BaseModel):
             end_date=task.end_date.isoformat() if task.end_date else None,
             error_msg=task.error_msg,
             trained_model_id=str(task.trained_model_id)
-            if task.trained_model_id else None,
+            if task.trained_model_id
+            else None,
             progress=task.progress if hasattr(task, "progress") else None,
         )
 
