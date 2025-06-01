@@ -76,3 +76,17 @@ def train_model_service_svc(
         model.save_pretrained(str(output_dir))
         tokenizer.save_pretrained(str(output_dir))
         logger.info(f"DPO-Training abgeschlossen. Modell gespeichert unter: {output_dir}")
+        # Speicherbereinigung nach dem Training
+        try:
+            del model
+            del tokenizer
+        except Exception:
+            pass
+        import gc
+        gc.collect()
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except ImportError:
+            pass
