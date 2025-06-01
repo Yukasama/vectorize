@@ -25,6 +25,7 @@ class TrainingStatusResponse(BaseModel):
     end_date: str | None = None
     error_msg: str | None = None
     trained_model_id: str | None = None
+    progress: float | None = None
 
     @classmethod
     def from_task(cls, task: TrainingTask) -> "TrainingStatusResponse":
@@ -37,6 +38,7 @@ class TrainingStatusResponse(BaseModel):
             error_msg=task.error_msg,
             trained_model_id=str(task.trained_model_id)
             if task.trained_model_id else None,
+            progress=task.progress if hasattr(task, "progress") else None,
         )
 
 
