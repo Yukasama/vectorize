@@ -3,6 +3,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
+import asyncio
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -20,6 +21,8 @@ from .repository import (
 from .schemas import TrainRequest
 from .service import train_model_service_svc
 from .utils.uuid_utils import is_valid_uuid
+
+TRAINING_TIMEOUT_SECONDS = 60 * 60 * 2  # 2 Stunden Timeout
 
 
 async def train_model_task(
@@ -43,49 +46,18 @@ async def train_model_task(
         norm_model_id = UUID(train_request.model_id)
         orig_model = await get_ai_model_by_id(db, norm_model_id)
 
-        # Training epochweise, Fortschritt nach jeder Epoche synchron updaten
-        from vectorize.training.service import train_model_service_svc
-        from datasets import load_dataset
-        from transformers import AutoModelForCausalLM, AutoTokenizer
-        from trl import DPOConfig, DPOTrainer
-        from pathlib import Path
-
-        dataset_file = dataset_paths[0]
-        dataset = load_dataset("json", data_files=dataset_file, split="train")
-        model = AutoModelForCausalLM.from_pretrained(model_path)
-        tokenizer = AutoTokenizer.from_pretrained(model_path)
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-        config = DPOConfig(
-            learning_rate=train_request.learning_rate,
-            per_device_train_batch_size=train_request.per_device_train_batch_size,
-            num_train_epochs=1,  # Wir steuern die Epochen selbst
-        )
-        trainer = DPOTrainer(
-            model=model,
-            args=config,
-            train_dataset=dataset,  # type: ignore
-            processing_class=tokenizer,
-        )
-        # Robust step count: use length for datasets.Dataset, fallback to 1 for IterableDataset
-        steps_per_epoch = 1
+        # Training epochweise, Fortschritt nach jeder Epoche synchron updaten, jetzt mit Timeout
         try:
-            # Hugging Face datasets.Dataset has __len__
-            steps_per_epoch = int(getattr(dataset, '__len__', lambda: 1)())
-        except Exception:
-            steps_per_epoch = 1
-        if not isinstance(steps_per_epoch, int):
-            steps_per_epoch = 1
-        total_steps = train_request.epochs * steps_per_epoch
-        for epoch in range(train_request.epochs):
-            trainer.train(resume_from_checkpoint=None)
-            progress = ((epoch + 1) * steps_per_epoch) / total_steps
-            await update_training_task_progress(db, task_id, progress)
-        output_dir = Path(train_request.output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        model.save_pretrained(str(output_dir))
-        tokenizer.save_pretrained(str(output_dir))
-        logger.info(f"DPO-Training abgeschlossen. Modell gespeichert unter: {output_dir}")
+            await asyncio.wait_for(
+                _run_training_with_progress(db, model_path, train_request, task_id, dataset_paths, orig_model),
+                timeout=TRAINING_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            logger.error(f"Training timed out after {TRAINING_TIMEOUT_SECONDS} seconds: task_id={task_id}")
+            await update_training_task_status(
+                db, task_id, TaskStatus.FAILED, error_msg="Training timed out."
+            )
+            return
 
         tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         new_model_tag = f"{orig_model.model_tag}-finetuned-{tag_time}"
@@ -114,3 +86,46 @@ async def train_model_task(
         await update_training_task_status(
             db, task_id, TaskStatus.FAILED, error_msg=str(exc)
         )
+
+
+async def _run_training_with_progress(db, model_path, train_request, task_id, dataset_paths, orig_model):
+    from datasets import load_dataset
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from trl import DPOConfig, DPOTrainer
+    from pathlib import Path
+
+    dataset_file = dataset_paths[0]
+    dataset = load_dataset("json", data_files=dataset_file, split="train")
+    model = AutoModelForCausalLM.from_pretrained(model_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    config = DPOConfig(
+        learning_rate=train_request.learning_rate,
+        per_device_train_batch_size=train_request.per_device_train_batch_size,
+        num_train_epochs=1,
+    )
+    trainer = DPOTrainer(
+        model=model,
+        args=config,
+        train_dataset=dataset,  # type: ignore
+        processing_class=tokenizer,
+    )
+    steps_per_epoch = 1
+    try:
+        steps_per_epoch = int(getattr(dataset, '__len__', lambda: 1)())
+    except Exception:
+        steps_per_epoch = 1
+    if not isinstance(steps_per_epoch, int):
+        steps_per_epoch = 1
+    total_steps = train_request.epochs * steps_per_epoch
+    for epoch in range(train_request.epochs):
+        trainer.train(resume_from_checkpoint=None)
+        progress = ((epoch + 1) * steps_per_epoch) / total_steps
+        await update_training_task_progress(db, task_id, progress)
+    output_dir = Path(train_request.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    model.save_pretrained(str(output_dir))
+    tokenizer.save_pretrained(str(output_dir))
+    logger.info(f"DPO-Training abgeschlossen. Modell gespeichert unter: {output_dir}")
+    return output_dir
