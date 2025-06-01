@@ -4,10 +4,10 @@
 
 import shutil
 from pathlib import Path
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-from vectorize.app import app
 
 LOCALTRAINMODEL_ID = "3d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
 
@@ -26,11 +26,11 @@ class TestTrainingValid:
             "model_id": LOCALTRAINMODEL_ID,
             "dataset_ids": [
                 "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
-                "0a9d5e87-e497-4737-9829-2070780d10df"
+                "0a9d5e87-e497-4737-9829-2070780d10df",
             ],
             "epochs": 3,
             "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_202_ACCEPTED
@@ -51,11 +51,11 @@ class TestTrainingValid:
             "model_id": LOCALTRAINMODEL_ID,
             "dataset_ids": [
                 "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
-                "0a9d5e87-e497-4737-9829-2070780d10df"
+                "0a9d5e87-e497-4737-9829-2070780d10df",
             ],
             "epochs": 1,
             "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_202_ACCEPTED
@@ -65,12 +65,10 @@ class TestTrainingValid:
         """Test training with only one dataset (should succeed)."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_ids": [
-                "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
-            ],
+            "dataset_ids": ["0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"],
             "epochs": 1,
             "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_202_ACCEPTED
@@ -80,12 +78,10 @@ class TestTrainingValid:
         """Test that progress is tracked and >0 after training start."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
-            "dataset_ids": [
-                "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
-            ],
+            "dataset_ids": ["0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"],
             "epochs": 1,
             "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8
+            "per_device_train_batch_size": 8,
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_202_ACCEPTED
