@@ -19,7 +19,12 @@ __all__ = [
 
 
 async def save_training_task(db: AsyncSession, task: TrainingTask) -> None:
-    """Persist a new TrainingTask to the database."""
+    """Persist a new TrainingTask to the database.
+
+    Args:
+        db (AsyncSession): The database session.
+        task (TrainingTask): The training task to save.
+    """
     db.add(task)
     await db.commit()
     await db.refresh(task)
@@ -28,7 +33,14 @@ async def save_training_task(db: AsyncSession, task: TrainingTask) -> None:
 async def update_training_task_status(
     db: AsyncSession, task_id: UUID, status: TaskStatus, error_msg: str | None = None
 ) -> None:
-    """Update the status and error message of a TrainingTask."""
+    """Update the status and error message of a TrainingTask.
+
+    Args:
+        db (AsyncSession): The database session.
+        task_id (UUID): The ID of the training task.
+        status (TaskStatus): The new status.
+        error_msg (str | None): Optional error message.
+    """
     result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
     task = result.first()
     if task:
@@ -44,7 +56,13 @@ async def update_training_task_status(
 async def update_training_task_progress(
     db: AsyncSession, task_id: UUID, progress: float
 ) -> None:
-    """Update the progress of a TrainingTask."""
+    """Update the progress of a TrainingTask.
+
+    Args:
+        db (AsyncSession): The database session.
+        task_id (UUID): The ID of the training task.
+        progress (float): The new progress value (0.0 to 1.0).
+    """
     result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
     task = result.first()
     if task:
@@ -54,6 +72,14 @@ async def update_training_task_progress(
 
 
 async def get_train_task_by_id(db: AsyncSession, task_id: UUID) -> TrainingTask | None:
-    """Fetch a TrainingTask by its ID."""
+    """Fetch a TrainingTask by its ID.
+
+    Args:
+        db (AsyncSession): The database session.
+        task_id (UUID): The ID of the training task.
+
+    Returns:
+        TrainingTask | None: The training task if found, else None.
+    """
     result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
     return result.first()

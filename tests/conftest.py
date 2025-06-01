@@ -1,7 +1,6 @@
 """Common test fixtures for the application."""
 
 import os
-import shutil
 import warnings
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
@@ -79,12 +78,3 @@ def client_fixture(session: AsyncSession) -> Generator:
     yield client
 
     app.dependency_overrides.clear()
-
-
-@pytest.fixture(scope="session", autouse=True)
-def cleanup_trainer_output() -> Generator:
-    """Cleanup the trainer_output directory after tests."""
-    yield
-    trainer_output = Path("trainer_output")
-    if trainer_output.exists() and trainer_output.is_dir():
-        shutil.rmtree(trainer_output, ignore_errors=True)
