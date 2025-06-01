@@ -9,6 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from vectorize.ai_model.exceptions import ModelNotFoundError
 from vectorize.ai_model.repository import get_ai_model_by_id
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
@@ -41,7 +42,12 @@ async def train_model(
     if not is_valid_uuid(train_request.model_id):
         raise InvalidModelIdError(train_request.model_id)
     model = await get_ai_model_by_id(db, UUID(train_request.model_id))
+    if not model:
+        raise ModelNotFoundError(train_request.model_id)
     model_path = str(Path("data/models") / model.model_tag)
+    model_weights_path = Path(model_path)
+    if not any(model_weights_path.glob("*.bin")) and not any(model_weights_path.glob("*.safetensors")):
+        raise TrainingDatasetNotFoundError(f"Model weights not found in {model_path}")
     dataset_paths = []
     for ds_id in train_request.dataset_ids:
         if not is_valid_uuid(ds_id):
@@ -52,15 +58,15 @@ async def train_model(
         dataset_paths.append(str(dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
     if missing:
-        for p in missing:
-            logger.error("Training request failed: Dataset file not found: {}", p)
-        raise TrainingDatasetNotFoundError(missing[0])
-    logger.info(
-        "DPO-Training requested for model_id={}, model_path={}, dataset_paths={}",
-        train_request.model_id,
-        model_path,
-        [str(p) for p in dataset_paths],
-    )
+        raise TrainingDatasetNotFoundError(
+            f"Missing datasets: {', '.join(missing)}"
+        )
+    logger.bind(
+        model_id=train_request.model_id,
+        dataset_count=len(dataset_paths),
+        model_path=model_path
+    ).info(
+        "DPO-Training requested.")
     task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     await save_training_task(db, task)
     background_tasks.add_task(
@@ -71,11 +77,13 @@ async def train_model(
         task.id,
         [str(p) for p in dataset_paths],
     )
-    logger.info(
-        "DPO-Training started in background for model_id={}, task_id={}",
-        train_request.model_id,
-        str(task.id),
-    )
+    logger.bind(
+        task_id=str(task.id),
+        model_id=train_request.model_id,
+        dataset_count=len(dataset_paths),
+        model_path=model_path
+    ).info(
+        "DPO-Training started in background.")
     return Response(status_code=status.HTTP_202_ACCEPTED)
 
 

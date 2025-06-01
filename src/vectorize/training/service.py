@@ -1,6 +1,7 @@
 """Trains a model with DPOTrainer on prompt/chosen/rejected data."""
 
 from pathlib import Path
+from typing import Optional
 
 from datasets import load_dataset
 from loguru import logger
@@ -10,12 +11,29 @@ from trl import DPOConfig, DPOTrainer
 from .schemas import TrainRequest
 
 
+class ProgressCallback:
+    """Callback to update training progress in the database."""
+    def __init__(self, total_steps: int, on_update):
+        self.total_steps = max(total_steps, 1)
+        self.on_update = on_update
+        self.current_step = 0
+
+    def __call__(self, step: Optional[int] = None):
+        if step is not None:
+            self.current_step = step
+        else:
+            self.current_step += 1
+        progress = min(self.current_step / self.total_steps, 1.0)
+        self.on_update(progress)
+
+
 def train_model_service_svc(
     model_path: str,
     train_request: TrainRequest,
     dataset_paths: list[str],
+    progress_callback=None,
 ) -> None:
-    """Trains a model with DPOTrainer on prompt/chosen/rejected data."""
+    """Trains a model with DPOTrainer on prompt/chosen/rejected data. Optionally tracks progress."""
     logger.info("Starte DPO-Training mit Hugging Face TRL.")
     if not dataset_paths:
         raise ValueError("Keine Datensätze angegeben.")
@@ -39,9 +57,22 @@ def train_model_service_svc(
         train_dataset=dataset,  # type: ignore
         processing_class=tokenizer,
     )
-    trainer.train()
-    output_dir = Path(train_request.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    model.save_pretrained(str(output_dir))
-    tokenizer.save_pretrained(str(output_dir))
-    logger.info(f"DPO-Training abgeschlossen. Modell gespeichert unter: {output_dir}")
+    try:
+        # Robust step count: use len() if possible, else fallback to 1
+        try:
+            steps_per_epoch = len(dataset)  # type: ignore
+        except Exception:
+            steps_per_epoch = 1
+        total_steps = train_request.epochs * steps_per_epoch
+        if progress_callback:
+            for epoch in range(train_request.epochs):
+                trainer.train(resume_from_checkpoint=None)
+                progress_callback((epoch + 1) * steps_per_epoch)
+        else:
+            trainer.train()
+    finally:
+        output_dir = Path(train_request.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        model.save_pretrained(str(output_dir))
+        tokenizer.save_pretrained(str(output_dir))
+        logger.info(f"DPO-Training abgeschlossen. Modell gespeichert unter: {output_dir}")
