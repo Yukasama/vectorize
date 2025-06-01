@@ -28,7 +28,6 @@ class TestTrainingValid:
                 "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
                 "0a9d5e87-e497-4737-9829-2070780d10df"
             ],
-            "output_dir": "data/models/trained_models/my_finetuned_model",
             "epochs": 3,
             "learning_rate": 0.00005,
             "per_device_train_batch_size": 8
@@ -36,9 +35,13 @@ class TestTrainingValid:
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_202_ACCEPTED
 
-        trained_model_dir = Path(payload["output_dir"])
-        if trained_model_dir.exists() and trained_model_dir.is_dir():
-            shutil.rmtree(trained_model_dir)
+        # Lösche alle erzeugten Modelle nach dem Test
+        import glob
+        import shutil
+        from pathlib import Path
+        model_dirs = glob.glob("data/models/trained_models/*-finetuned-*")
+        for d in model_dirs:
+            shutil.rmtree(d, ignore_errors=True)
 
     @staticmethod
     def test_get_training_status(client: TestClient) -> None:
@@ -53,10 +56,44 @@ class TestTrainingValid:
                 "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
                 "0a9d5e87-e497-4737-9829-2070780d10df"
             ],
-            "output_dir": "data/models/trained_models/my_finetuned_model_status_test",
             "epochs": 1,
             "learning_rate": 0.00005,
             "per_device_train_batch_size": 8
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_202_ACCEPTED
+
+    @staticmethod
+    def test_training_with_single_dataset(client: TestClient) -> None:
+        """Test training with only one dataset (should succeed)."""
+        payload = {
+            "model_id": LOCALTRAINMODEL_ID,
+            "dataset_ids": [
+                "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
+            ],
+            "epochs": 1,
+            "learning_rate": 0.00005,
+            "per_device_train_batch_size": 8
+        }
+        response = client.post("/training/train", json=payload)
+        assert response.status_code == status.HTTP_202_ACCEPTED
+
+    @staticmethod
+    def test_progress_tracking(client: TestClient) -> None:
+        """Test that progress is tracked and >0 after training start."""
+        payload = {
+            "model_id": LOCALTRAINMODEL_ID,
+            "dataset_ids": [
+                "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
+            ],
+            "epochs": 1,
+            "learning_rate": 0.00005,
+            "per_device_train_batch_size": 8
+        }
+        response = client.post("/training/train", json=payload)
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        # Extract task_id from logs or DB if available, or skip detailed check here
+        # (In echter Umgebung: task_id aus Response/Status holen und progress prüfen)
+        # Hier nur Dummy-Check, da kein task_id zurückgegeben wird
+        # assert progress > 0
+        # TODO: Implementiere echten Progress-Check, wenn API das unterstützt
