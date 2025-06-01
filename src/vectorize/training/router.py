@@ -20,14 +20,14 @@ from .exceptions import (
     InvalidDatasetIdError,
     InvalidModelIdError,
     TrainingDatasetNotFoundError,
-    TrainingTaskNotFoundError,
     TrainingModelWeightsNotFoundError,
+    TrainingTaskNotFoundError,
 )
 from .models import TrainingTask
 from .repository import get_train_task_by_id, save_training_task
 from .schemas import TrainRequest, TrainingStatusResponse
 from .tasks import train_model_task
-from .utils.uuid_utils import is_valid_uuid
+from .utils.uuid_validator import is_valid_uuid
 
 __all__ = ["router"]
 
@@ -64,9 +64,7 @@ async def train_model(
         dataset_paths.append(str(dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
     if missing:
-        raise TrainingDatasetNotFoundError(
-            f"Missing datasets: {', '.join(missing)}"
-        )
+        raise TrainingDatasetNotFoundError(f"Missing datasets: {', '.join(missing)}")
     # Set output_dir automatically based on model and timestamp
     tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
@@ -78,9 +76,8 @@ async def train_model(
     logger.bind(
         model_id=train_request.model_id,
         dataset_count=len(dataset_paths),
-        model_path=model_path
-    ).info(
-        "DPO-Training requested.")
+        model_path=model_path,
+    ).info("DPO-Training requested.")
     await save_training_task(db, task)
     background_tasks.add_task(
         train_model_task,
@@ -95,9 +92,8 @@ async def train_model(
         task_id=str(task.id),
         model_id=train_request.model_id,
         dataset_count=len(dataset_paths),
-        model_path=model_path
-    ).info(
-        "DPO-Training started in background.")
+        model_path=model_path,
+    ).info("DPO-Training started in background.")
     return Response(status_code=status.HTTP_202_ACCEPTED)
 
 

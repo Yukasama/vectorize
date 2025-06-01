@@ -1,10 +1,14 @@
 """Background task for model training."""
 
 import asyncio
+import gc
+import os
+import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
+import torch
 from datasets import load_dataset
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -23,14 +27,28 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest
-from .utils.uuid_utils import is_valid_uuid
+from .utils.uuid_validator import is_valid_uuid
 
-TRAINING_TIMEOUT_SECONDS = 60 * 60 * 2  # 2 Stunden Timeout
+TRAINING_TIMEOUT_SECONDS = int(
+    os.environ.get("TRAINING_TIMEOUT_SECONDS", str(60 * 60 * 2))
+)  # 2 hours default
+
+MIN_FREE_DISK_GB = 2  # Minimum free disk space in GB required for training
+
+
+def check_disk_space(path: str, min_gb: int = MIN_FREE_DISK_GB) -> bool:
+    """Check if the given path has at least min_gb gigabytes free."""
+    try:
+        _total, _used, free = shutil.disk_usage(path)
+        return free >= min_gb * 1024**3
+    except Exception as exc:
+        logger.warning(f"Disk space check failed for {path}: {exc}")
+        return False
 
 
 # NOTE: Argument count exceeds 5 due to business logic and clarity requirements.
 # This is an accepted exception for these training orchestration functions.
-async def train_model_task(  # noqa: PLR0913,PLR0917
+async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
     db: AsyncSession,
     model_path: str,
     train_request: TrainRequest,
@@ -47,6 +65,19 @@ async def train_model_task(  # noqa: PLR0913,PLR0917
         task_id,
         output_dir,
     )
+    # Disk space check before training
+    parent_dir = Path(output_dir).parent
+    if not parent_dir.exists():
+        parent_dir.mkdir(parents=True, exist_ok=True)
+    if not check_disk_space(str(parent_dir), MIN_FREE_DISK_GB):
+        logger.error(
+            f"Insufficient disk space for training at {parent_dir}. Minimum "
+            f"required: {MIN_FREE_DISK_GB}GB."
+        )
+        await update_training_task_status(
+            db, task_id, TaskStatus.FAILED, error_msg="Insufficient disk space."
+        )
+        return
     try:
         # Validate and normalize model ID (defensive)
         if not is_valid_uuid(train_request.model_id):
@@ -77,6 +108,18 @@ async def train_model_task(  # noqa: PLR0913,PLR0917
                 db, task_id, TaskStatus.FAILED, error_msg="Training timed out."
             )
             return
+        except (OSError, ValueError, RuntimeError) as exc:
+            logger.error(f"Training failed due to system/runtime error: {exc}")
+            await update_training_task_status(
+                db, task_id, TaskStatus.FAILED, error_msg=str(exc)
+            )
+            return
+        except Exception as exc:
+            logger.error(f"Unexpected error during training: {exc}")
+            await update_training_task_status(
+                db, task_id, TaskStatus.FAILED, error_msg=str(exc)
+            )
+            return
 
         tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         new_model_tag = f"{orig_model.model_tag}-finetuned-{tag_time}"
@@ -97,13 +140,32 @@ async def train_model_task(  # noqa: PLR0913,PLR0917
             f"Training finished successfully for model_path={model_path}, "
             f"task_id={task_id}, new_model_id={new_model_id}"
         )
+    except (OSError, ValueError, RuntimeError) as exc:
+        logger.error(f"Training failed due to system/runtime error: {exc}")
+        await update_training_task_status(
+            db, task_id, TaskStatus.FAILED, error_msg=str(exc)
+        )
     except Exception as exc:
         logger.exception(f"Training failed: task_id={task_id} - {exc}")
         await update_training_task_status(
             db, task_id, TaskStatus.FAILED, error_msg=str(exc)
         )
+    finally:
+        # Robust resource cleanup
+        try:
+            del orig_model
+        except Exception as exc:
+            logger.warning(f"Cleanup failed for orig_model: {exc}")
+        try:
+            gc.collect()
+            if hasattr(torch, "cuda") and torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except Exception as exc:
+            logger.warning(f"Cleanup failed (GC/CUDA): {exc}")
 
 
+# NOTE: Progress is updated after each epoch.
+# For batch-level progress, a custom callback is needed.
 # NOTE: Argument count exceeds 5 due to business logic and clarity requirements.
 # This is an accepted exception for these training orchestration functions.
 async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
@@ -114,7 +176,7 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
     dataset_paths: list[str],
     output_dir: str,
 ) -> None:
-    """Run DPO training and update progress after each epoch."""
+    """Run DPO training and update progress after each epoch (epoch-based progress)."""
     dataset_file = dataset_paths[0]
     dataset = load_dataset("json", data_files=dataset_file, split="train")
     model = AutoModelForCausalLM.from_pretrained(model_path)
@@ -149,6 +211,16 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
     output_dir_path.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(str(output_dir_path))
     tokenizer.save_pretrained(str(output_dir_path))
-    logger.info(
-        "DPO training complete. Model saved at: %s", output_dir_path
-    )
+    logger.info("DPO training complete. Model saved at: %s", output_dir_path)
+    # Resource cleanup for model/tokenizer
+    try:
+        del model
+        del tokenizer
+    except Exception as exc:
+        logger.warning(f"Cleanup failed (model/tokenizer): {exc}")
+    try:
+        gc.collect()
+        if hasattr(torch, "cuda") and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception as exc:
+        logger.warning(f"Cleanup failed (GC/CUDA): {exc}")

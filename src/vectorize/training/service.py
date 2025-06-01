@@ -19,6 +19,7 @@ from .schemas import TrainRequest
 
 class ProgressCallback:
     """Callback to update training progress in the database."""
+
     def __init__(self, total_steps: int, on_update: Callable[[float], None]) -> None:
         """Initialize ProgressCallback.
 
@@ -99,9 +100,7 @@ def train_model_service_svc(
         output_dir_path.mkdir(parents=True, exist_ok=True)
         model.save_pretrained(str(output_dir_path))
         tokenizer.save_pretrained(str(output_dir_path))
-        logger.info(
-            f"DPO training finished. Model saved at: {output_dir_path}"
-        )
+        logger.info(f"DPO training finished. Model saved at: {output_dir_path}")
         try:
             del model
             del tokenizer
