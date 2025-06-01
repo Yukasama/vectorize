@@ -14,6 +14,8 @@ from vectorize.common.task_status import TaskStatus
 from .repository import get_train_task_by_id, update_training_task_status
 from .schemas import TrainRequest
 from .service import train_model_service_svc
+from .utils.uuid_utils import is_valid_uuid, normalize_uuid
+from .exceptions import InvalidModelIdError
 
 
 async def train_model_task(
@@ -31,7 +33,11 @@ async def train_model_task(
         task_id,
     )
     try:
-        orig_model = await get_ai_model_by_id(db, UUID(train_request.model_id))
+        # Validierung und Normalisierung der Modell-ID (defensiv)
+        if not is_valid_uuid(train_request.model_id):
+            raise InvalidModelIdError(train_request.model_id)
+        norm_model_id = UUID(train_request.model_id)
+        orig_model = await get_ai_model_by_id(db, norm_model_id)
         train_model_service_svc(model_path, train_request, dataset_paths)
 
         tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
@@ -57,7 +63,7 @@ async def train_model_task(
             new_model_id,
         )
     except Exception as exc:
-        logger.exception("Training failed: task_id={}", task_id)
+        logger.exception(f"Training failed: task_id={task_id} - {exc}")
         await update_training_task_status(
             db, task_id, TaskStatus.FAILED, error_msg=str(exc)
         )
