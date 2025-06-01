@@ -4,6 +4,7 @@ import uuid
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
+from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from loguru import logger
@@ -61,6 +62,10 @@ async def train_model(
         raise TrainingDatasetNotFoundError(
             f"Missing datasets: {', '.join(missing)}"
         )
+    # Set output_dir automatically based on model and timestamp
+    tag_time = datetime.now().strftime("%Y%m%d-%H%M%S")
+    output_dir = f"data/models/trained_models/{model.model_tag}-finetuned-{tag_time}"
+
     logger.bind(
         model_id=train_request.model_id,
         dataset_count=len(dataset_paths),
@@ -76,6 +81,7 @@ async def train_model(
         train_request,
         task.id,
         [str(p) for p in dataset_paths],
+        output_dir,  # pass output_dir to task
     )
     logger.bind(
         task_id=str(task.id),

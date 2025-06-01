@@ -31,6 +31,7 @@ def train_model_service_svc(
     model_path: str,
     train_request: TrainRequest,
     dataset_paths: list[str],
+    output_dir: str,  # output_dir als Funktionsargument
     progress_callback=None,
 ) -> None:
     """Trains a model with DPOTrainer on prompt/chosen/rejected data. Optionally tracks progress."""
@@ -71,11 +72,12 @@ def train_model_service_svc(
         else:
             trainer.train()
     finally:
-        output_dir = Path(train_request.output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        model.save_pretrained(str(output_dir))
-        tokenizer.save_pretrained(str(output_dir))
-        logger.info(f"DPO-Training abgeschlossen. Modell gespeichert unter: {output_dir}")
+        # output_dir wird jetzt immer automatisch als str übergeben
+        output_dir_path = Path(output_dir)
+        output_dir_path.mkdir(parents=True, exist_ok=True)
+        model.save_pretrained(str(output_dir_path))
+        tokenizer.save_pretrained(str(output_dir_path))
+        logger.info(f"DPO-Training abgeschlossen. Modell gespeichert unter: {output_dir_path}")
         # Speicherbereinigung nach dem Training
         try:
             del model
