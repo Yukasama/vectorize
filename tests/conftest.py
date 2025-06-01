@@ -1,6 +1,7 @@
 """Common test fixtures for the application."""
 
 import os
+import warnings
 
 os.environ.setdefault("ENV", "testing")
 
@@ -16,6 +17,15 @@ from vectorize.app import app
 from vectorize.config import settings
 from vectorize.config.db import get_session
 from vectorize.config.seed import seed_db
+
+
+def pytest_configure(config):
+    import warnings
+    warnings.filterwarnings(
+        "ignore",
+        message=".*pin_memory.*not supported on MPS.*",
+        category=UserWarning,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -67,3 +77,13 @@ def client_fixture(session: AsyncSession) -> Generator[TestClient]:
     yield client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_trainer_output():
+    yield
+    import shutil
+    from pathlib import Path
+    trainer_output = Path("trainer_output")
+    if trainer_output.exists() and trainer_output.is_dir():
+        shutil.rmtree(trainer_output, ignore_errors=True)
