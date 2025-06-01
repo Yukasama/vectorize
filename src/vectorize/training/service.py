@@ -1,7 +1,13 @@
 """Trains a model with DPOTrainer on prompt/chosen/rejected data."""
 
+import gc
+from collections.abc import Callable
 from pathlib import Path
-from typing import Optional
+
+try:
+    import torch
+except ImportError:
+    torch = None
 
 from datasets import load_dataset
 from loguru import logger
@@ -13,12 +19,23 @@ from .schemas import TrainRequest
 
 class ProgressCallback:
     """Callback to update training progress in the database."""
-    def __init__(self, total_steps: int, on_update):
+    def __init__(self, total_steps: int, on_update: Callable[[float], None]) -> None:
+        """Initialize ProgressCallback.
+
+        Args:
+            total_steps (int): Total number of steps for training.
+            on_update (Callable[[float], None]): Callback to update progress.
+        """
         self.total_steps = max(total_steps, 1)
         self.on_update = on_update
         self.current_step = 0
 
-    def __call__(self, step: Optional[int] = None):
+    def __call__(self, step: int | None = None) -> None:
+        """Update progress.
+
+        Args:
+            step (int | None): Current step number.
+        """
         if step is not None:
             self.current_step = step
         else:
@@ -31,18 +48,26 @@ def train_model_service_svc(
     model_path: str,
     train_request: TrainRequest,
     dataset_paths: list[str],
-    output_dir: str,  # output_dir als Funktionsargument
-    progress_callback=None,
+    output_dir: str,
+    progress_callback: Callable[[int], None] | None = None,
 ) -> None:
-    """Trains a model with DPOTrainer on prompt/chosen/rejected data. Optionally tracks progress."""
-    logger.info("Starte DPO-Training mit Hugging Face TRL.")
+    """Train a model with DPOTrainer on prompt/chosen/rejected data.
+
+    Args:
+        model_path (str): Path to the model.
+        train_request (TrainRequest): Training request parameters.
+        dataset_paths (list[str]): List of dataset file paths.
+        output_dir (str): Output directory for the trained model.
+        progress_callback (Callable[[int], None] | None): Optional callback for
+            progress updates.
+    """
+    logger.info("Starting DPO training with Hugging Face TRL.")
     if not dataset_paths:
-        raise ValueError("Keine Datensätze angegeben.")
-    # Für DPO: Wir nehmen den ersten Datensatz (kann ggf. erweitert werden)
-    dataset_file = dataset_paths[0]
-    if not Path(dataset_file).is_file():
+        raise ValueError("No datasets provided.")
+    dataset_file = Path(dataset_paths[0])
+    if not dataset_file.is_file():
         raise FileNotFoundError(f"Dataset file not found: {dataset_file}")
-    dataset = load_dataset("json", data_files=dataset_file, split="train")
+    dataset = load_dataset("json", data_files=str(dataset_file), split="train")
     model = AutoModelForCausalLM.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     if tokenizer.pad_token is None:
@@ -59,12 +84,10 @@ def train_model_service_svc(
         processing_class=tokenizer,
     )
     try:
-        # Robust step count: use len() if possible, else fallback to 1
         try:
             steps_per_epoch = len(dataset)  # type: ignore
         except Exception:
             steps_per_epoch = 1
-        total_steps = train_request.epochs * steps_per_epoch
         if progress_callback:
             for epoch in range(train_request.epochs):
                 trainer.train(resume_from_checkpoint=None)
@@ -72,23 +95,18 @@ def train_model_service_svc(
         else:
             trainer.train()
     finally:
-        # output_dir wird jetzt immer automatisch als str übergeben
         output_dir_path = Path(output_dir)
         output_dir_path.mkdir(parents=True, exist_ok=True)
         model.save_pretrained(str(output_dir_path))
         tokenizer.save_pretrained(str(output_dir_path))
-        logger.info(f"DPO-Training abgeschlossen. Modell gespeichert unter: {output_dir_path}")
-        # Speicherbereinigung nach dem Training
+        logger.info(
+            f"DPO training finished. Model saved at: {output_dir_path}"
+        )
         try:
             del model
             del tokenizer
-        except Exception:
-            pass
-        import gc
+        except Exception as exc:
+            logger.warning(f"Cleanup failed: {exc}")
         gc.collect()
-        try:
-            import torch
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-        except ImportError:
-            pass
+        if torch is not None and hasattr(torch, "cuda") and torch.cuda.is_available():
+            torch.cuda.empty_cache()

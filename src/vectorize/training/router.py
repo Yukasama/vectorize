@@ -1,10 +1,10 @@
 """Training router for DPO training (Hugging Face TRL)."""
 
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
-from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from loguru import logger
@@ -47,8 +47,12 @@ async def train_model(
         raise ModelNotFoundError(train_request.model_id)
     model_path = str(Path("data/models") / model.model_tag)
     model_weights_path = Path(model_path)
-    if not any(model_weights_path.glob("*.bin")) and not any(model_weights_path.glob("*.safetensors")):
-        raise TrainingDatasetNotFoundError(f"Model weights not found in {model_path}")
+    if not any(model_weights_path.glob("*.bin")) and not any(
+        model_weights_path.glob("*.safetensors")
+    ):
+        raise TrainingDatasetNotFoundError(
+            f"Model weights not found in {model_path}"
+        )
     dataset_paths = []
     for ds_id in train_request.dataset_ids:
         if not is_valid_uuid(ds_id):
@@ -63,8 +67,10 @@ async def train_model(
             f"Missing datasets: {', '.join(missing)}"
         )
     # Set output_dir automatically based on model and timestamp
-    tag_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-    output_dir = f"data/models/trained_models/{model.model_tag}-finetuned-{tag_time}"
+    tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    output_dir = (
+        f"data/models/trained_models/{model.model_tag}-finetuned-{tag_time}"
+    )
 
     logger.bind(
         model_id=train_request.model_id,

@@ -35,11 +35,8 @@ class TestTrainingValid:
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_202_ACCEPTED
 
-        # Lösche alle erzeugten Modelle nach dem Test
-        import glob
-        import shutil
-        from pathlib import Path
-        model_dirs = glob.glob("data/models/trained_models/*-finetuned-*")
+        # Clean up all generated models after the test
+        model_dirs = Path("data/models/trained_models").glob("*-finetuned-*")
         for d in model_dirs:
             shutil.rmtree(d, ignore_errors=True)
 
@@ -92,8 +89,3 @@ class TestTrainingValid:
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == status.HTTP_202_ACCEPTED
-        # Extract task_id from logs or DB if available, or skip detailed check here
-        # (In echter Umgebung: task_id aus Response/Status holen und progress prüfen)
-        # Hier nur Dummy-Check, da kein task_id zurückgegeben wird
-        # assert progress > 0
-        # TODO: Implementiere echten Progress-Check, wenn API das unterstützt
