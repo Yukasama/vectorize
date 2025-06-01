@@ -21,6 +21,7 @@ from .exceptions import (
     InvalidModelIdError,
     TrainingDatasetNotFoundError,
     TrainingTaskNotFoundError,
+    TrainingModelWeightsNotFoundError,
 )
 from .models import TrainingTask
 from .repository import get_train_task_by_id, save_training_task
@@ -50,7 +51,7 @@ async def train_model(
     if not any(model_weights_path.glob("*.bin")) and not any(
         model_weights_path.glob("*.safetensors")
     ):
-        raise TrainingDatasetNotFoundError(
+        raise TrainingModelWeightsNotFoundError(
             f"Model weights not found in {model_path}"
         )
     dataset_paths = []
@@ -68,8 +69,10 @@ async def train_model(
         )
     # Set output_dir automatically based on model and timestamp
     tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     output_dir = (
-        f"data/models/trained_models/{model.model_tag}-finetuned-{tag_time}"
+        f"data/models/trained_models/{model.model_tag}-finetuned-"
+        f"{tag_time}-{str(task.id)[:8]}"
     )
 
     logger.bind(
@@ -78,7 +81,6 @@ async def train_model(
         model_path=model_path
     ).info(
         "DPO-Training requested.")
-    task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     await save_training_task(db, task)
     background_tasks.add_task(
         train_model_task,

@@ -4,10 +4,10 @@
 
 import shutil
 from pathlib import Path
-
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from vectorize.app import app
 
 LOCALTRAINMODEL_ID = "3d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
 
