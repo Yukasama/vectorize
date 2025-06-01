@@ -1,4 +1,4 @@
-"""Training router für DPO-Training (Hugging Face TRL)."""
+"""Training router for DPO training (Hugging Face TRL)."""
 
 import uuid
 from pathlib import Path
@@ -15,8 +15,8 @@ from vectorize.config.db import get_session
 from vectorize.datasets.repository import get_dataset_db
 
 from .exceptions import (
-    InvalidModelIdError,
     InvalidDatasetIdError,
+    InvalidModelIdError,
     TrainingDatasetNotFoundError,
     TrainingTaskNotFoundError,
 )
@@ -24,7 +24,7 @@ from .models import TrainingTask
 from .repository import get_train_task_by_id, save_training_task
 from .schemas import TrainRequest, TrainingStatusResponse
 from .tasks import train_model_task
-from .utils.uuid_utils import is_valid_uuid, normalize_uuid
+from .utils.uuid_utils import is_valid_uuid
 
 __all__ = ["router"]
 
@@ -37,22 +37,17 @@ async def train_model(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Startet DPO-Training als Background-Task. Erwartet Datensätze im prompt/chosen/rejected-Format."""
-    # Validierung der Modell-ID
+    """Starts DPO training as a background task. Expects prompt/chosen/rejected data."""
     if not is_valid_uuid(train_request.model_id):
         raise InvalidModelIdError(train_request.model_id)
-    norm_model_id = normalize_uuid(train_request.model_id)
-    # Hole Modellobjekt per ID (akzeptiert beide Formate)
     model = await get_ai_model_by_id(db, UUID(train_request.model_id))
     model_path = str(Path("data/models") / model.model_tag)
-    # Hole Dataset-Pfade aus der DB
     dataset_paths = []
     for ds_id in train_request.dataset_ids:
         if not is_valid_uuid(ds_id):
             raise InvalidDatasetIdError(ds_id)
         ds_uuid = uuid.UUID(ds_id)
         ds = await get_dataset_db(db, ds_uuid)
-        # Annahme: file_name ist der relative Pfad im Storage
         dataset_path = Path("data/datasets") / ds.file_name
         dataset_paths.append(str(dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
@@ -89,7 +84,7 @@ async def get_training_status(
     task_id: UUID,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> TrainingStatusResponse:
-    """Gibt den Status und die Metadaten eines Trainingsjobs zurück."""
+    """Returns the status and metadata of a training job."""
     task = await get_train_task_by_id(db, task_id)
     if not task:
         raise TrainingTaskNotFoundError(str(task_id))

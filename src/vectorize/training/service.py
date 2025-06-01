@@ -1,4 +1,4 @@
-"""Service für DPO-Training mit Hugging Face TRL API."""
+"""Trains a model with DPOTrainer on prompt/chosen/rejected data."""
 
 from pathlib import Path
 
@@ -15,7 +15,7 @@ def train_model_service_svc(
     train_request: TrainRequest,
     dataset_paths: list[str],
 ) -> None:
-    """Trainiert ein Modell mit DPOTrainer auf Datensätzen im prompt/chosen/rejected-Format."""
+    """Trains a model with DPOTrainer on prompt/chosen/rejected data."""
     logger.info("Starte DPO-Training mit Hugging Face TRL.")
     if not dataset_paths:
         raise ValueError("Keine Datensätze angegeben.")
@@ -26,7 +26,6 @@ def train_model_service_svc(
     dataset = load_dataset("json", data_files=dataset_file, split="train")
     model = AutoModelForCausalLM.from_pretrained(model_path)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
-    # Ensure pad_token is set (required for DPOTrainer)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     config = DPOConfig(
@@ -37,7 +36,7 @@ def train_model_service_svc(
     trainer = DPOTrainer(
         model=model,
         args=config,
-        train_dataset=dataset, # type: ignore
+        train_dataset=dataset,  # type: ignore
         processing_class=tokenizer,
     )
     trainer.train()

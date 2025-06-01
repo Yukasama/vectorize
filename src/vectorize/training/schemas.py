@@ -1,4 +1,4 @@
-"""Schemas für das DPO-Training (Hugging Face TRL)."""
+"""Schemas for DPO training (Hugging Face TRL)."""
 
 
 from pydantic import BaseModel, Field
@@ -7,15 +7,17 @@ from vectorize.training.models import TrainingTask
 
 
 class TrainConfig(BaseModel):
-    """Hyperparameter für DPO-Training."""
+    """Hyperparameters for DPO training."""
 
-    epochs: int = Field(1, description="Anzahl Trainingsepochen", gt=0)
-    learning_rate: float = Field(5e-5, description="Lernrate", gt=0)
-    per_device_train_batch_size: int = Field(8, description="Batchgröße pro Gerät", gt=0)
+    epochs: int = Field(1, description="Number of training epochs", gt=0)
+    learning_rate: float = Field(5e-5, description="Learning rate", gt=0)
+    per_device_train_batch_size: int = Field(
+        8, description="Batch size per device", gt=0
+    )
 
 
 class TrainingStatusResponse(BaseModel):
-    """Response-Schema für Trainingsstatus."""
+    """Response schema for training status."""
 
     task_id: str
     status: str
@@ -26,27 +28,29 @@ class TrainingStatusResponse(BaseModel):
 
     @classmethod
     def from_task(cls, task: TrainingTask) -> "TrainingStatusResponse":
+        """Create a TrainingStatusResponse from a TrainingTask."""
         return cls(
             task_id=str(task.id),
             status=task.task_status.name,
             created_at=task.created_at.isoformat() if task.created_at else None,
             end_date=task.end_date.isoformat() if task.end_date else None,
             error_msg=task.error_msg,
-            trained_model_id=str(task.trained_model_id) if task.trained_model_id else None,
+            trained_model_id=str(task.trained_model_id)
+            if task.trained_model_id else None,
         )
 
 
 class TrainRequest(BaseModel):
-    """Request für DPO-Training: erwartet Datensätze im prompt/chosen/rejected-Format (JSONL)."""
+    """Request for DPO training: expects datasets in prompt/chosen/rejected (JSONL)."""
 
-    model_id: str = Field(description="ID des lokalen Modells in der Datenbank")
+    model_id: str = Field(description="ID of the local model in the database")
     dataset_ids: list[str] = Field(
-        description="IDs der Trainings-Datasets (JSONL, prompt/chosen/rejected)",
+        description="IDs of training datasets (JSONL, prompt/chosen/rejected)",
         min_length=1,
     )
-    output_dir: str = Field(description="Pfad zum Speichern des trainierten Modells")
-    epochs: int = Field(1, description="Anzahl Trainingsepochen", gt=0)
-    learning_rate: float = Field(5e-5, description="Lernrate", gt=0)
+    output_dir: str = Field(description="Path to save the trained model")
+    epochs: int = Field(1, description="Number of training epochs", gt=0)
+    learning_rate: float = Field(5e-5, description="Learning rate", gt=0)
     per_device_train_batch_size: int = Field(
-        8, description="Batchgröße pro Gerät", gt=0
+        8, description="Batch size per device", gt=0
     )

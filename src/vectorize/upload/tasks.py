@@ -44,14 +44,12 @@ async def process_huggingface_model_background(
     """
     try:
         logger.info("[BG] Starting model upload for task", taskId=task_id)
-        # Lade Modell und erhalte Snapshot-Ordner
         snapshot_path = snapshot_download(
             repo_id=model_tag,
             revision=revision,
             cache_dir="data/models",
             allow_patterns=["*.safetensors", "*.json"],
         )
-        # Ermittle relativen model_tag (z.B. models--openai-community--gpt2/snapshots/<hash>)
         rel_snapshot = str(Path(snapshot_path).relative_to("data/models"))
         ai_model = AIModel(
             model_tag=rel_snapshot,
