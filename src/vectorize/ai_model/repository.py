@@ -1,9 +1,9 @@
 """AIModel repository."""
 
+import os
 from collections.abc import Sequence
 from uuid import UUID
 
-import os
 from huggingface_hub import snapshot_download
 from loguru import logger
 from sqlmodel import func, select
@@ -200,10 +200,12 @@ async def get_ai_model_by_id(db: AsyncSession, model_id: UUID) -> AIModel:
 
 
 async def import_hf_model_and_register(repo_id: str, db: AsyncSession) -> UUID:
-    """Lädt ein Modell von Hugging Face, speichert den Snapshot-Ordner als model_tag und registriert es in der DB."""
-    # Lade das Modell herunter (snapshot_download gibt den Snapshot-Ordner zurück)
-    snapshot_path = snapshot_download(repo_id, local_dir="data/models", local_dir_use_symlinks=False)
-    # Ermittle relativen model_tag (z.B. models--openai-community--gpt2/snapshots/<hash>)
+    """Download a Hugging Face model, store the snapshot folder as model_tag."""
+    snapshot_path = snapshot_download(
+        repo_id,
+        local_dir="data/models",
+        local_dir_use_symlinks=False,
+    )
     model_tag = os.path.relpath(snapshot_path, "data/models")
     model = AIModel(
         name=repo_id,

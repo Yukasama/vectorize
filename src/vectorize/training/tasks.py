@@ -11,11 +11,11 @@ from vectorize.ai_model.models import AIModel
 from vectorize.ai_model.repository import get_ai_model_by_id, save_ai_model_db
 from vectorize.common.task_status import TaskStatus
 
+from .exceptions import InvalidModelIdError
 from .repository import get_train_task_by_id, update_training_task_status
 from .schemas import TrainRequest
 from .service import train_model_service_svc
-from .utils.uuid_utils import is_valid_uuid, normalize_uuid
-from .exceptions import InvalidModelIdError
+from .utils.uuid_utils import is_valid_uuid
 
 
 async def train_model_task(
