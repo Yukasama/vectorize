@@ -11,7 +11,7 @@ from vectorize.common.task_status import TaskStatus
 from .models import TrainingTask
 
 __all__ = [
-    "get_training_task_by_id",
+    "get_train_task_by_id",
     "save_training_task",
     "update_training_task_status",
 ]
@@ -40,9 +40,7 @@ async def update_training_task_status(
         await db.refresh(task)
 
 
-async def get_training_task_by_id(
-    db: AsyncSession, task_id: UUID
-) -> TrainingTask | None:
+async def get_train_task_by_id(db: AsyncSession, task_id: UUID) -> TrainingTask | None:
     """Fetch a TrainingTask by its ID."""
     result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
     return result.first()

@@ -11,7 +11,7 @@ from vectorize.ai_model.models import AIModel
 from vectorize.ai_model.repository import get_ai_model_by_id, save_ai_model_db
 from vectorize.common.task_status import TaskStatus
 
-from .repository import get_training_task_by_id, update_training_task_status
+from .repository import get_train_task_by_id, update_training_task_status
 from .schemas import TrainRequest
 from .service import train_model_service_svc
 
@@ -43,7 +43,7 @@ async def train_model_task(
             trained_from_id=orig_model.id,
         )
         new_model_id = await save_ai_model_db(db, new_model)
-        task = await get_training_task_by_id(db, task_id)
+        task = await get_train_task_by_id(db, task_id)
         if task:
             task.trained_model_id = new_model_id
             await db.commit()
