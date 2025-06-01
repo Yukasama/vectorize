@@ -94,11 +94,8 @@ async def train_model_task(  # noqa: PLR0913,PLR0917
             await db.refresh(task)
         await update_training_task_status(db, task_id, TaskStatus.DONE)
         logger.info(
-            "Training finished successfully for model_path=%s, task_id=%s, "
-            "new_model_id=%s",
-            model_path,
-            task_id,
-            new_model_id,
+            f"Training finished successfully for model_path={model_path}, "
+            f"task_id={task_id}, new_model_id={new_model_id}"
         )
     except Exception as exc:
         logger.exception(f"Training failed: task_id={task_id} - {exc}")
@@ -128,6 +125,7 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
         learning_rate=train_request.learning_rate,
         per_device_train_batch_size=train_request.per_device_train_batch_size,
         num_train_epochs=1,
+        output_dir=output_dir,  # Enforce output_dir for all trainer artifacts
     )
     trainer = DPOTrainer(
         model=model,
@@ -137,10 +135,10 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
     )
     steps_per_epoch = 1
     try:
-        steps_per_epoch = int(getattr(dataset, "__len__", lambda: 1)())
+        steps_per_epoch = len(dataset)  # type: ignore
+        if not isinstance(steps_per_epoch, int) or steps_per_epoch <= 0:
+            steps_per_epoch = 1
     except Exception:
-        steps_per_epoch = 1
-    if not isinstance(steps_per_epoch, int):
         steps_per_epoch = 1
     total_steps = train_request.epochs * steps_per_epoch
     for epoch in range(train_request.epochs):
