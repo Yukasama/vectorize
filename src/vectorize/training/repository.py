@@ -13,8 +13,8 @@ from .models import TrainingTask
 __all__ = [
     "get_train_task_by_id",
     "save_training_task",
-    "update_training_task_status",
     "update_training_task_progress",
+    "update_training_task_status",
 ]
 
 

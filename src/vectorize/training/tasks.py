@@ -1,11 +1,15 @@
 """Background task for model training."""
 
+import asyncio
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import UUID
 
-import asyncio
+from datasets import load_dataset
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from trl import DPOConfig, DPOTrainer
 
 from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
@@ -19,43 +23,56 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest
-from .service import train_model_service_svc
 from .utils.uuid_utils import is_valid_uuid
 
 TRAINING_TIMEOUT_SECONDS = 60 * 60 * 2  # 2 Stunden Timeout
 
 
-async def train_model_task(
+# NOTE: Argument count exceeds 5 due to business logic and clarity requirements.
+# This is an accepted exception for these training orchestration functions.
+async def train_model_task(  # noqa: PLR0913,PLR0917
     db: AsyncSession,
     model_path: str,
     train_request: TrainRequest,
     task_id: UUID,
     dataset_paths: list[str],
-    output_dir: str,  # new argument
+    output_dir: str,
 ) -> None:
     """Background task: trains the model, saves new AIModel, updates TrainingTask."""
     logger.info(
-        "Training started for model_path={}, dataset_paths={}, task_id={}, output_dir={}",
+        "Training started for model_path=%s, dataset_paths=%s, task_id=%s, "
+        "output_dir=%s",
         model_path,
         dataset_paths,
         task_id,
         output_dir,
     )
     try:
-        # Validierung und Normalisierung der Modell-ID (defensiv)
+        # Validate and normalize model ID (defensive)
         if not is_valid_uuid(train_request.model_id):
             raise InvalidModelIdError(train_request.model_id)
         norm_model_id = UUID(train_request.model_id)
         orig_model = await get_ai_model_by_id(db, norm_model_id)
 
-        # Training epochweise, Fortschritt nach jeder Epoche synchron updaten, jetzt mit Timeout
+        # Training with progress update after each epoch, now with timeout
         try:
             await asyncio.wait_for(
-                _run_training_with_progress(db, model_path, train_request, task_id, dataset_paths, orig_model, output_dir),
+                _run_training_with_progress(
+                    db=db,
+                    model_path=model_path,
+                    train_request=train_request,
+                    task_id=task_id,
+                    dataset_paths=dataset_paths,
+                    output_dir=output_dir,
+                ),
                 timeout=TRAINING_TIMEOUT_SECONDS,
             )
-        except asyncio.TimeoutError:
-            logger.error(f"Training timed out after {TRAINING_TIMEOUT_SECONDS} seconds: task_id={task_id}")
+        except TimeoutError:
+            logger.error(
+                "Training timed out after %s seconds: task_id=%s",
+                TRAINING_TIMEOUT_SECONDS,
+                task_id,
+            )
             await update_training_task_status(
                 db, task_id, TaskStatus.FAILED, error_msg="Training timed out."
             )
@@ -77,8 +94,8 @@ async def train_model_task(
             await db.refresh(task)
         await update_training_task_status(db, task_id, TaskStatus.DONE)
         logger.info(
-            "Training finished successfully for model_path={}, task_id={}, "
-            "new_model_id={}",
+            "Training finished successfully for model_path=%s, task_id=%s, "
+            "new_model_id=%s",
             model_path,
             task_id,
             new_model_id,
@@ -90,12 +107,17 @@ async def train_model_task(
         )
 
 
-async def _run_training_with_progress(db, model_path, train_request, task_id, dataset_paths, orig_model, output_dir):
-    from datasets import load_dataset
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-    from trl import DPOConfig, DPOTrainer
-    from pathlib import Path
-
+# NOTE: Argument count exceeds 5 due to business logic and clarity requirements.
+# This is an accepted exception for these training orchestration functions.
+async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
+    db: AsyncSession,
+    model_path: str,
+    train_request: TrainRequest,
+    task_id: UUID,
+    dataset_paths: list[str],
+    output_dir: str,
+) -> None:
+    """Run DPO training and update progress after each epoch."""
     dataset_file = dataset_paths[0]
     dataset = load_dataset("json", data_files=dataset_file, split="train")
     model = AutoModelForCausalLM.from_pretrained(model_path)
@@ -115,7 +137,7 @@ async def _run_training_with_progress(db, model_path, train_request, task_id, da
     )
     steps_per_epoch = 1
     try:
-        steps_per_epoch = int(getattr(dataset, '__len__', lambda: 1)())
+        steps_per_epoch = int(getattr(dataset, "__len__", lambda: 1)())
     except Exception:
         steps_per_epoch = 1
     if not isinstance(steps_per_epoch, int):
@@ -125,9 +147,10 @@ async def _run_training_with_progress(db, model_path, train_request, task_id, da
         trainer.train(resume_from_checkpoint=None)
         progress = ((epoch + 1) * steps_per_epoch) / total_steps
         await update_training_task_progress(db, task_id, progress)
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    model.save_pretrained(str(output_dir))
-    tokenizer.save_pretrained(str(output_dir))
-    logger.info(f"DPO-Training abgeschlossen. Modell gespeichert unter: {output_dir}")
-    return output_dir
+    output_dir_path = Path(output_dir)
+    output_dir_path.mkdir(parents=True, exist_ok=True)
+    model.save_pretrained(str(output_dir_path))
+    tokenizer.save_pretrained(str(output_dir_path))
+    logger.info(
+        "DPO training complete. Model saved at: %s", output_dir_path
+    )

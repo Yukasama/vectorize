@@ -124,7 +124,7 @@ class TestTrainingInvalid:
             "per_device_train_batch_size": 8
         }
         response = client.post("/training/train", json=payload)
-        assert response.status_code == 422
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         data = response.json()
         assert "learning" in str(data).lower() or "zero" in str(data).lower()
 

@@ -1,11 +1,12 @@
 """Common test fixtures for the application."""
 
 import os
+import shutil
 import warnings
+from collections.abc import AsyncGenerator, Generator
+from pathlib import Path
 
 os.environ.setdefault("ENV", "testing")
-
-from collections.abc import AsyncGenerator, Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,8 +20,9 @@ from vectorize.config.db import get_session
 from vectorize.config.seed import seed_db
 
 
-def pytest_configure(config):
-    import warnings
+def pytest_configure(config: object) -> None:
+    """Configure pytest to filter warnings for MPS pin_memory on Mac."""
+    del config  # unused
     warnings.filterwarnings(
         "ignore",
         message=".*pin_memory.*not supported on MPS.*",
@@ -58,7 +60,7 @@ async def session() -> AsyncGenerator[AsyncSession]:
 
 
 @pytest.fixture(name="client")
-def client_fixture(session: AsyncSession) -> Generator[TestClient]:
+def client_fixture(session: AsyncSession) -> Generator:
     """Create a test client for the FastAPI app.
 
     Args:
@@ -80,10 +82,9 @@ def client_fixture(session: AsyncSession) -> Generator[TestClient]:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def cleanup_trainer_output():
+def cleanup_trainer_output() -> Generator:
+    """Cleanup the trainer_output directory after tests."""
     yield
-    import shutil
-    from pathlib import Path
     trainer_output = Path("trainer_output")
     if trainer_output.exists() and trainer_output.is_dir():
         shutil.rmtree(trainer_output, ignore_errors=True)
