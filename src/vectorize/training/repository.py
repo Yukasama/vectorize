@@ -14,6 +14,7 @@ __all__ = [
     "get_train_task_by_id",
     "save_training_task",
     "update_training_task_status",
+    "update_training_task_progress",
 ]
 
 
@@ -36,6 +37,18 @@ async def update_training_task_status(
             task.end_date = datetime.now(UTC)
         if error_msg:
             task.error_msg = error_msg
+        await db.commit()
+        await db.refresh(task)
+
+
+async def update_training_task_progress(
+    db: AsyncSession, task_id: UUID, progress: float
+) -> None:
+    """Update the progress of a TrainingTask."""
+    result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
+    task = result.first()
+    if task:
+        task.progress = progress
         await db.commit()
         await db.refresh(task)
 

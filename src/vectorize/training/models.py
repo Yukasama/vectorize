@@ -59,3 +59,8 @@ class TrainingTask(SQLModel, table=True):
         ),
         description="Timestamp when the training task was last updated.",
     )
+
+    progress: float = Field(
+        default=0.0,
+        description="Progress of the training task as a float between 0.0 and 1.0.",
+    )
