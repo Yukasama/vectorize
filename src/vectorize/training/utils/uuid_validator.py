@@ -1,4 +1,5 @@
 """UUID validation utility for training module."""
+
 import uuid
 
 

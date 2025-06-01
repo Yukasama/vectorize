@@ -3,7 +3,6 @@
 import os
 import warnings
 from collections.abc import AsyncGenerator, Generator
-from pathlib import Path
 
 os.environ.setdefault("ENV", "testing")
 
