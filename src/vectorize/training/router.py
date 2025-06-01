@@ -14,7 +14,7 @@ from vectorize.config.db import get_session
 
 from .exceptions import TrainingDatasetNotFoundError, TrainingTaskNotFoundError
 from .models import TrainingTask
-from .repository import get_training_task_by_id, save_training_task
+from .repository import get_train_task_by_id, save_training_task
 from .schemas import TrainRequest, TrainingStatusResponse
 from .tasks import train_model_task
 from .utils.helpers import get_dataset_paths_by_ids, get_model_path_by_id
@@ -68,7 +68,7 @@ async def get_training_status(
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> TrainingStatusResponse:
     """Get the status and metadata of a training task by its ID."""
-    task = await get_training_task_by_id(db, task_id)
+    task = await get_train_task_by_id(db, task_id)
     if not task:
         raise TrainingTaskNotFoundError(str(task_id))
     return TrainingStatusResponse.from_task(task)
