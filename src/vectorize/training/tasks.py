@@ -79,13 +79,11 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
         )
         return
     try:
-        # Validate and normalize model ID (defensive)
         if not is_valid_uuid(train_request.model_id):
             raise InvalidModelIdError(train_request.model_id)
         norm_model_id = UUID(train_request.model_id)
         orig_model = await get_ai_model_by_id(db, norm_model_id)
 
-        # Training with progress update after each epoch, now with timeout
         try:
             await asyncio.wait_for(
                 _run_training_with_progress(
@@ -151,7 +149,6 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
             db, task_id, TaskStatus.FAILED, error_msg=str(exc)
         )
     finally:
-        # Robust resource cleanup
         try:
             del orig_model
         except Exception as exc:

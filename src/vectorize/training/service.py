@@ -73,11 +73,11 @@ def train_model_service_svc(
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-    config = DPOConfig(
-        learning_rate=train_request.learning_rate,
-        per_device_train_batch_size=train_request.per_device_train_batch_size,
-        num_train_epochs=train_request.epochs,
-    )
+    dpo_config_kwargs = train_request.model_dump(exclude_unset=True)
+    dpo_config_kwargs["num_train_epochs"] = dpo_config_kwargs.pop("epochs")
+    dpo_config_kwargs.pop("model_id", None)
+    dpo_config_kwargs.pop("dataset_ids", None)
+    config = DPOConfig(**dpo_config_kwargs)
     trainer = DPOTrainer(
         model=model,
         args=config,

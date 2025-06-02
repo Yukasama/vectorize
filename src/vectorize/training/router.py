@@ -65,7 +65,6 @@ async def train_model(
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
     if missing:
         raise TrainingDatasetNotFoundError(f"Missing datasets: {', '.join(missing)}")
-    # Set output_dir automatically based on model and timestamp
     tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     output_dir = (
@@ -86,7 +85,7 @@ async def train_model(
         train_request,
         task.id,
         [str(p) for p in dataset_paths],
-        output_dir,  # pass output_dir to task
+        output_dir,
     )
     logger.bind(
         task_id=str(task.id),
