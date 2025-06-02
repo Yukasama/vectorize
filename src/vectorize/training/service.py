@@ -62,7 +62,7 @@ def train_model_service_svc(
         progress_callback (Callable[[int], None] | None): Optional callback for
             progress updates.
     """
-    logger.info("Starting DPO training with Hugging Face TRL.")
+    logger.debug("Starting DPO training with Hugging Face TRL.")
     if not dataset_paths:
         raise ValueError("No datasets provided.")
     dataset_file = Path(dataset_paths[0])
@@ -100,7 +100,7 @@ def train_model_service_svc(
         output_dir_path.mkdir(parents=True, exist_ok=True)
         model.save_pretrained(str(output_dir_path))
         tokenizer.save_pretrained(str(output_dir_path))
-        logger.info(f"DPO training finished. Model saved at: {output_dir_path}")
+        logger.debug(f"DPO training finished. Model saved at: {output_dir_path}")
         try:
             del model
             del tokenizer
