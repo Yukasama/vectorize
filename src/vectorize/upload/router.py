@@ -26,7 +26,7 @@ from vectorize.common.exceptions import InternalServerError, InvalidFileError
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
 
-from .exceptions import InvalidUrlError, ModelAlreadyExistsError
+from .exceptions import ModelAlreadyExistsError
 from .github_service import repo_info
 from .local_service import upload_zip_model
 from .models import UploadTask
@@ -36,7 +36,6 @@ from .tasks import (
     process_github_model_background,
     process_huggingface_model_background,
 )
-from .utils import GitHubUtils
 
 router = APIRouter(tags=["Model Upload"])
 
@@ -128,11 +127,10 @@ async def load_model_github(
     Returns:
         Response with 201 status and Location header.
     """
-    if not GitHubUtils.is_github_url(data.repo_url):
-        raise InvalidUrlError()
+    owner = data.owner
+    repo = data.repo_name
+    branch = data.revision or "main"
 
-    owner, repo, url_tag = GitHubUtils.parse_github_url(data.repo_url)
-    branch = data.revision or url_tag or "main"
     key = f"{owner}/{repo}@{branch}"
     base_url = f"https://github.com/{owner}/{repo}"
 
@@ -156,7 +154,13 @@ async def load_model_github(
     )
     await save_upload_task(db, task)
     background_tasks.add_task(
-        process_github_model_background, db, owner, repo, branch, data.repo_url, task.id
+        process_github_model_background,
+        db,
+        owner,
+        repo,
+        branch,
+        base_url,
+        task.id
     )
 
     return Response(

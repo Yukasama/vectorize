@@ -23,6 +23,7 @@ class ErrorCode(StrEnum):
     EMPTY_FILE = "EMPTY_FILE"
 
     INVALID_URL = "INVALID_URL"
+    MODEL_NOT_FOUND = "MODEL_NOT_FOUND"
 
 
 class ErrorNames(StrEnum):

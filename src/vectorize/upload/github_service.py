@@ -12,20 +12,22 @@ from vectorize.ai_model.exceptions import ModelNotFoundError
 
 from .exceptions import (
     InvalidModelError,
-    InvalidUrlError,
     NoValidModelsFoundError,
 )
-from .utils import GitHubUtils
 
 _github_models: dict[str, object] = {}
 
 
-def load_github_model_and_cache_only(github_url: str) -> None:
+def load_github_model_and_cache_only(owner: str,
+    repo: str,
+    branch: str = "main"
+    ) -> None:
     """Clone ein GitHub-Repo, suche das Model und cache es lokal + im Memory.
 
     Args:
-        github_url: HTTPS-URL zum GitHub-Repo mit Model (z.B. owner/repo).
-
+        owner: The repository owner (user or org)
+        repo: The repository name
+        branch: Branch or tag name defaults to main
     Returns:
         dict: Metadaten zum gecachten Model (owner, repo, branch, local_path, key).
 
@@ -34,10 +36,6 @@ def load_github_model_and_cache_only(github_url: str) -> None:
         NoValidModelsFoundError: Wenn kein gültiges Model-File gefunden wurde.
         InvalidModelError: Für alle anderen Fehler während Clone/Load.
     """
-    if not GitHubUtils.is_github_url(github_url):
-        raise InvalidUrlError()
-    owner, repo, url_tag = GitHubUtils.parse_github_url(github_url)
-    branch = url_tag or "main"
     key = f"{owner}/{repo}@{branch}"
 
     if key in _github_models:

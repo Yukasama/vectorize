@@ -84,3 +84,10 @@ class InvalidUrlError(AppError):
     error_code = ErrorCode.INVALID_URL
     message = "Invalid GitHub URL"
     status_code = status.HTTP_400_BAD_REQUEST
+
+
+class ModelNotFoundError(AppError):
+    """Exception raised when no model is found."""
+    error_code = ErrorCode.MODEL_NOT_FOUND
+    message = "Model not found"
+    status_code = status.HTTP_400_BAD_REQUEST

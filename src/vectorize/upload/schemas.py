@@ -1,6 +1,6 @@
 """Schemas for importing models."""
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, constr
 
 __all__ = ["GitHubModelRequest", "HuggingFaceModelRequest"]
 
@@ -19,11 +19,11 @@ class HuggingFaceModelRequest(BaseModel):
 
 
 class GitHubModelRequest(BaseModel):
-    """_RequestModel for passing (GitHub) Urls.
+    """Request model for specifying GitHub repo access via components."""
 
-    Args:
-        BaseModel (_type_): _description_
-    """
-
-    repo_url: HttpUrl = Field(..., alias="github_url")
-    revision: str | None = Field(None, alias="tag")
+    owner: constr(min_length=1) = Field(...,
+        description="GitHub username or organization")
+    repo_name: constr(min_length=1) = Field(...,
+        description="Repository name")
+    revision: str = Field("main", alias="tag",
+        description="Branch or tag name (defaults to 'main')")
