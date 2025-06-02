@@ -1,7 +1,7 @@
 """Schemas for DPO training (Hugging Face TRL)."""
 
+
 from pydantic import BaseModel, Field
-from typing import Optional
 
 from vectorize.training.models import TrainingTask
 
@@ -45,6 +45,7 @@ class TrainingStatusResponse(BaseModel):
 
 class TrainRequest(BaseModel):
     """Request for DPO training: expects datasets in prompt/chosen/rejected (JSONL).
+
     All DPOConfig parameters supported. Important ones are required, others optional.
     """
 
@@ -58,29 +59,27 @@ class TrainRequest(BaseModel):
     per_device_train_batch_size: int = Field(
         8, description="Batch size per device", gt=0
     )
-    # Optionale DPOConfig-Parameter (Beispiele, ggf. nach Bedarf erweitern)
-    weight_decay: Optional[float] = Field(
+    weight_decay: float | None = Field(
         None, description="Weight decay (L2 regularization)"
     )
-    warmup_steps: Optional[int] = Field(
+    warmup_steps: int | None = Field(
         None, description="Number of warmup steps"
     )
-    logging_steps: Optional[int] = Field(
+    logging_steps: int | None = Field(
         None, description="Log every X steps"
     )
-    save_steps: Optional[int] = Field(
+    save_steps: int | None = Field(
         None, description="Save checkpoint every X steps"
     )
-    max_grad_norm: Optional[float] = Field(
+    max_grad_norm: float | None = Field(
         None, description="Maximum gradient norm for clipping"
     )
-    gradient_accumulation_steps: Optional[int] = Field(
+    gradient_accumulation_steps: int | None = Field(
         None, description="Number of steps to accumulate gradients"
     )
-    fp16: Optional[bool] = Field(
+    fp16: bool | None = Field(
         None, description="Use mixed precision training (fp16)"
     )
-    bf16: Optional[bool] = Field(
+    bf16: bool | None = Field(
         None, description="Use bfloat16 precision"
     )
-    # ...weitere DPOConfig-Parameter nach Bedarf ergänzen...
