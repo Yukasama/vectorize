@@ -1,6 +1,8 @@
 """Schemas for importing models."""
 
-from pydantic import BaseModel, Field, constr
+from typing import Annotated
+
+from pydantic import BaseModel, Field
 
 __all__ = ["GitHubModelRequest", "HuggingFaceModelRequest"]
 
@@ -20,10 +22,9 @@ class HuggingFaceModelRequest(BaseModel):
 
 class GitHubModelRequest(BaseModel):
     """Request model for specifying GitHub repo access via components."""
-
-    owner: constr(min_length=1) = Field(...,
-        description="GitHub username or organization")
-    repo_name: constr(min_length=1) = Field(...,
-        description="Repository name")
-    revision: str = Field("main", alias="tag",
-        description="Branch or tag name (defaults to 'main')")
+    owner: Annotated[str, Field(min_length=1,
+        description="GitHub username or organization")]
+    repo_name: Annotated[str, Field(min_length=1,
+        description="Repository name")]
+    revision: Annotated[str, Field("main", alias="tag",
+        description="Branch or tag name (defaults to 'main')")]

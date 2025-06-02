@@ -21,7 +21,7 @@ _github_models: dict[str, object] = {}
 def load_github_model_and_cache_only(owner: str,
     repo: str,
     branch: str = "main"
-    ) -> None:
+    ) -> dict[str, str | object]:
     """Clone ein GitHub-Repo, suche das Model und cache es lokal + im Memory.
 
     Args:
