@@ -20,12 +20,8 @@ def get_error_path(err: AppError | ETagError | Exception) -> str:
         "filename:line (fn:function_name)"
     """
     error_location = traceback.extract_tb(err.__traceback__)[-1]
-    full_filename, line, func, _ = error_location
+    filename, line, func, _ = error_location
 
-    vectorize_path = (
-        full_filename.split("vectorize")[-1]
-        if "vectorize" in full_filename
-        else full_filename
-    )
-    filename = f"vectorize{vectorize_path}"
+    app_path = filename.split("vectorize")[-1] if "vectorize" in filename else filename
+    filename = f"vectorize{app_path}"
     return f"{filename}:{line} (fn:{func})"

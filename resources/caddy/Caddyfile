@@ -6,21 +6,74 @@
 }
 
 localhost {
-	@noSlash path /monitoring
-	redir @noSlash /monitoring/ 308
+    @noSlash path /monitoring
+    redir @noSlash /monitoring/ 308
 
-	handle /monitoring/* {
-		reverse_proxy grafana:3000 {
-			header_up Host {host}
-			header_up X-Real-IP {remote_host}
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {scheme}
-			header_up Connection {header.Connection}
-			header_up Upgrade    {header.Upgrade}
-		}
-	}
+    handle /monitoring/* {
+        reverse_proxy grafana:3000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Connection {header.Connection}
+            header_up Upgrade {header.Upgrade}
+        }
+    }
 
-	handle {
-		reverse_proxy vectorize:8000
-	}
+    handle /health* {
+        header {
+            X-Content-Type-Options "nosniff"
+            Referrer-Policy "no-referrer"
+            Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=(), fullscreen=(), picture-in-picture=()"
+            Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+            Content-Security-Policy "default-src 'none'; frame-ancestors 'none'"
+            Cache-Control "no-cache, no-store, must-revalidate"
+            -Server
+            -Via
+        }
+        reverse_proxy vectorize:8000
+    }
+
+    handle /docs* {
+        header {
+            X-Content-Type-Options "nosniff"
+            Referrer-Policy "strict-origin-when-cross-origin"
+            Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+            Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+            Content-Security-Policy "default-src 'self'; img-src 'self' data: https://fastapi.tiangolo.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self'; frame-ancestors 'none'"
+            -Server
+            -Via
+        }
+        reverse_proxy vectorize:8000
+    }
+
+    handle /redoc* {
+        header {
+            X-Content-Type-Options "nosniff"
+            Referrer-Policy "strict-origin-when-cross-origin"
+            Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+            Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+            Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https://fastapi.tiangolo.com https://cdn.redoc.ly; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self'; worker-src blob:; frame-ancestors 'none'"
+            -Server
+            -Via
+        }
+        reverse_proxy vectorize:8000
+    }
+
+    handle {
+        header {
+            Access-Control-Allow-Origin "http://localhost:3000"
+            Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+            Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+            Access-Control-Max-Age "86400"
+            X-Content-Type-Options "nosniff"
+            Referrer-Policy "strict-origin-when-cross-origin"
+            Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+            Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+            Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
+            -Server
+            -Via
+        }
+        reverse_proxy vectorize:8000
+    }
 }

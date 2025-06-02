@@ -3,6 +3,7 @@
 from fastapi import APIRouter, FastAPI
 
 from vectorize.ai_model.router import router as models_router
+from vectorize.common.router import router as common_router
 from vectorize.config.config import settings
 from vectorize.datasets.router import router as dataset_router
 from vectorize.inference.router import router as embeddings_router
@@ -15,6 +16,8 @@ def register_routers(app: FastAPI) -> None:
     Args:
         app: FastAPI application instance.
     """
+    app.include_router(common_router)
+
     base_router = APIRouter(prefix=settings.prefix)
     base_router.include_router(dataset_router, prefix="/datasets")
     base_router.include_router(upload_router, prefix="/uploads")

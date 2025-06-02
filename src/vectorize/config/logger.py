@@ -20,14 +20,14 @@ def config_logger() -> None:
 
     if is_production:
         logging.root.handlers = [InterceptHandler()]
-        logging.root.setLevel(logging.INFO)
+        logging.root.setLevel(logging.WARNING)
 
         loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
         for logger_instance in loggers:
             logger_instance.handlers = []
             logger_instance.propagate = True
 
-        logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
+        logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING)
 
     logger.remove()
 
@@ -35,22 +35,24 @@ def config_logger() -> None:
         logger.add(
             settings.log_path,
             rotation=settings.rotation,
-            format=_format_record,
+            format=_development_format,
             enqueue=True,
             backtrace=False,
             diagnose=False,
             compression="zip",
             colorize=False,
+            level=logging.DEBUG,
         )
 
     logger.add(
-        sys.stdout,
-        format=_format_record,
-        level=logging.INFO if is_production else settings.log_level,
+        sys.stderr if is_production else sys.stdout,
+        format=_production_format if is_production else _development_format,
+        level=logging.WARNING if is_production else logging.DEBUG,
         colorize=not is_production,
         enqueue=True,
         backtrace=not is_production,
         diagnose=not is_production,
+        catch=not is_production,
     )
 
     if is_production:
@@ -60,15 +62,15 @@ def config_logger() -> None:
                 labels={
                     "application": "fastapi",
                     "environment": settings.app_env,
-                    "source": "fastapi",
+                    "version": "0.1.0",
                 },
-                timeout=10,
+                timeout=5,
                 enable_structured_loki_metadata=True,
                 default_formatter=LoguruFormatter(),  # type: ignore[arg-type]
             ),
             serialize=True,
             enqueue=True,
-            level=logging.INFO,
+            level=logging.WARNING,
         )
 
 
@@ -94,7 +96,18 @@ class InterceptHandler(logging.Handler):
         )
 
 
-def _format_record(record: Mapping[str, Any]) -> str:
+def _production_format(record: Mapping[str, Any]) -> str:
+    """Optimized format for production - structured and minimal."""
+    return (
+        f"{record['time'].strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} | "
+        f"{record['level']:<8} | "
+        f"{record['name']}:{record['line']} - "
+        f"{record['message']}\n"
+    )
+
+
+def _development_format(record: Mapping[str, Any]) -> str:
+    """Detailed format for development with colors and extras."""
     ts = record["time"].strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
     line = (

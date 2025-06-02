@@ -3,7 +3,6 @@
 # port = 8000
 prefix = "/v1"
 reload = true
-server_header = false
 
 [app.db]
 logging = false
@@ -14,7 +13,6 @@ pool_size = 5
 pool_pre_ping = true
 pool_recycle = 300
 pool_timeout = 30
-
 
 [app.dataset]
 dataset_upload_dir = "data/datasets"

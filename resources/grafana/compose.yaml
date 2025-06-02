@@ -1,7 +1,7 @@
 services:
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
+    container_name: vectorize_prometheus
     volumes:
       - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml
     command: "--config.file=/etc/prometheus/prometheus.yaml"
@@ -13,10 +13,11 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    depends_on: [vectorize]
 
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
+    container_name: vectorize_grafana
     volumes:
       - grafana_data:/var/lib/grafana
       - ./config/provisioning:/etc/grafana/provisioning
@@ -38,7 +39,7 @@ services:
 
   alloy:
     image: grafana/alloy:latest
-    container_name: alloy
+    container_name: vectorize_alloy
     volumes:
       - ./config/config.alloy:/etc/alloy/config.alloy
     command: ["run", "--stability.level=experimental", "/etc/alloy/config.alloy"]
@@ -54,7 +55,7 @@ services:
 
   loki:
     image: grafana/loki:latest
-    container_name: loki
+    container_name: vectorize_loki
     volumes:
       - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
       - loki_data:/loki
