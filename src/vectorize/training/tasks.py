@@ -46,6 +46,11 @@ def check_disk_space(path: str, min_gb: int = MIN_FREE_DISK_GB) -> bool:
         return False
 
 
+async def _is_task_canceled(db: AsyncSession, task_id: UUID) -> bool:
+    task = await get_train_task_by_id(db, task_id)
+    return task is not None and task.task_status == TaskStatus.CANCELED
+
+
 # NOTE: Argument count exceeds 5 due to business logic and clarity requirements.
 # This is an accepted exception for these training orchestration functions.
 async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
@@ -57,7 +62,7 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
     output_dir: str,
 ) -> None:
     """Background task: trains the model, saves new AIModel, updates TrainingTask."""
-    logger.info(
+    logger.debug(
         "Training started for model_path=%s, dataset_paths=%s, task_id=%s, "
         "output_dir=%s",
         model_path,
@@ -65,7 +70,7 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
         task_id,
         output_dir,
     )
-    # Disk space check before training
+    await update_training_task_status(db, task_id, TaskStatus.RUNNING)
     parent_dir = Path(output_dir).parent
     if not parent_dir.exists():
         parent_dir.mkdir(parents=True, exist_ok=True)
@@ -119,6 +124,15 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
             )
             return
 
+        task = await get_train_task_by_id(db, task_id)
+        if task and task.task_status == TaskStatus.CANCELED:
+            logger.debug(
+                "Training was canceled, skipping model save and DB entry for "
+                "task_id=%s",
+                task_id,
+            )
+            return
+
         tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         new_model_tag = f"{orig_model.model_tag}-finetuned-{tag_time}"
         new_model = AIModel(
@@ -134,7 +148,7 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
             await db.commit()
             await db.refresh(task)
         await update_training_task_status(db, task_id, TaskStatus.DONE)
-        logger.info(
+        logger.debug(
             f"Training finished successfully for model_path={model_path}, "
             f"task_id={task_id}, new_model_id={new_model_id}"
         )
@@ -201,6 +215,14 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
         steps_per_epoch = 1
     total_steps = train_request.epochs * steps_per_epoch
     for epoch in range(train_request.epochs):
+        if await _is_task_canceled(db, task_id):
+            logger.debug(
+                "Training canceled at epoch %s/%s", epoch + 1, train_request.epochs
+            )
+            await update_training_task_status(
+                db, task_id, TaskStatus.CANCELED, error_msg="Training canceled by user"
+            )
+            return
         trainer.train(resume_from_checkpoint=None)
         progress = ((epoch + 1) * steps_per_epoch) / total_steps
         await update_training_task_progress(db, task_id, progress)
@@ -208,8 +230,7 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
     output_dir_path.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(str(output_dir_path))
     tokenizer.save_pretrained(str(output_dir_path))
-    logger.info("DPO training complete. Model saved at: %s", output_dir_path)
-    # Resource cleanup for model/tokenizer
+    logger.debug("DPO training complete. Model saved at: %s", output_dir_path)
     try:
         del model
         del tokenizer
