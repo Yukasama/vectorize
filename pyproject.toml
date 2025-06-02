@@ -167,7 +167,6 @@ ignore = [
     "RET503", # https://docs.astral.sh/ruff/rules/implicit-return
     "RUF012",
     "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma
-    "RUF029", # async def without await
 ]
 
 [tool.ruff.lint.isort]

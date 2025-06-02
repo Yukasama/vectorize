@@ -20,7 +20,7 @@ from .exceptions import (
 _models = {}
 
 
-async def load_model_and_cache_only(model_tag: str, revision: str) -> None:
+async def load_model_and_cache_only(model_tag: str, revision: str) -> None:  # noqa: RUF029
     """Load a Hugging Face model and cache it locally if not already cached.
 
     Downloads the model and tokenizer from Hugging Face using the given
