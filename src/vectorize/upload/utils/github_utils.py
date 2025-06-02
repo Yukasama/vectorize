@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 from pydantic import HttpUrl
 
-from .exceptions import InvalidUrlError
+from vectorize.upload.exceptions import InvalidUrlError
 
 _MIN_PATH_PARTS_FOR_RELEASE_URL = 4
 
@@ -52,7 +52,7 @@ class GitHubUtils:
         text = str(url)
         m = re.fullmatch(GitHubUtils.GITHUB_BASE_REGEX, text)
         if not m:
-            raise InvalidUrlError()
+            raise InvalidUrlError
 
         owner = m.group("owner")
         repo = m.group("repo")

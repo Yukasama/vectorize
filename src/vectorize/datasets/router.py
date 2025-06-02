@@ -17,9 +17,9 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.common.app_error import AppError
+from vectorize.common.exceptions import InvalidFileError
 from vectorize.config.db import get_session
 
-from .exceptions import InvalidFileError
 from .models import DatasetAll, DatasetPublic, DatasetUpdate
 from .service import (
     delete_dataset_svc,

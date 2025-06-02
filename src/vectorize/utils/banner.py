@@ -25,10 +25,18 @@ def create_banner(settings: Settings, silent: bool = False) -> str:
     banner = figlet_format("VECTORIZE", font="slant")
     lines.extend([
         "\033[1;36m" + banner + "\033[0m",
-        "\033[1;33m⚡ VECTORIZE Service v0.1.0 ⚡\033[0m",
+        f"\033[1;33m⚡ VECTORIZE Service v{settings.version} ⚡\033[0m",
         f"\033[0;37m{'-' * 60}\033[0m",
     ])
 
+    log_level_colors = {
+        "DEBUG": "\033[1;34m",
+        "INFO": "\033[1;32m",
+        "WARNING": "\033[1;33m",
+        "ERROR": "\033[1;31m",
+        "CRITICAL": "\033[1;35m",
+    }
+    log_level_color = log_level_colors.get(settings.log_level, "\033[0;37m")
     env_color = "\033[1;31m" if settings.app_env == "production" else "\033[1;32m"
     lines.extend([
         f"🌍 Environment: {env_color}{settings.app_env}\033[0m",
@@ -59,8 +67,8 @@ def create_banner(settings: Settings, silent: bool = False) -> str:
 
     lines.extend([
         "\n\033[1;33m📝 Logging Configuration\033[0m",
-        f"  • Log Level: {settings.log_level}",
-        f"  • Log Path: {settings.log_path}",
+        f"  • Log Level: {log_level_color}{settings.log_level}\033[0m",
+        f"  • Log Path: {settings.log_path if settings.app_env != 'production' else 'stderr'}",  # noqa: E501
     ])
 
     lines.extend([
