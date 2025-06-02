@@ -52,7 +52,7 @@ def _load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
         ModelNotFoundError: If the model directory doesn't exist
         ModelLoadError: If the model can't be successfully loaded
     """
-    folder = Path(settings.model_upload_dir) / model_tag
+    folder = Path(settings.model_inference_dir) / model_tag
     if not folder.exists():
         raise ModelNotFoundError(model_tag)
 

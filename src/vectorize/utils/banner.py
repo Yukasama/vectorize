@@ -25,7 +25,7 @@ def create_banner(settings: Settings, silent: bool = False) -> str:
     banner = figlet_format("VECTORIZE", font="slant")
     lines.extend([
         "\033[1;36m" + banner + "\033[0m",
-        "\033[1;33m⚡ VECTORIZE Service v0.1.0 ⚡\033[0m",
+        f"\033[1;33m⚡ VECTORIZE Service v{settings.version} ⚡\033[0m",
         f"\033[0;37m{'-' * 60}\033[0m",
     ])
 

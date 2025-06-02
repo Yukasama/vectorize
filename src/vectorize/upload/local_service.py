@@ -19,12 +19,12 @@ from .exceptions import (
     ModelAlreadyExistsError,
     NoValidModelsFoundError,
 )
-from .zip_extractor import (
+from .utils.zip_extractor import (
     process_model_directory,
     process_single_model,
     save_zip_to_temp,
 )
-from .zip_validator import get_toplevel_directories, is_valid_zip
+from .utils.zip_validator import get_toplevel_directories, is_valid_zip
 
 __all__ = ["upload_zip_model"]
 
@@ -37,10 +37,7 @@ async def _process_directory(
     db: AsyncSession,
 ) -> tuple[Path, str]:
     """Process a single model directory from a ZIP archive."""
-    model_folder_name = (
-        dir_path.rsplit("/", maxsplit=1)[-1] if "/" in dir_path else dir_path
-    )
-
+    model_folder_name = Path(dir_path).name
     logger.debug("Processing model directory: {} as {}", dir_path, model_folder_name)
 
     return await process_model_directory(

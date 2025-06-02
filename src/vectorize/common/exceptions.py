@@ -26,6 +26,14 @@ class InternalServerError(AppError):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
+class InvalidFileError(AppError):
+    """Exception raised when the file is invalid."""
+
+    error_code = ErrorCode.INVALID_FILE
+    message = "Invalid file format"
+    status_code = status.HTTP_400_BAD_REQUEST
+
+
 class VersionMismatchError(ETagError):
     """Exception raised when the dataset version does not match."""
 

@@ -1,4 +1,4 @@
-"""ZIP archive validation."""
+"""Zip archive validation."""
 
 import io
 import zipfile
@@ -8,13 +8,10 @@ from typing import Final
 from fastapi import UploadFile
 from loguru import logger
 
+from vectorize.common.exceptions import InvalidFileError
 from vectorize.config.config import settings
 
-from ..exceptions import (
-    FileTooLargeError,
-    InvalidFileError,
-    TooManyFilesError,
-)
+from ..exceptions import FileTooLargeError, TooManyFilesError
 
 __all__ = ["_handle_zip_upload", "_validate_zip_file"]
 

@@ -22,13 +22,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.ai_model.exceptions import ModelNotFoundError
 from vectorize.ai_model.model_source import RemoteModelSource
 from vectorize.ai_model.service import get_ai_model_svc
-from vectorize.common.exceptions import InternalServerError
+from vectorize.common.exceptions import InternalServerError, InvalidFileError
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
-from vectorize.datasets.exceptions import InvalidFileError
 
 from .exceptions import InvalidUrlError, ModelAlreadyExistsError
 from .github_service import repo_info
+from .local_service import upload_zip_model
 from .models import UploadTask
 from .repository import save_upload_task
 from .schemas import GitHubModelRequest, HuggingFaceModelRequest
@@ -37,7 +37,6 @@ from .tasks import (
     process_huggingface_model_background,
 )
 from .utils import GitHubUtils
-from .zip_service import upload_zip_model
 
 router = APIRouter(tags=["Model Upload"])
 
@@ -166,8 +165,8 @@ async def load_model_github(
     )
 
 
-@router.post("/local_models", summary="Upload multiple models from a ZIP archive")
-async def load_multiple_models(
+@router.post("/local", summary="Upload multiple models from a ZIP archive")
+async def load_model_local(
     file: Annotated[UploadFile, File()],
     request: Request,
     db: Annotated[AsyncSession, Depends(get_session)],

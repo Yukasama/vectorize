@@ -44,6 +44,11 @@ class Settings(BaseSettings):
         description="Network port the server listens on.",
     )
 
+    version: str = Field(
+        default=_server_config.get("version", "0.1.0"),
+        description="Version of the application.",
+    )
+
     prefix: str = Field(
         default=_server_config.get("prefix", ""),
         description="API URL prefix for all endpoints.",
@@ -80,10 +85,15 @@ class Settings(BaseSettings):
         description="Maximum number of files allowed in a zip archive for datasets.",
     )
 
-    # Model configuration
     dataset_max_upload_size: int = Field(
         default=_dataset_config.get("max_upload_size"),
         description="Maximum allowed file size for dataset uploads in bytes.",
+    )
+
+    # Model configuration
+    model_upload_dir: Path = Field(
+        default=Path(_model_config.get("model_upload_dir")),
+        description="Directory for storing uploaded model files.",
     )
 
     model_max_upload_size: int = Field(
@@ -173,7 +183,7 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def model_upload_dir(self) -> Path:
+    def model_inference_dir(self) -> Path:
         """Directory for storing model files."""
         if self.app_env == "testing":
             return Path("test_data/inference")

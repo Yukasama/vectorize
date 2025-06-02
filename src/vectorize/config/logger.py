@@ -62,7 +62,7 @@ def config_logger() -> None:
                 labels={
                     "application": "fastapi",
                     "environment": settings.app_env,
-                    "version": "0.1.0",
+                    "version": settings.version,
                 },
                 timeout=5,
                 enable_structured_loki_metadata=True,
