@@ -88,6 +88,6 @@ class InvalidUrlError(AppError):
 
 class ModelNotFoundError(AppError):
     """Exception raised when no model is found."""
-    error_code = ErrorCode.MODEL_NOT_FOUND
+    error_code = ErrorCode.NOT_FOUND
     message = "Model not found"
     status_code = status.HTTP_400_BAD_REQUEST
