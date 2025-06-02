@@ -24,7 +24,11 @@ from .exceptions import (
     TrainingTaskNotFoundError,
 )
 from .models import TrainingTask
-from .repository import get_train_task_by_id, save_training_task
+from .repository import (
+    get_train_task_by_id,
+    save_training_task,
+    update_training_task_status,
+)
 from .schemas import TrainRequest, TrainingStatusResponse
 from .tasks import train_model_task
 from .utils.uuid_validator import is_valid_uuid
@@ -106,3 +110,24 @@ async def get_training_status(
     if not task:
         raise TrainingTaskNotFoundError(str(task_id))
     return TrainingStatusResponse.from_task(task)
+
+
+@router.post("/{task_id}/cancel")
+async def cancel_training(
+    task_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    """Cancel a running training task."""
+    task = await get_train_task_by_id(db, task_id)
+    if not task:
+        raise TrainingTaskNotFoundError(str(task_id))
+    if task.task_status not in {TaskStatus.PENDING, TaskStatus.RUNNING}:
+        return Response(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content=f"Cannot cancel task with status: {task.task_status.name}",
+        )
+    await update_training_task_status(
+        db, task_id, TaskStatus.CANCELED, error_msg="Training canceled by user"
+    )
+    logger.debug(f"Training task {task_id} marked for cancellation")
+    return Response(status_code=status.HTTP_200_OK)
