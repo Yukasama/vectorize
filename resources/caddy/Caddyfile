@@ -5,22 +5,86 @@
     }
 }
 
+(api_headers) {
+    X-Content-Type-Options        "nosniff"
+    Referrer-Policy               "strict-origin-when-cross-origin"
+    Permissions-Policy            "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+    Strict-Transport-Security     "max-age=63072000; includeSubDomains; preload"
+    Cross-Origin-Opener-Policy    "same-origin"
+    Cross-Origin-Embedder-Policy  "require-corp"
+    Cross-Origin-Resource-Policy  "same-origin"
+    -Server
+    -Via
+}
+
 localhost {
-	@noSlash path /monitoring
-	redir @noSlash /monitoring/ 308
+    vars cors_origin "{vars.cors_origin}"
 
-	handle /monitoring/* {
-		reverse_proxy grafana:3000 {
-			header_up Host {host}
-			header_up X-Real-IP {remote_host}
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {scheme}
-			header_up Connection {header.Connection}
-			header_up Upgrade    {header.Upgrade}
-		}
-	}
+    @noSlash path /monitoring
+    redir @noSlash /monitoring/ 308
 
-	handle {
-		reverse_proxy vectorize:8000
-	}
+    handle /monitoring/* {
+        reverse_proxy grafana:3000 {
+            header_up Host              {host}
+            header_up X-Real-IP         {remote_host}
+            header_up X-Forwarded-For   {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up Connection        {header.Connection}
+            header_up Upgrade           {header.Upgrade}
+        }
+    }
+
+    handle /health* {
+        header {
+            import api_headers
+            Referrer-Policy            "no-referrer"
+            Content-Security-Policy    "default-src 'none'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+            Cache-Control              "no-cache, no-store, must-revalidate"
+        }
+        reverse_proxy vectorize:8000
+    }
+
+    handle /docs* {
+        header {
+            import api_headers
+            Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: https://fastapi.tiangolo.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self'; frame-ancestors 'none'"
+        }
+        reverse_proxy vectorize:8000
+    }
+
+    handle /redoc* {
+        header {
+            import api_headers
+            Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://fastapi.tiangolo.com https://cdn.redoc.ly; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self'; worker-src blob:; frame-ancestors 'none'"
+        }
+        reverse_proxy vectorize:8000
+    }
+
+    @cors_preflight {
+        method OPTIONS
+        path /*
+    }
+    handle @cors_preflight {
+        header {
+            import api_headers
+            Access-Control-Allow-Origin      "{vars.cors_origin}"
+            Access-Control-Allow-Credentials "true"
+            Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS"
+            Access-Control-Allow-Headers     "Content-Type, Authorization, X-Requested-With"
+            Access-Control-Max-Age           "86400"
+            Vary                             "Origin"
+        }
+        respond "" 204
+    }
+
+    handle {
+        header {
+            import api_headers
+            Access-Control-Allow-Origin      "{vars.cors_origin}"
+            Access-Control-Allow-Credentials "true"
+            Vary                             "Origin"
+            Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
+        }
+        reverse_proxy vectorize:8000
+    }
 }

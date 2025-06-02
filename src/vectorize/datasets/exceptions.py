@@ -15,7 +15,6 @@ __all__ = [
     "FileTooLargeError",
     "InvalidCSVColumnError",
     "InvalidCSVFormatError",
-    "InvalidFileError",
     "MissingColumnError",
     "TooManyFilesError",
     "UnsupportedFormatError",
@@ -23,14 +22,6 @@ __all__ = [
 
 
 _ALLOWED_EXTENSIONS = ", ".join(settings.allowed_extensions)
-
-
-class InvalidFileError(AppError):
-    """Exception raised when the file is invalid."""
-
-    error_code = ErrorCode.INVALID_FILE
-    message = "Invalid file format"
-    status_code = status.HTTP_400_BAD_REQUEST
 
 
 class FileTooLargeError(AppError):

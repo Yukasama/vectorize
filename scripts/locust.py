@@ -7,7 +7,7 @@ Run headless with: uvx locust -f scripts/locust.py --host=https://localhost/v1 -
 from pathlib import Path
 
 import urllib3
-from locust import HttpUser, constant_throughput, task
+from locust import HttpUser, constant_pacing, task
 
 from tests.dataset.utils import build_files
 
@@ -31,7 +31,7 @@ class AppLoadTests(HttpUser):
 
     base_path = Path(__file__).parent.parent / "test_data" / "datasets"
     host = "http://localhost:8000/v1"
-    wait_time = constant_throughput(0.1)
+    wait_time = constant_pacing(0)
 
     def on_start(self) -> None:
         """Set up the client to ignore SSL certificate validation."""
