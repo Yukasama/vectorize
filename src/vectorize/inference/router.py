@@ -17,10 +17,10 @@ from .service import get_embeddings_srv, get_model_stats_srv
 __all__ = ["router"]
 
 
-router = APIRouter(tags=["Embeddings", "Inference"])
+router = APIRouter(tags=["Inference"])
 
 
-@router.post("")
+@router.post("", summary="Get embeddings by model")
 async def get_embeddings(
     data: EmbeddingRequest,
     db: Annotated[AsyncSession, Depends(get_session)],
@@ -43,7 +43,7 @@ async def get_embeddings(
     return await get_embeddings_srv(db, data)
 
 
-@router.get("/counter/{model_tag}")
+@router.get("/counter/{model_tag}", summary="Get model inference statistics")
 async def get_model_stats(
     model_tag: str,
     db: Annotated[AsyncSession, Depends(get_session)],

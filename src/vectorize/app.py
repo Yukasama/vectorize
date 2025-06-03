@@ -56,7 +56,7 @@ app: Final = FastAPI(
 # --------------------------------------------------------
 # P R O M E T H E U S
 # --------------------------------------------------------
-Instrumentator().instrument(app).expose(app)
+Instrumentator().instrument(app).expose(app, include_in_schema=False)
 add_prometheus_metrics(app)
 
 
