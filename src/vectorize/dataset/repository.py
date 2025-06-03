@@ -118,7 +118,7 @@ async def update_dataset_db(
     return dataset
 
 
-async def delete_dataset_db(db: AsyncSession, dataset_id: UUID) -> str:
+async def delete_dataset_db(db: AsyncSession, dataset_id: UUID) -> str | None:
     """Delete a dataset from the database.
 
     Args:
