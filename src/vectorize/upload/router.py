@@ -13,7 +13,6 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import JSONResponse
 from huggingface_hub import model_info
 from huggingface_hub.errors import EntryNotFoundError, HfHubHTTPError
 from loguru import logger
@@ -154,13 +153,7 @@ async def load_model_github(
     )
     await save_upload_task(db, task)
     background_tasks.add_task(
-        process_github_model_background,
-        db,
-        owner,
-        repo,
-        branch,
-        base_url,
-        task.id
+        process_github_model_background, db, owner, repo, branch, base_url, task.id
     )
 
     return Response(
@@ -177,7 +170,7 @@ async def load_model_local(
     model_name: Annotated[
         str | None, Query(description="Base name for models (optional)")
     ] = None,
-) -> JSONResponse:
+) -> Response:
     """Upload a ZIP archive containing multiple model directories.
 
     Each top-level directory in the ZIP will be treated as a separate model.
@@ -190,7 +183,7 @@ async def load_model_local(
         db: Database session
 
     Returns:
-        JSON response with metadata about uploaded models
+        Response with 201 status and Location header
 
     Raises:
         InvalidFileError: If no file is provided or format is invalid
@@ -210,26 +203,12 @@ async def load_model_local(
     model_count = result["total_models"]
     logger.info(f"Successfully uploaded {model_count} models from ZIP archive")
 
-    models_info = [
-        {
-            "id": model["model_id"],
-            "name": model["model_name"],
-            "directory": model["model_dir"],
-            "url": f"{request.url.scheme}://{request.url.netloc}{request.url.path}/{model['model_id']}",
-        }
-        for model in result["models"]
-    ]
-
     headers = {}
     if result["models"]:
         first_model = result["models"][0]
         headers["Location"] = f"{request.url}/{first_model['model_id']}"
 
-    return JSONResponse(
-        content={
-            "message": f"Successfully uploaded {model_count} models",
-            "models": models_info,
-        },
+    return Response(
         status_code=status.HTTP_201_CREATED,
         headers=headers,
     )

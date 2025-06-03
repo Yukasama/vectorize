@@ -121,8 +121,7 @@ class TestZipModelUpload:
             params={"model_name": "multiple_models", "extract_zip": "true"},
             files=files,
         )
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.json()["message"] == "Successfully uploaded 2 models"
 
+        assert response.status_code == status.HTTP_201_CREATED
         response = client.get("/models?size=100")
         assert len(response.json()["items"]) == models_length + file_count

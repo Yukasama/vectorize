@@ -61,7 +61,6 @@ def create_test_zip(
 
         print(f"Total files created: {file_count}")  # noqa: T201
 
-        # Convert to Path object for consistent handling
         output_zip_path = Path(output_path)
         print(f"Creating ZIP archive: {output_zip_path}")  # noqa: T201
 
@@ -72,7 +71,6 @@ def create_test_zip(
                     arcname = os.path.relpath(file_path, temp_dir)
                     zipf.write(file_path, arcname)
 
-        # Now we can use .stat() on the Path object
         zip_size = output_zip_path.stat().st_size
         print(  # noqa: T201
             f"ZIP file created: {output_zip_path} ({zip_size / (1024 * 1024):.2f} MB)"
