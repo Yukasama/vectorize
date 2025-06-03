@@ -71,7 +71,7 @@ async def get_dataset_svc(
 async def upload_dataset_svc(
     db: AsyncSession, file: UploadFile, options: DatasetUploadOptions | None = None
 ) -> UUID:
-    """Stream upload, parse file to DataFrame, save as CSV, and return dataset ID.
+    """Stream upload, parse file to DataFrame, save as JSONL, and return dataset ID.
 
     Args:
         db: Database session for storing the dataset information.
@@ -105,7 +105,7 @@ async def upload_dataset_svc(
     df, classification = _classify_dataset(escaped_df, column_mapping)
 
     try:
-        unique_name = f"{Path(safe_name).stem}_{uuid4()}.csv"
+        unique_name = f"{Path(safe_name).stem}_{uuid4()}.jsonl"
         file_path = _save_dataframe_to_fs(df, unique_name)
 
         dataset = Dataset(
@@ -119,7 +119,7 @@ async def upload_dataset_svc(
         logger.debug("Dataset saved", datasetId=dataset_id)
         return dataset_id
     except Exception:
-        # Clean up the saved file if database operation failed
+        # Roll back file on DB failure
         if "file_path" in locals() and Path(file_path).exists():
             Path(file_path).unlink()
         raise

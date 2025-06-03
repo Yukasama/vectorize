@@ -16,7 +16,6 @@ from ..exceptions import FileTooLargeError, TooManyFilesError
 __all__ = ["_handle_zip_upload", "_validate_zip_file"]
 
 
-_MAX_ZIP_UNCOMPRESSED: Final[int] = 500 * 2**20
 _MAX_ZIP_RATIO: Final[float] = 100.0
 
 
@@ -79,7 +78,7 @@ def _validate_zip_file(zip_bytes: bytes) -> Sequence[tuple[str, bytes]]:
             raise TooManyFilesError(len(members))
 
         total_uncompressed = sum(m.file_size for m in members)
-        if total_uncompressed > _MAX_ZIP_UNCOMPRESSED:
+        if total_uncompressed > settings.dataset_max_upload_size:
             raise FileTooLargeError(size=total_uncompressed)
 
         safe_files: list[tuple[str, bytes]] = []

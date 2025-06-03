@@ -18,14 +18,14 @@ pool_timeout = 30
 [app.dataset]
 dataset_upload_dir = "data/datasets"
 allowed_extensions = ["csv", "json", "jsonl", "xml", "xlsx", "xls"]
-max_upload_size = 52428800                                          # 50 MB
+max_upload_size = 53687091200                                       # 50 GB
 max_filename_length = 255
 default_delimiter = ";"
-max_zip_members = 1000
+max_zip_members = 10000
 
 [app.model]
 model_upload_dir = "data/models"
-max_upload_size = 524288000      # 500 MB
+max_upload_size = 53687091200    # 50 GB
 
 [app.inference]
 device = "cpu"

@@ -21,7 +21,7 @@ def _save_dataframe_to_fs(df: pd.DataFrame, filename: str) -> Path:
     """
     out_path = settings.dataset_upload_dir / filename
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(out_path, index=False)
+    df.to_json(out_path, orient="records", lines=True, force_ascii=False)
     return out_path
 
 

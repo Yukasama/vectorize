@@ -103,6 +103,7 @@ class TooManyFilesError(AppError):
     """Exception raised when the zip file is too long."""
 
     _MAX_LENGTH = 5000
+    error_code = ErrorCode.INVALID_FILE
     status_code = status.HTTP_400_BAD_REQUEST
 
     def __init__(self, size: int) -> None:
