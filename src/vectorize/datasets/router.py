@@ -37,7 +37,7 @@ __all__ = ["router"]
 router = APIRouter(tags=["Dataset"])
 
 
-@router.get("")
+@router.get("", summary="Get all datasets")
 async def get_datasets(
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[DatasetAll]:
@@ -54,7 +54,7 @@ async def get_datasets(
     return datasets
 
 
-@router.get("/{dataset_id}", response_model=None)
+@router.get("/{dataset_id}", response_model=None, summary="Get dataset by ID")
 async def get_dataset(
     dataset_id: UUID,
     request: Request,
@@ -90,7 +90,7 @@ async def get_dataset(
     return dataset
 
 
-@router.post("")
+@router.post("", summary="Upload dataset files")
 async def upload_dataset(
     files: Annotated[list[UploadFile], File(description="One or many files")],
     request: Request,
@@ -169,7 +169,7 @@ async def upload_dataset(
     )
 
 
-@router.put("/{dataset_id}")
+@router.put("/{dataset_id}", summary="Update dataset by ID")
 async def update_dataset(
     dataset_id: UUID,
     request: Request,
@@ -204,7 +204,7 @@ async def update_dataset(
     )
 
 
-@router.delete("/{dataset_id}")
+@router.delete("/{dataset_id}", summary="Delete dataset by ID")
 async def delete_dataset(
     dataset_id: UUID, db: Annotated[AsyncSession, Depends(get_session)]
 ) -> Response:

@@ -148,4 +148,5 @@ async def get_models_paged_db(
     result = await db.exec(stmt)
     items = result.all()
 
+    logger.debug("AIModels retrieved", items_fetched=len(items), total_items=total)
     return items, total

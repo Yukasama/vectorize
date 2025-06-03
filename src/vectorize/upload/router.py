@@ -37,7 +37,7 @@ from .tasks import (
     process_huggingface_model_background,
 )
 
-router = APIRouter(tags=["Model Upload"])
+router = APIRouter(tags=["AIModel Upload"])
 
 
 @router.post("/huggingface")
