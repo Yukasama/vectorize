@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from loguru import logger
-from sqlmodel import select
+from sqlmodel import desc, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.common.task_status import TaskStatus
@@ -69,10 +69,10 @@ async def get_synthesis_tasks(db: AsyncSession, limit: int = 20) -> list[Synthes
         List of synthesis tasks ordered by creation date (newest first)
     """
     statement = (
-        select(SynthesisTask).order_by(SynthesisTask.created_at.desc()).limit(limit)
+        select(SynthesisTask).order_by(desc(SynthesisTask.created_at)).limit(limit)
     )
     result = await db.exec(statement)
-    tasks = result.all()
+    tasks = list(result.all())
 
     logger.debug("Retrieved synthesis tasks from DB", count=len(tasks))
     return tasks
@@ -102,9 +102,8 @@ async def update_synthesis_task_status(
     if error_msg:
         task.error_msg = error_msg
 
-    # Bei erfolgreichem Abschluss oder Fehlschlag setzen wir auch das Enddatum
     if status in {TaskStatus.DONE, TaskStatus.FAILED}:
-        task.end_date = datetime.now(tz=UTC).date()
+        task.end_date = datetime.now(tz=UTC)
 
     await db.commit()
     await db.refresh(task)
