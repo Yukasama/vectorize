@@ -100,16 +100,17 @@ async def upload_media_for_synthesis(
         }
 
     file_contents = []
-    for file in files:
-        if not file.filename:
-            continue
-        try:
-            content = await file.read()
-            file_contents.append((file.filename, content))
-        except Exception as e:
-            logger.error(f"Error reading file {file.filename}: {e}")
-        finally:
-            await file.close()
+    if files:
+        for file in files:
+            if not file.filename:
+                continue
+            try:
+                content = await file.read()
+                file_contents.append((file.filename, content))
+            except Exception as e:
+                logger.error(f"Error reading file {file.filename}: {e}")
+            finally:
+                await file.close()
 
     if not file_contents:
         raise HTTPException(
