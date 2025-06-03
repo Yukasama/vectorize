@@ -1,5 +1,6 @@
 {
   "reportAssignmentType": "none",
   "reportCallIssue": "none",
-  "typeCheckingMode": "basic"
+  "reportMissingTypeStubs": "none",
+  "typeCheckingMode": "standard"
 }

@@ -104,6 +104,7 @@ async def upload_dataset_svc(
     escaped_df = _escape_csv_formulas(raw_df)
     df, classification = _classify_dataset(escaped_df, column_mapping)
 
+    file_path: Path | None = None
     try:
         unique_name = f"{Path(safe_name).stem}_{uuid4()}.jsonl"
         file_path = _save_dataframe_to_fs(df, unique_name)
@@ -120,8 +121,9 @@ async def upload_dataset_svc(
         return dataset_id
     except Exception:
         # Roll back file on DB failure
-        if "file_path" in locals() and Path(file_path).exists():
-            Path(file_path).unlink()
+        if file_path is not None and file_path.exists():
+            file_path.unlink()
+            logger.debug("Cleaned up file after database error", file_path=file_path)
         raise
 
 

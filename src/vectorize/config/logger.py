@@ -75,9 +75,11 @@ def config_logger() -> None:
 
 
 class InterceptHandler(logging.Handler):
-    @staticmethod
-    def emit(record: logging.LogRecord) -> None:
+    def emit(self, record: logging.LogRecord) -> None:
         """Intercepts standard logging and sends it to Loguru."""
+        if not self.filter(record):
+            return
+
         if "changes detected" in record.getMessage():
             return
 
@@ -87,7 +89,7 @@ class InterceptHandler(logging.Handler):
             level = record.levelno
 
         frame, depth = logging.currentframe(), 2
-        while frame.f_back and frame.f_code.co_filename == logging.__file__:
+        while frame and frame.f_back and frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back
             depth += 1
 

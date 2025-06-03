@@ -65,7 +65,7 @@ class Settings(BaseSettings):
         description="Directory for storing uploaded dataset files.",
     )
 
-    allowed_extensions: frozenset = Field(
+    allowed_extensions: frozenset[str] = Field(
         default=frozenset(_dataset_config.get("allowed_extensions", [])),
         description="File extensions permitted for dataset uploads.",
     )

@@ -63,7 +63,7 @@ def client_fixture(session: AsyncSession) -> Generator[TestClient]:
 
     app.dependency_overrides[get_session] = get_session_override
 
-    client = TestClient(app, base_url=f"http://testserver{settings.prefix}")
+    client = TestClient(app, base_url=f"http://testserver{settings.prefix}")  # NOSONAR
     yield client
 
     app.dependency_overrides.clear()

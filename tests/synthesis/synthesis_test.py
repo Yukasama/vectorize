@@ -6,9 +6,9 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-_VALID_DATASET_ID = "8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b"
 _INVALID_DATASET_ID = "12345678-1234-5678-1234-567812345678"
 _MALFORMED_UUID = "not-a-valid-uuid"
+_SYNTHESIS_MEDIA = "/synthesis/media"
 
 
 @pytest.mark.asyncio
@@ -22,7 +22,7 @@ class TestSynthesisTasks:
     ) -> None:
         """Test creating synthesis task with non-existent dataset ID."""
         response = client.post(
-            "/synthesis/media", data={"existing_dataset_id": _INVALID_DATASET_ID}
+            _SYNTHESIS_MEDIA, data={"existing_dataset_id": _INVALID_DATASET_ID}
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -32,7 +32,7 @@ class TestSynthesisTasks:
     async def test_upload_media_with_malformed_uuid(cls, client: TestClient) -> None:
         """Test creating synthesis task with malformed UUID."""
         response = client.post(
-            "/synthesis/media", data={"existing_dataset_id": _MALFORMED_UUID}
+            _SYNTHESIS_MEDIA, data={"existing_dataset_id": _MALFORMED_UUID}
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -43,7 +43,7 @@ class TestSynthesisTasks:
         cls, client: TestClient
     ) -> None:
         """Test creating synthesis task without providing files or dataset ID."""
-        response = client.post("/synthesis/media")
+        response = client.post(_SYNTHESIS_MEDIA)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert (
@@ -104,7 +104,7 @@ class TestSynthesisTasks:
     @classmethod
     async def test_synthesis_router_registration(cls, client: TestClient) -> None:
         """Test that synthesis endpoints are properly registered."""
-        response = client.post("/synthesis/media")
+        response = client.post(_SYNTHESIS_MEDIA)
         assert response.status_code != status.HTTP_404_NOT_FOUND
 
         response = client.get("/synthesis")
