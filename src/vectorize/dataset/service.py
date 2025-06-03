@@ -8,7 +8,7 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config import settings
-from vectorize.datasets.column_mapper import ColumnMapping
+from vectorize.dataset.column_mapper import ColumnMapping
 from vectorize.utils.etag_parser import parse_etag
 from vectorize.utils.file_sanitizer import sanitize_filename
 

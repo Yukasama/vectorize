@@ -5,8 +5,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.datasets.exceptions import DatasetNotFoundError
-from vectorize.datasets.repository import get_dataset_db
+from vectorize.dataset.exceptions import DatasetNotFoundError
+from vectorize.dataset.repository import get_dataset_db
 
 __all__ = [
     "validate_existing_dataset",

@@ -9,8 +9,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
 from vectorize.config.config import settings
-from vectorize.datasets.classification import Classification
-from vectorize.datasets.models import Dataset
+from vectorize.dataset.classification import Classification
+from vectorize.dataset.models import Dataset
 
 __all__ = ["seed_db"]
 

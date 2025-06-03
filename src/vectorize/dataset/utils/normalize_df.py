@@ -1,4 +1,4 @@
-"""Normalize a DataFrame to a canonical [question, positive, (negative)] layout."""
+"""Normalize a DataFrame to a canonical [prompt, chosen, (rejected)] layout."""
 
 from collections.abc import Mapping
 
@@ -10,12 +10,12 @@ __all__ = ["_normalize_dataset"]
 
 
 _ALIASES: Mapping[str, tuple[str, ...]] = {
-    "question": ("anchor", "q", "query"),
-    "positive": ("answer",),
-    "negative": ("random",),
+    "prompt": ("anchor", "q", "query"),
+    "chosen": ("answer",),
+    "rejected": ("random",),
 }
 
-_ROLES = ("question", "positive", "negative")
+_ROLES = ("prompt", "chosen", "rejected")
 
 
 def _normalize_dataset(
@@ -24,7 +24,7 @@ def _normalize_dataset(
     """Normalize DataFrame columns to canonical names and order.
 
     Mutates the provided DataFrame in-place to standardize column names to
-    'question', 'positive', and optionally 'negative', and reorders columns
+    'prompt', 'chosen', and optionally 'rejected', and reorders columns
     in that sequence. Columns not matching these roles are removed.
 
     Args:
@@ -34,7 +34,7 @@ def _normalize_dataset(
             in the DataFrame.
 
     Raises:
-        InvalidCSVFormatError: If required columns (question, positive) cannot
+        InvalidCSVFormatError: If required columns (prompt, chosen) cannot
             be found in the DataFrame.
     """
     header_map = _build_header_map(df, mapping)
@@ -43,9 +43,9 @@ def _normalize_dataset(
     df.drop(columns=[c for c in df.columns if c not in keep_columns], inplace=True)
     df.rename(columns={header_map[r]: r for r in header_map}, inplace=True)
 
-    cols_order = ["question", "positive"]
-    if "negative" in header_map:
-        cols_order.append("negative")
+    cols_order = ["prompt", "chosen"]
+    if "rejected" in header_map:
+        cols_order.append("rejected")
     df[:] = df[cols_order]
 
 
@@ -55,7 +55,7 @@ def _find_column_match(
     """Find matching column for a semantic role.
 
     Args:
-        role: Semantic role to find ('question', 'positive', or 'negative').
+        role: Semantic role to find ('prompt', 'chosen', or 'rejected').
         df_cols_lc: Dictionary mapping lowercase column names to actual column names.
         mapping: Optional explicit mapping from roles to column names.
 
@@ -90,7 +90,7 @@ def _build_header_map(
         Dictionary mapping role names to actual DataFrame column names.
 
     Raises:
-        InvalidCSVFormatError: If mandatory columns (question, positive)
+        InvalidCSVFormatError: If mandatory columns (prompt, chosen)
             cannot be found in the DataFrame.
     """
     df_cols_lc = {col.lower(): col for col in df.columns}
@@ -102,11 +102,11 @@ def _build_header_map(
             header_map[role] = column
 
     missing_column = None
-    if "question" not in header_map:
-        missing_column = "question"
+    if "prompt" not in header_map:
+        missing_column = "prompt"
         raise MissingColumnError(missing_column)
-    if "positive" not in header_map:
-        missing_column = "positive"
+    if "chosen" not in header_map:
+        missing_column = "chosen"
         raise MissingColumnError(missing_column)
 
     return header_map

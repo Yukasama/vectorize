@@ -10,7 +10,7 @@ from defusedxml import ElementTree
 from loguru import logger
 
 from vectorize.config import settings
-from vectorize.datasets.exceptions import InvalidXMLFormatError
+from vectorize.dataset.exceptions import InvalidXMLFormatError
 
 from ..file_format import FileFormat
 
