@@ -56,14 +56,14 @@ class TestValidDatasets:
 
         return UUID(dataset_id)
 
-    @pytest.mark.parametrize("ext", ["csv", "json", "xml", "xlsx"])
+    @pytest.mark.parametrize("ext", ["csv", "json", "jsonl", "xml", "xlsx"])
     async def test_formats_upload(self, ext: str, client: TestClient) -> None:
         """Uploading single-file datasets in multiple formats succeeds."""
         file_path = self.valid_dir / f"{_DEFAULT}.{ext}"
         await self._upload_and_verify(client, file_path)
 
     @pytest.mark.parametrize(
-        "file_name,file_length", [("default.zip", 4), ("big.zip", 300)]
+        "file_name,file_length", [("default.zip", 4), ("big.zip", 400)]
     )
     async def test_zip_upload(
         self, file_name: str, file_length: int, client: TestClient
@@ -87,7 +87,7 @@ class TestValidDatasets:
         """Uploading a ZIP archive succeeds and returns 201."""
         file_path = self.valid_dir / "partial.zip"
 
-        valid_files = 3
+        valid_files = 5
         response = client.post("/datasets", files=build_files(file_path))
         assert response.status_code == status.HTTP_201_CREATED
         assert len(response.json()["failed"]) == valid_files
@@ -98,9 +98,9 @@ class TestValidDatasets:
         file_path = self.valid_dir / _CUSTOM_FORMAT
 
         column_mapping = {
-            "question": "anchor",
-            "positive": "answer",
-            "negative": "no_context",
+            "prompt": "anchor",
+            "chosen": "answer",
+            "rejected": "no_context",
         }
 
         await self._upload_and_verify(

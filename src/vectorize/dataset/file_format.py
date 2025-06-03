@@ -11,6 +11,7 @@ class FileFormat(StrEnum):
     # No abbreviation to preserve extension names
     CSV = "csv"
     JSON = "json"
+    JSONL = "jsonl"
     XML = "xml"
     EXCEL = "xlsx"
     EXCEL_LEGACY = "xls"

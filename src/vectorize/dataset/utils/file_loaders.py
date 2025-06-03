@@ -73,6 +73,37 @@ def _load_json(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
         return pd.json_normalize(payload)
 
 
+def _load_jsonl(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
+    """Load a JSONL (JSON Lines) file where each line is a separate JSON object.
+
+    Args:
+        path: Path to the JSONL file.
+        *_: Additional arguments (ignored).
+
+    Returns:
+        pd.DataFrame: DataFrame with each line as a row.
+    """
+    records = []
+
+    with path.open(encoding="utf-8") as f:
+        for line_num, line in enumerate(f, 1):
+            stripped_line = line.strip()
+            if not stripped_line:
+                continue
+
+            try:
+                record = json.loads(stripped_line)
+                records.append(record)
+            except json.JSONDecodeError as e:
+                logger.warning("Invalid JSON on line {}: {} - skipping", line_num, e)
+                continue
+
+    if not records:
+        return pd.DataFrame()
+
+    return pd.DataFrame(records)
+
+
 def _load_xml(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
     """Parse an XML document into a flat DataFrame of child elements.
 
@@ -108,6 +139,7 @@ def _load_excel(path: Path, sheet_name: int = 0) -> pd.DataFrame:
 _load_file: Final[dict[FileFormat, Any]] = {
     FileFormat.CSV: _load_csv,
     FileFormat.JSON: _load_json,
+    FileFormat.JSONL: _load_jsonl,
     FileFormat.XML: _load_xml,
     FileFormat.EXCEL: _load_excel,
     FileFormat.EXCEL_LEGACY: _load_excel,

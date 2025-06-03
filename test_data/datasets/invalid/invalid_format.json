@@ -1,17 +1,17 @@
 [
   {
-    "question": "Wie kann ich mein Passwort zurücksetzen?"
+    "prompt": "Wie kann ich mein Passwort zurücksetzen?"
   },
   {
-    "question": "Das Produkt funktioniert einwandfrei."
+    "prompt": "Das Produkt funktioniert einwandfrei."
   },
   {
-    "question": "Wann werden die Waren geliefert?"
+    "prompt": "Wann werden die Waren geliefert?"
   },
   {
-    "question": "Ich bin mit dem Service sehr zufrieden."
+    "prompt": "Ich bin mit dem Service sehr zufrieden."
   },
   {
-    "question": "Gibt es Rabatte für Stammkunden?"
+    "prompt": "Gibt es Rabatte für Stammkunden?"
   }
 ]

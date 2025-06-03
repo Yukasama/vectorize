@@ -20,14 +20,14 @@ def config_logger() -> None:
 
     if is_production:
         logging.root.handlers = [InterceptHandler()]
-        logging.root.setLevel(logging.WARNING)
+        logging.root.setLevel(settings.log_level)
 
         loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
         for logger_instance in loggers:
             logger_instance.handlers = []
             logger_instance.propagate = True
 
-        logging.basicConfig(handlers=[InterceptHandler()], level=logging.WARNING)
+        logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
 
     logger.remove()
 
@@ -47,7 +47,7 @@ def config_logger() -> None:
     logger.add(
         sys.stderr if is_production else sys.stdout,
         format=_production_format if is_production else _development_format,
-        level=logging.WARNING if is_production else logging.DEBUG,
+        level=logging.INFO if is_production else logging.DEBUG,
         colorize=not is_production,
         enqueue=True,
         backtrace=not is_production,
@@ -70,7 +70,7 @@ def config_logger() -> None:
             ),
             serialize=True,
             enqueue=True,
-            level=logging.WARNING,
+            level=logging.INFO,
         )
 
 

@@ -10,9 +10,9 @@ __all__ = ["_normalize_dataset"]
 
 
 _ALIASES: Mapping[str, tuple[str, ...]] = {
-    "prompt": ("anchor", "q", "query"),
-    "chosen": ("answer",),
-    "rejected": ("random",),
+    "prompt": ("anchor", "question", "q", "query"),
+    "chosen": ("answer", "positive", "a"),
+    "rejected": ("random", "negative", "no_context"),
 }
 
 _ROLES = ("prompt", "chosen", "rejected")

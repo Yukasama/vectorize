@@ -8,6 +8,6 @@ __all__ = ["ColumnMapping"]
 class ColumnMapping(TypedDict, total=False):
     """Mapping of columns in the dataset."""
 
-    question: str | None
-    positive: str | None
-    negative: str | None
+    prompt: str | None
+    chosen: str | None
+    rejected: str | None

@@ -15,7 +15,7 @@ from vectorize.dataset.exceptions import DatasetNotFoundError
 from vectorize.dataset.models import Dataset
 from vectorize.dataset.repository import get_dataset_db, upload_dataset_db
 from vectorize.dataset.upload_options_model import DatasetUploadOptions
-from vectorize.dataset.utils.save_dataset import _save_dataframe_to_fs
+from vectorize.dataset.utils.dataset_fs import _save_dataframe_to_fs
 
 from .repository import update_synthesis_task_status
 from .text_extractor import extract_text_from_media
@@ -108,7 +108,7 @@ async def process_existing_dataset_background(
 
             classification = (
                 Classification.SENTENCE_TRIPLES
-                if "negative" in df.columns
+                if "rejected" in df.columns
                 else Classification.SENTENCE_DUPLES
             )
 
@@ -192,7 +192,7 @@ async def _process_single_file(
 
         classification = (
             Classification.SENTENCE_TRIPLES
-            if "negative" in df.columns
+            if "rejected" in df.columns
             else Classification.SENTENCE_DUPLES
         )
 

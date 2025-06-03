@@ -1,27 +1,27 @@
 [
   {
-    "question": "Wie kann ich mein Passwort zurücksetzen?",
-    "positive": "Wie setze ich mein Passwort auf die Standardeinstellung zurück?",
-    "negative": "Wie kann ich meine Bestellung stornieren?"
+    "prompt": "Wie kann ich mein Passwort zurücksetzen?",
+    "chosen": "Wie setze ich mein Passwort auf die Standardeinstellung zurück?",
+    "rejected": "Wie kann ich meine Bestellung stornieren?"
   },
   {
-    "question": "Das Produkt funktioniert einwandfrei.",
-    "positive": "Die Ware ist in einem sehr guten Zustand.",
-    "negative": "Das Gerät ist defekt angekommen."
+    "prompt": "Das Produkt funktioniert einwandfrei.",
+    "chosen": "Die Ware ist in einem sehr guten Zustand.",
+    "rejected": "Das Gerät ist defekt angekommen."
   },
   {
-    "question": "Wann werden die Waren geliefert?",
-    "positive": "An welchem Tag kommt meine Bestellung an?",
-    "negative": "Wie kann ich die Zahlungsmethode ändern?"
+    "prompt": "Wann werden die Waren geliefert?",
+    "chosen": "An welchem Tag kommt meine Bestellung an?",
+    "rejected": "Wie kann ich die Zahlungsmethode ändern?"
   },
   {
-    "question": "Ich bin mit dem Service sehr zufrieden.",
-    "positive": "Der Kundendienst hat meine Erwartungen übertroffen.",
-    "negative": "Ich warte seit Wochen auf eine Antwort vom Support."
+    "prompt": "Ich bin mit dem Service sehr zufrieden.",
+    "chosen": "Der Kundendienst hat meine Erwartungen übertroffen.",
+    "rejected": "Ich warte seit Wochen auf eine Antwort vom Support."
   },
   {
-    "question": "Gibt es Rabatte für Stammkunden?",
-    "positive": "Haben Sie Sonderangebote für regelmäßige Käufer?",
-    "negative": "Wie kann ich einen defekten Artikel umtauschen?"
+    "prompt": "Gibt es Rabatte für Stammkunden?",
+    "chosen": "Haben Sie Sonderangebote für regelmäßige Käufer?",
+    "rejected": "Wie kann ich einen defekten Artikel umtauschen?"
   }
 ]

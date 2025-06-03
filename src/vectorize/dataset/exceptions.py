@@ -54,7 +54,7 @@ class InvalidCSVFormatError(AppError):
     """Exception raised when the CSV format is invalid."""
 
     error_code = ErrorCode.INVALID_CSV_FORMAT
-    message = "Invalid CSV format, expected: 'question, positive, negative' as columns"
+    message = "Invalid CSV format, expected: 'prompt, chosen, rejected' as columns"
     status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 

@@ -1,0 +1,5 @@
+{"prompt": "Wie kann ich mein Passwort zurücksetzen?", "chosen": "Wie setze ich mein Passwort auf die Standardeinstellung zurück?", "rejected": "Wie kann ich meine Bestellung stornieren?"}
+{"prompt": "Das Produkt funktioniert einwandfrei.", "chosen": "Die Ware ist in einem sehr guten Zustand.", "rejected": "Das Gerät ist defekt angekommen."}
+{"prompt": "Wann werden die Waren geliefert?", "chosen": "An welchem Tag kommt meine Bestellung an?", "rejected": "Wie kann ich die Zahlungsmethode ändern?"}
+{"prompt": "Ich bin mit dem Service sehr zufrieden.", "chosen": "Der Kundendienst hat meine Erwartungen übertroffen.", "rejected": "Ich warte seit Wochen auf eine Antwort vom Support."}
+{"prompt": "Gibt es Rabatte für Stammkunden?", "chosen": "Haben Sie Sonderangebote für regelmäßige Käufer?", "rejected": "Wie kann ich einen defekten Artikel umtauschen?"}

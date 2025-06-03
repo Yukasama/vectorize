@@ -1,4 +1,4 @@
-question,positive,negative
+prompt,chosen,rejected
 Normal Entry,Safe content,100
 "Injection","Field breaking attack, extra columns",200
 "Double Quote Escape""Injection","Breaking parser with quotes""",300

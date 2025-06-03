@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <data>
   <record>
-    <question>Wie kann ich mein Passwort zurücksetzen?</question>
+    <prompt>Wie kann ich mein Passwort zurücksetzen?</prompt>
   </record>
   <record>
-    <question>Das Produkt funktioniert einwandfrei.</question>
+    <prompt>Das Produkt funktioniert einwandfrei.</prompt>
   </record>
   <record>
-    <question>Wann werden die Waren geliefert?</question>
+    <prompt>Wann werden die Waren geliefert?</prompt>
   </record>
   <record>
-    <question>Ich bin mit dem Service sehr zufrieden.</question>
+    <prompt>Ich bin mit dem Service sehr zufrieden.</prompt>
   </record>
   <record>
-    <question>Gibt es Rabatte für Stammkunden?</question>
+    <prompt>Gibt es Rabatte für Stammkunden?</prompt>
   </record>
 </data>

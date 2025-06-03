@@ -118,7 +118,7 @@ async def update_dataset_db(
     return dataset
 
 
-async def delete_dataset_db(db: AsyncSession, dataset_id: UUID) -> None:
+async def delete_dataset_db(db: AsyncSession, dataset_id: UUID) -> str:
     """Delete a dataset from the database.
 
     Args:
@@ -138,3 +138,4 @@ async def delete_dataset_db(db: AsyncSession, dataset_id: UUID) -> None:
     await db.delete(dataset)
     await db.commit()
     logger.debug("Dataset deleted", dataset=dataset)
+    return dataset.file_name

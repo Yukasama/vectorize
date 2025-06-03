@@ -18,12 +18,12 @@ __all__ = ["_classify_dataset"]
 
 
 _ALIASES: Mapping[str, tuple[str, ...]] = {
-    "question": ("anchor", "q", "query"),
-    "positive": ("answer",),
-    "negative": ("random",),
+    "prompt": ("anchor", "q", "query"),
+    "chosen": ("answer",),
+    "rejected": ("random",),
 }
 
-_ROLES = ("question", "positive", "negative")
+_ROLES = ("prompt", "chosen", "rejected")
 
 
 def _classify_dataset(
@@ -50,15 +50,15 @@ def _classify_dataset(
     df_cols_lc = {c.lower(): c for c in df.columns}
     header_map = _resolve_headers(df_cols_lc, mapping)
 
-    ordered_roles = ["question", "positive"] + (
-        ["negative"] if "negative" in header_map else []
+    ordered_roles = ["prompt", "chosen"] + (
+        ["rejected"] if "rejected" in header_map else []
     )
     cleaned = df[[header_map[r] for r in ordered_roles]].copy()
     cleaned.columns = ordered_roles
 
     cls = (
         Classification.SENTENCE_TRIPLES
-        if "negative" in header_map
+        if "rejected" in header_map
         else Classification.SENTENCE_DUPLES
     )
     return cast(pd.DataFrame, cleaned), cls
@@ -81,8 +81,8 @@ def _resolve_headers(
     Raises:
         InvalidCSVColumnError: When a column name specified in mapping is
             not found in the DataFrame.
-        MissingColumnError: When mandatory columns (question, positive, or
-            an explicitly requested negative) cannot be resolved.
+        MissingColumnError: When mandatory columns (prompt, chosen, or
+            an explicitly requested rejected) cannot be resolved.
     """
     resolved: dict[str, str] = {}
 
@@ -111,9 +111,9 @@ def _resolve_headers(
         if col_name:
             resolved[role] = col_name
 
-    mandatory = ["question", "positive"]
-    if mapping and mapping.get("negative") is not None:
-        mandatory.append("negative")
+    mandatory = ["prompt", "chosen"]
+    if mapping and mapping.get("rejected") is not None:
+        mandatory.append("rejected")
 
     for role in mandatory:
         if role not in resolved:

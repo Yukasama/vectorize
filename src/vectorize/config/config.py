@@ -4,7 +4,7 @@ import tomllib
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 __all__ = ["settings"]
@@ -171,7 +171,7 @@ class Settings(BaseSettings):
     )
 
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
-        default="DEBUG",
+        default="INFO",
         validation_alias="LOG_LEVEL",
         description="Logging level (e.g., DEBUG, INFO, WARNING, ERROR).",
     )
@@ -200,6 +200,13 @@ class Settings(BaseSettings):
     def reload(self) -> bool:
         """Whether to enable auto-reload on code changes."""
         return _server_config.get("reload") and (self.app_env == "development")
+
+    @model_validator(mode="after")
+    def validate_log_level(self) -> "Settings":
+        """Adjust log level based on environment."""
+        if self.app_env == "production" and self.log_level == "DEBUG":
+            self.log_level = "INFO"
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"

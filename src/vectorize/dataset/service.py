@@ -23,8 +23,8 @@ from .repository import (
 from .upload_options_model import DatasetUploadOptions
 from .utils.csv_escaper import _escape_csv_formulas
 from .utils.dataset_classifier import _classify_dataset
+from .utils.dataset_fs import _delete_dataset_from_fs, _save_dataframe_to_fs
 from .utils.file_df_converter import _convert_file_to_df
-from .utils.save_dataset import _save_dataframe_to_fs
 
 __all__ = [
     "get_dataset_svc",
@@ -95,9 +95,9 @@ async def upload_dataset_svc(
     column_mapping: ColumnMapping | None = None
     if options:
         column_mapping = ColumnMapping(
-            question=options.question_name,
-            positive=options.positive_name,
-            negative=options.negative_name,
+            prompt=options.prompt_name,
+            chosen=options.chosen_name,
+            rejected=options.rejected_name,
         )
 
     raw_df = await _convert_file_to_df(file, ext, options.sheet_index if options else 0)
@@ -166,5 +166,10 @@ async def delete_dataset_svc(db: AsyncSession, dataset_id: UUID) -> None:
     Returns:
         None
     """
-    await delete_dataset_db(db, dataset_id)
+    file_name = await delete_dataset_db(db, dataset_id)
+    if not file_name:
+        logger.warning("Dataset not found for deletion", dataset_id=dataset_id)
+        return
+
+    _delete_dataset_from_fs(file_name)
     logger.debug("Dataset deleted", dataset_id=dataset_id)

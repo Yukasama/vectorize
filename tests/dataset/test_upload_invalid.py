@@ -52,7 +52,7 @@ class TestInvalidDatasets:
         assert response.status_code == expected_status
         assert response.json()["code"] == expected_code
 
-    @pytest.mark.parametrize("ext", ["csv", "json", "xml", "xlsx"])
+    @pytest.mark.parametrize("ext", ["csv", "json", "jsonl", "xml", "xlsx"])
     async def test_invalid_format(self, client: TestClient, ext: str) -> None:
         """Test uploading an invalid file format."""
         test_file_path = self.invalid_dir / f"{_INVALID_FORMAT}.{ext}"
@@ -68,7 +68,7 @@ class TestInvalidDatasets:
         """Uploading a ZIP archive succeeds and returns 201."""
         file_path = self.invalid_dir / "invalid.zip"
 
-        invalid_files = 6
+        invalid_files = 7
         response = client.post("/datasets", files=build_files(file_path))
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         assert len(response.json()["failed"]) == invalid_files
