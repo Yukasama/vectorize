@@ -27,7 +27,7 @@ def config_logger() -> None:
             logger_instance.handlers = []
             logger_instance.propagate = True
 
-        logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
+        logging.basicConfig(handlers=[InterceptHandler()], level=settings.log_level)
 
     logger.remove()
 
@@ -47,7 +47,7 @@ def config_logger() -> None:
     logger.add(
         sys.stderr if is_production else sys.stdout,
         format=_production_format if is_production else _development_format,
-        level=logging.INFO if is_production else logging.DEBUG,
+        level=settings.log_level,
         colorize=not is_production,
         enqueue=True,
         backtrace=not is_production,
@@ -70,7 +70,7 @@ def config_logger() -> None:
             ),
             serialize=True,
             enqueue=True,
-            level=logging.INFO,
+            level=settings.log_level,
         )
 
 
