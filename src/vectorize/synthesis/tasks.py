@@ -95,7 +95,9 @@ async def process_existing_dataset_background(
 
             source_dataset = await get_dataset_db(db, dataset_id)
             if not source_dataset:
-                raise DatasetNotFoundError(f"Dataset {dataset_id} not found")
+                raise DatasetNotFoundError(
+                    dataset_id=dataset_id, message=f"Dataset {dataset_id} not found"
+                )
 
             dataset_file_path = settings.dataset_upload_dir / source_dataset.file_name
 

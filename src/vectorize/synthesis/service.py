@@ -41,7 +41,7 @@ async def validate_existing_dataset(
     try:
         existing_dataset = await get_dataset_db(db, dataset_uuid)
         if not existing_dataset:
-            raise DatasetNotFoundError(str(dataset_uuid))
+            raise DatasetNotFoundError(dataset_uuid)
     except DatasetNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
