@@ -5,10 +5,14 @@ from csv import Sniffer
 from pathlib import Path
 from typing import Any, Final
 
+import chardet
+import orjson
 import pandas as pd
+import polars as pl
 from defusedxml import ElementTree
 from loguru import logger
 
+from vectorize.common.exceptions import InvalidFileError
 from vectorize.config import settings
 from vectorize.dataset.exceptions import InvalidXMLFormatError
 
@@ -34,21 +38,26 @@ def _load_csv(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
         UnicodeDecodeError: If all encoding attempts fail.
     """
     delim = _detect_delimiter(path)
-    encodings = ("utf-8-sig", "utf-8", "latin1", "cp1252")
-    for enc in encodings:
-        try:
-            return pd.read_csv(path, delimiter=delim, encoding=enc)
-        except UnicodeDecodeError:
-            logger.debug("decode fail ({}), retry", enc)
+    encoding = _detect_encoding(path)
 
-    # Last attempt with engine="python" to tolerate malformed lines.
-    return pd.read_csv(
-        path,
-        delimiter=delim,
-        encoding="latin1",
-        engine="python",
-        on_bad_lines="skip",
-    )
+    try:
+        return pd.read_csv(
+            path,
+            delimiter=delim,
+            encoding=encoding,
+            engine="c",
+            low_memory=False,
+            dtype_backend="pyarrow",
+        )
+    except (UnicodeDecodeError, pd.errors.ParserError) as e:
+        # Fallback to multiple encoding attempts
+        encodings = ("utf-8-sig", "utf-8", "latin1", "cp1252")
+        for enc in encodings:
+            try:
+                return pd.read_csv(path, delimiter=delim, encoding=enc, engine="c")
+            except UnicodeDecodeError:
+                logger.debug("decode fail ({}), retry", enc)
+        raise InvalidFileError(f"Failed to decode CSV file {path}") from e
 
 
 def _load_json(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
@@ -62,10 +71,15 @@ def _load_json(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
         pd.DataFrame: DataFrame derived from the JSON structure.
     """
     try:
-        return pd.read_json(path)
+        return pd.read_json(path, dtype_backend="pyarrow")
     except ValueError:
-        with path.open(encoding="utf-8") as f:
-            payload = json.load(f)
+        try:
+            with path.open("rb") as f:
+                payload = orjson.loads(f.read())
+        except ImportError:
+            with path.open(encoding="utf-8") as f:
+                payload = json.load(f)
+
         if isinstance(payload, list):
             return pd.DataFrame(payload)
         if isinstance(payload, dict) and "data" in payload:
@@ -74,7 +88,7 @@ def _load_json(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
 
 
 def _load_jsonl(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
-    """Load a JSONL (JSON Lines) file where each line is a separate JSON object.
+    """Load a JSONL file.
 
     Args:
         path: Path to the JSONL file.
@@ -83,25 +97,21 @@ def _load_jsonl(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
     Returns:
         pd.DataFrame: DataFrame with each line as a row.
     """
-    records = []
-
-    with path.open(encoding="utf-8") as f:
-        for line_num, line in enumerate(f, 1):
-            stripped_line = line.strip()
-            if not stripped_line:
-                continue
-
-            try:
-                record = json.loads(stripped_line)
-                records.append(record)
-            except json.JSONDecodeError as e:
-                logger.warning("Invalid JSON on line {}: {} - skipping", line_num, e)
-                continue
-
-    if not records:
-        return pd.DataFrame()
-
-    return pd.DataFrame(records)
+    try:
+        df_polars = pl.read_ndjson(path)
+        return df_polars.to_pandas()
+    except ImportError:
+        logger.info("Polars not available, using pandas fallback")
+        return pd.read_json(
+            path,
+            lines=True,
+            orient="records",
+            dtype_backend="pyarrow",
+            engine="pyarrow",
+        )
+    except Exception as e:
+        logger.warning("Failed to load with polars: {}, using pandas", e)
+        return pd.read_json(path, lines=True, orient="records")
 
 
 def _load_xml(path: Path, *_: Any) -> pd.DataFrame:  # noqa: ANN401
@@ -133,7 +143,17 @@ def _load_excel(path: Path, sheet_name: int = 0) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame with sheet contents.
     """
-    return pd.read_excel(path, sheet_name=sheet_name)
+    try:
+        engine = "openpyxl" if path.suffix.lower() == ".xlsx" else "xlrd"
+
+        return pd.read_excel(
+            path,
+            sheet_name=sheet_name,
+            engine=engine,
+            dtype_backend="pyarrow",
+        )
+    except Exception:
+        return pd.read_excel(path, sheet_name=sheet_name)
 
 
 _load_file: Final[dict[FileFormat, Any]] = {
@@ -160,15 +180,30 @@ def _detect_delimiter(path: Path) -> str:
     Returns:
         str: Detected delimiter character.
     """
-    with path.open(newline="", encoding="utf-8") as csvfile:
-        sample: Final = csvfile.read(4096)
+    with path.open(newline="", encoding="utf-8", errors="ignore") as csvfile:
+        sample: Final = csvfile.read(1024)
         if not sample:
             return settings.default_delimiter
+
+        delimiter_counts = {d: sample.count(d) for d in _DELIMITERS}
+        most_common = max(delimiter_counts, key=lambda d: delimiter_counts[d])
+
+        if delimiter_counts[most_common] > 0:
+            return most_common
+
         try:
             dialect = Sniffer().sniff(sample)
             return dialect.delimiter
         except Exception:
-            for d in _DELIMITERS:
-                if d in sample:
-                    return d
             return settings.default_delimiter
+
+
+def _detect_encoding(path: Path) -> str:
+    """Detect file encoding using chardet for better accuracy."""
+    try:
+        with path.open("rb") as f:
+            raw_data = f.read(10000)
+            result = chardet.detect(raw_data)
+            return result["encoding"] or "utf-8"
+    except ImportError:
+        return "utf-8"
