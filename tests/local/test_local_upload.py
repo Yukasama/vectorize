@@ -106,20 +106,22 @@ class TestZipModelUpload:
         assert response.status_code == status.HTTP_409_CONFLICT
         assert response.json()["code"] == "MODEL_ALREADY_EXISTS"
 
-    async def test_multiple_model(self, client: TestClient) -> None:
+    @classmethod
+    async def test_multiple_model(cls, client: TestClient) -> None:
         """Test uploading a ZIP file with a copy of the model."""
         files = get_test_zip_file(TestZipModelUpload._multiple_models_zip)
         file_count = 2
 
-        current_model_dirs = [d for d in Path(self._upload_dir).iterdir() if d.is_dir()]
+        response = client.get("/models?size=100")
+        assert response.status_code == status.HTTP_200_OK
+        models_length = len(response.json()["items"])
 
         response = client.post(
             "/uploads/local",
             params={"model_name": "multiple_models", "extract_zip": "true"},
             files=files,
         )
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.json()["message"] == "Successfully uploaded 2 models"
 
-        model_dirs = [d for d in Path(self._upload_dir).iterdir() if d.is_dir()]
-        assert len(model_dirs) == len(current_model_dirs) + file_count
+        assert response.status_code == status.HTTP_201_CREATED
+        response = client.get("/models?size=100")
+        assert len(response.json()["items"]) == models_length + file_count

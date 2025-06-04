@@ -38,17 +38,15 @@ ENV UPLOAD_DIR=/app/data/datasets \
     MODELS_DIR=/app/data/models \
     DB_DIR=/app/db
 
-# Install git for git-python dependency  
+# Install dependencies, create user, and prepare directories in one layer
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        ca-certificates \
         git-core \
         libcurl4 \
-        libpcre2-8-0 \
-        ca-certificates && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Create user with no home dir and login, then prepare writable volumes
-RUN groupadd --system appuser && useradd --system \
+        libpcre2-8-0 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    groupadd --system appuser && useradd --system \
             --gid appuser \
             --no-create-home \
             --shell /usr/sbin/nologin \

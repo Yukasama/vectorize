@@ -61,19 +61,21 @@ def create_test_zip(
 
         print(f"Total files created: {file_count}")  # noqa: T201
 
-        output_path = str(Path(output_path))
-        print(f"Creating ZIP archive: {output_path}")  # noqa: T201
+        output_zip_path = Path(output_path)
+        print(f"Creating ZIP archive: {output_zip_path}")  # noqa: T201
 
-        with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+        with zipfile.ZipFile(output_zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
             for root, _, zip_files in os.walk(temp_dir):
                 for file in zip_files:
                     file_path = Path(root) / file
                     arcname = os.path.relpath(file_path, temp_dir)
                     zipf.write(file_path, arcname)
 
-        zip_size = output_path.stat().st_size  # type: ignore
-        print(f"ZIP file created: {output_path} ({zip_size / (1024 * 1024):.2f} MB)")  # noqa: T201
-        return Path(output_path)
+        zip_size = output_zip_path.stat().st_size
+        print(  # noqa: T201
+            f"ZIP file created: {output_zip_path} ({zip_size / (1024 * 1024):.2f} MB)"
+        )
+        return output_zip_path
 
     finally:
         if not preserve_temp:
@@ -94,6 +96,18 @@ if __name__ == "__main__":
         type=int,
         default=100,
         help="Number of copies to make of each file (default: 100)",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default="test_large.zip",
+        help="Output ZIP file path (default: test_large.zip)",
+    )
+    parser.add_argument(
+        "--preserve-temp",
+        action="store_true",
+        help="Keep temporary directory after creating ZIP",
     )
 
     args = parser.parse_args()

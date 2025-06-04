@@ -1,4 +1,4 @@
-id,anchor,positive,negative
+id,anchor,chosen,rejected
 1,"Wie kann ich mein Passwort zurücksetzen?","Wie setze ich mein Passwort auf die Standardeinstellung zurück?","Wie kann ich meine Bestellung stornieren?"
 2,"Das Produkt funktioniert einwandfrei.","Die Ware ist in einem sehr guten Zustand.","Das Gerät ist defekt angekommen."
 3,"Wann werden die Waren geliefert?","An welchem Tag kommt meine Bestellung an?","Wie kann ich die Zahlungsmethode ändern?"

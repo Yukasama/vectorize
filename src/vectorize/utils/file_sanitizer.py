@@ -9,7 +9,7 @@ from fastapi import UploadFile
 from vectorize.common.exceptions import InvalidFileError
 from vectorize.config import settings
 from vectorize.config.errors import ErrorNames
-from vectorize.datasets.exceptions import UnsupportedFormatError
+from vectorize.dataset.exceptions import UnsupportedFormatError
 
 __all__ = ["sanitize_filename"]
 

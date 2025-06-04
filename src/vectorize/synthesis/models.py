@@ -9,7 +9,7 @@ from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 from vectorize.common.task_status import TaskStatus
 
 if TYPE_CHECKING:
-    from vectorize.datasets.models import Dataset
+    from vectorize.dataset.models import Dataset
 
 __all__ = ["SynthesisTask"]
 

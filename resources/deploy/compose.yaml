@@ -15,6 +15,7 @@ services:
       UPLOAD_DIR: /app/data/datasets
       MODELS_DIR: /app/data/models
       DB_DIR: /app/db
+      LOG_LEVEL: INFO
     networks: [vectorize-network]
     restart: unless-stopped
     cap_drop: [ALL]

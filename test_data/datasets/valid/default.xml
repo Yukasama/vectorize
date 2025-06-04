@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <data>
   <record>
-    <question>Wie kann ich mein Passwort zurücksetzen?</question>
-    <positive>Wie setze ich mein Passwort auf die Standardeinstellung zurück?</positive>
-    <negative>Wie kann ich meine Bestellung stornieren?</negative>
+    <prompt>Wie kann ich mein Passwort zurücksetzen?</prompt>
+    <chosen>Wie setze ich mein Passwort auf die Standardeinstellung zurück?</chosen>
+    <rejected>Wie kann ich meine Bestellung stornieren?</rejected>
   </record>
   <record>
-    <question>Das Produkt funktioniert einwandfrei.</question>
-    <positive>Die Ware ist in einem sehr guten Zustand.</positive>
-    <negative>Das Gerät ist defekt angekommen.</negative>
+    <prompt>Das Produkt funktioniert einwandfrei.</prompt>
+    <chosen>Die Ware ist in einem sehr guten Zustand.</chosen>
+    <rejected>Das Gerät ist defekt angekommen.</rejected>
   </record>
   <record>
-    <question>Wann werden die Waren geliefert?</question>
-    <positive>An welchem Tag kommt meine Bestellung an?</positive>
-    <negative>Wie kann ich die Zahlungsmethode ändern?</negative>
+    <prompt>Wann werden die Waren geliefert?</prompt>
+    <chosen>An welchem Tag kommt meine Bestellung an?</chosen>
+    <rejected>Wie kann ich die Zahlungsmethode ändern?</rejected>
   </record>
   <record>
-    <question>Ich bin mit dem Service sehr zufrieden.</question>
-    <positive>Der Kundendienst hat meine Erwartungen übertroffen.</positive>
-    <negative>Ich warte seit Wochen auf eine Antwort vom Support.</negative>
+    <prompt>Ich bin mit dem Service sehr zufrieden.</prompt>
+    <chosen>Der Kundendienst hat meine Erwartungen übertroffen.</chosen>
+    <rejected>Ich warte seit Wochen auf eine Antwort vom Support.</rejected>
   </record>
   <record>
-    <question>Gibt es Rabatte für Stammkunden?</question>
-    <positive>Haben Sie Sonderangebote für regelmäßige Käufer?</positive>
-    <negative>Wie kann ich einen defekten Artikel umtauschen?</negative>
+    <prompt>Gibt es Rabatte für Stammkunden?</prompt>
+    <chosen>Haben Sie Sonderangebote für regelmäßige Käufer?</chosen>
+    <rejected>Wie kann ich einen defekten Artikel umtauschen?</rejected>
   </record>
 </data>
