@@ -27,6 +27,7 @@ AI_MODEL_READ_ID = UUID("7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_FAIL_ID = UUID("8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_DELETE_ID = UUID("2d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_LOCALTRAINMODEL_ID = UUID("3d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+AI_MODEL_MINILM_ID = UUID("45e16930-a99d-4b15-9f49-2b4b2c67f86d")
 
 DATASET_TRAINING_1_ID = UUID("0a9d5e87-e497-4737-9829-2070780d10df")
 DATASET_TRAINING_2_ID = UUID("0b30b284-f7fe-4e6c-a270-17cafc5b5bcb")
@@ -191,6 +192,14 @@ async def seed_db(session: AsyncSession) -> None:
             name="Any Paged Model 05",
             source=ModelSource.LOCAL,
             model_tag="any_model_05",
+        ),
+    )
+    session.add(
+        AIModel(
+            id=AI_MODEL_MINILM_ID,
+            name="all-MiniLM-L6-v2",
+            source=ModelSource.HUGGINGFACE,
+            model_tag="models--sentence-transformers--all-MiniLM-L6-v2",
         ),
     )
     await session.commit()

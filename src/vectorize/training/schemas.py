@@ -1,19 +1,71 @@
-"""Schemas for DPO training (Hugging Face TRL)."""
+"""Schemas for SBERT/SentenceTransformer triplet training."""
 
 
 from pydantic import BaseModel, Field
-
 from vectorize.training.models import TrainingTask
 
 
-class TrainConfig(BaseModel):
-    """Hyperparameters for DPO training."""
+class TrainRequest(BaseModel):
+    """Request für SBERT Triplet-Training: CSVs mit question,positive,negative. Alle wichtigen und optionalen sentence-transformers Parameter unterstützt."""
 
-    epochs: int = Field(1, description="Number of training epochs", gt=0)
-    learning_rate: float = Field(5e-5, description="Learning rate", gt=0)
-    per_device_train_batch_size: int = Field(
-        8, description="Batch size per device", gt=0
+    # Pflichtparameter
+    model_tag: str = Field(description="Tag des lokalen Modells in der Datenbank")
+    dataset_ids: list[str] = Field(
+        description="IDs der Trainingsdatensätze (CSV, Spalten: question,positive,negative)",
+        min_length=1,
     )
+    epochs: int = Field(1, description="Anzahl Trainingsepochen", gt=0)
+    per_device_train_batch_size: int = Field(
+        8, description="Batch-Größe pro Gerät", gt=0
+    )
+    learning_rate: float = Field(
+        2e-5, description="Learning Rate", gt=0
+    )
+
+    # Optionale sentence-transformers Parameter
+    warmup_steps: int | None = Field(
+        None, description="Anzahl Warmup-Schritte"
+    )
+    optimizer_name: str | None = Field(
+        None, description="Optimizer (z.B. AdamW, Adam, RMSprop)"
+    )
+    scheduler: str | None = Field(
+        None, description="Lernraten-Scheduler (z.B. 'constantlr', 'warmuplinear')"
+    )
+    weight_decay: float | None = Field(
+        None, description="Weight Decay (L2 Regularisierung)"
+    )
+    max_grad_norm: float | None = Field(
+        None, description="Maximaler Gradient-Norm für Clipping"
+    )
+    use_amp: bool | None = Field(
+        None, description="Automatisches Mixed Precision Training (AMP) nutzen"
+    )
+    show_progress_bar: bool | None = Field(
+        None, description="Fortschrittsbalken anzeigen"
+    )
+    evaluation_steps: int | None = Field(
+        None, description="Evaluiere alle X Schritte (optional, falls Val-Set)"
+    )
+    output_path: str | None = Field(
+        None, description="Pfad zum Speichern des Modells (optional, wird sonst automatisch gewählt)"
+    )
+    save_best_model: bool | None = Field(
+        None, description="Bestes Modell speichern (bei Val-Set)"
+    )
+    save_each_epoch: bool | None = Field(
+        None, description="Modell nach jeder Epoche speichern"
+    )
+    save_optimizer_state: bool | None = Field(
+        None, description="Optimizer-Status mit speichern"
+    )
+    dataloader_num_workers: int | None = Field(
+        None, description="Anzahl DataLoader-Worker (default: 0)"
+    )
+    device: str | None = Field(
+        None, description="Gerät für Training ('cpu', 'cuda', 'mps', etc.)"
+    )
+    # ...weitere optionale Parameter können ergänzt werden
 
 
 class TrainingStatusResponse(BaseModel):
@@ -29,7 +81,6 @@ class TrainingStatusResponse(BaseModel):
 
     @classmethod
     def from_task(cls, task: TrainingTask) -> "TrainingStatusResponse":
-        """Create a TrainingStatusResponse from a TrainingTask."""
         return cls(
             task_id=str(task.id),
             status=task.task_status.name,
@@ -41,45 +92,3 @@ class TrainingStatusResponse(BaseModel):
             else None,
             progress=task.progress if hasattr(task, "progress") else None,
         )
-
-
-class TrainRequest(BaseModel):
-    """Request for DPO training: expects datasets in prompt/chosen/rejected (JSONL).
-
-    All DPOConfig parameters supported. Important ones are required, others optional.
-    """
-
-    model_id: str = Field(description="ID of the local model in the database")
-    dataset_ids: list[str] = Field(
-        description="IDs of training datasets (JSONL, prompt/chosen/rejected)",
-        min_length=1,
-    )
-    epochs: int = Field(1, description="Number of training epochs", gt=0)
-    learning_rate: float = Field(5e-5, description="Learning rate", gt=0)
-    per_device_train_batch_size: int = Field(
-        8, description="Batch size per device", gt=0
-    )
-    weight_decay: float | None = Field(
-        None, description="Weight decay (L2 regularization)"
-    )
-    warmup_steps: int | None = Field(
-        None, description="Number of warmup steps"
-    )
-    logging_steps: int | None = Field(
-        None, description="Log every X steps"
-    )
-    save_steps: int | None = Field(
-        None, description="Save checkpoint every X steps"
-    )
-    max_grad_norm: float | None = Field(
-        None, description="Maximum gradient norm for clipping"
-    )
-    gradient_accumulation_steps: int | None = Field(
-        None, description="Number of steps to accumulate gradients"
-    )
-    fp16: bool | None = Field(
-        None, description="Use mixed precision training (fp16)"
-    )
-    bf16: bool | None = Field(
-        None, description="Use bfloat16 precision"
-    )

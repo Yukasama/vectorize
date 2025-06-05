@@ -1,5 +1,6 @@
-"""Training router for DPO training (Hugging Face TRL)."""
+"""Training router for SBERT triplet training (Hugging Face TRL)."""
 
+import os
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,7 +12,7 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.ai_model.exceptions import ModelNotFoundError
-from vectorize.ai_model.repository import get_ai_model_by_id
+from vectorize.ai_model.repository import get_ai_model_db
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
 from vectorize.datasets.repository import get_dataset_db
@@ -30,7 +31,6 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
-from .tasks import train_model_task
 from .utils.uuid_validator import is_valid_uuid
 
 __all__ = ["router"]
@@ -44,19 +44,24 @@ async def train_model(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Starts DPO training as a background task. Expects prompt/chosen/rejected data."""
-    if not is_valid_uuid(train_request.model_id):
-        raise InvalidModelIdError(train_request.model_id)
-    model = await get_ai_model_by_id(db, UUID(train_request.model_id))
+    """Starts SBERT triplet training as a background task. Expects CSVs with question,positive,negative."""
+    if not hasattr(train_request, "model_tag"):
+        raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
+    model = await get_ai_model_db(db, train_request.model_tag)
     if not model:
-        raise ModelNotFoundError(train_request.model_id)
+        raise ModelNotFoundError(train_request.model_tag)
     model_path = str(Path("data/models") / model.model_tag)
     model_weights_path = Path(model_path)
-    if not any(model_weights_path.glob("*.bin")) and not any(
-        model_weights_path.glob("*.safetensors")
-    ):
+    # Recursively check for .safetensors or .bin files in model_path
+    def has_model_weights(path):
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if file.endswith('.safetensors') or file.endswith('.bin'):
+                    return True
+        return False
+    if not has_model_weights(model_path):
         raise TrainingModelWeightsNotFoundError(
-            f"Model weights not found in {model_path}"
+            f"Model weights not found in {model_path} (searched recursively)"
         )
     dataset_paths = []
     for ds_id in train_request.dataset_ids:
@@ -68,7 +73,7 @@ async def train_model(
         dataset_paths.append(str(dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
     if missing:
-        raise TrainingDatasetNotFoundError(f"Missing datasets: {', '.join(missing)}")
+        raise TrainingDatasetNotFoundError("Missing datasets: %s" % ", ".join(missing))
     tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     output_dir = (
@@ -77,26 +82,25 @@ async def train_model(
     )
 
     logger.bind(
-        model_id=train_request.model_id,
+        model_tag=train_request.model_tag,
         dataset_count=len(dataset_paths),
         model_path=model_path,
-    ).info("DPO-Training requested.")
+    ).info("SBERT-Triplet-Training requested.")
     await save_training_task(db, task)
+    from .service import train_sbert_triplet_service
     background_tasks.add_task(
-        train_model_task,
-        db,
+        train_sbert_triplet_service,
         model_path,
         train_request,
-        task.id,
-        [str(p) for p in dataset_paths],
+        dataset_paths,
         output_dir,
     )
     logger.bind(
         task_id=str(task.id),
-        model_id=train_request.model_id,
+        model_tag=train_request.model_tag,
         dataset_count=len(dataset_paths),
         model_path=model_path,
-    ).info("DPO-Training started in background.")
+    ).info("SBERT-Triplet-Training started in background.")
     return Response(status_code=status.HTTP_202_ACCEPTED)
 
 
