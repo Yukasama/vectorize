@@ -9,15 +9,15 @@ from pathlib import Path
 from uuid import UUID
 
 import torch
-from datasets import load_dataset
+import pandas as pd
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from trl import DPOConfig, DPOTrainer
+from sentence_transformers import SentenceTransformer, InputExample, losses
+from torch.utils.data import DataLoader
 
 from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
-from vectorize.ai_model.repository import get_ai_model_by_id, save_ai_model_db
+from vectorize.ai_model.repository import save_ai_model_db, get_ai_model_db
 from vectorize.common.task_status import TaskStatus
 
 from .exceptions import InvalidModelIdError
@@ -27,7 +27,6 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest
-from .utils.uuid_validator import is_valid_uuid
 
 TRAINING_TIMEOUT_SECONDS = int(
     os.environ.get("TRAINING_TIMEOUT_SECONDS", str(60 * 60 * 2))
@@ -84,10 +83,14 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
         )
         return
     try:
-        if not is_valid_uuid(train_request.model_id):
-            raise InvalidModelIdError(train_request.model_id)
-        norm_model_id = UUID(train_request.model_id)
-        orig_model = await get_ai_model_by_id(db, norm_model_id)
+        if not hasattr(train_request, "model_tag"):
+            raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
+        # model_id wird nicht mehr verwendet
+        # if not is_valid_uuid(train_request.model_id):
+        #     raise InvalidModelIdError(train_request.model_id)
+        # norm_model_id = UUID(train_request.model_id)
+        # orig_model = await get_ai_model_by_id(db, norm_model_id)
+        orig_model = await get_ai_model_db(db, train_request.model_tag)
 
         try:
             await asyncio.wait_for(
@@ -135,13 +138,16 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
 
         tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         new_model_tag = f"{orig_model.model_tag}-finetuned-{tag_time}"
+        # Statt ID: Parent-Tag speichern
         new_model = AIModel(
             name=f"Fine-tuned: {orig_model.name} {tag_time}",
             model_tag=new_model_tag,
             source=ModelSource.LOCAL,
-            trained_from_id=orig_model.id,
+            trained_from_id=None,  # ID nicht mehr nutzen
+            trained_from_tag=orig_model.model_tag,  # <--- NEU
         )
         new_model_id = await save_ai_model_db(db, new_model)
+        logger.info(f"Neues finetuned Modell in DB gespeichert: {new_model.name} | model_tag={new_model_tag} | trained_from_tag={orig_model.model_tag} | new_model_id={new_model_id}")
         task = await get_train_task_by_id(db, task_id)
         if task:
             task.trained_model_id = new_model_id
@@ -187,55 +193,74 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
     dataset_paths: list[str],
     output_dir: str,
 ) -> None:
-    """Run DPO training and update progress after each epoch (epoch-based progress)."""
+    """Run SBERT triplet training and update progress after each epoch."""
     dataset_file = dataset_paths[0]
-    dataset = load_dataset("json", data_files=dataset_file, split="train")
-    model = AutoModelForCausalLM.from_pretrained(model_path)
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    config = DPOConfig(
-        learning_rate=train_request.learning_rate,
-        per_device_train_batch_size=train_request.per_device_train_batch_size,
-        num_train_epochs=1,
-        output_dir=output_dir,  # Enforce output_dir for all trainer artifacts
+    # Modell laden (wie in service.py, robust für Huggingface und lokale Modelle)
+    from .utils.safetensors_finder import find_safetensors_file
+    safetensors_path = find_safetensors_file(model_path)
+    if safetensors_path:
+        model_dir = os.path.dirname(safetensors_path)
+        logger.debug(f"Found .safetensors file for model: {safetensors_path} (using dir: {model_dir})")
+        model = SentenceTransformer(model_dir)
+    else:
+        logger.debug("No .safetensors file found, loading model from original path.")
+        model = SentenceTransformer(model_path)
+    # Triplet-Daten aus JSONL(s) laden und für Contrastive-Loss aufbereiten
+    df = pd.read_json(dataset_file, lines=True)
+    train_examples = []
+    for _, row in df.iterrows():
+        q, pos, neg = row["Question"], row["Positive"], row["Negative"]
+        train_examples.append(InputExample(texts=[q, pos], label=1.0))
+        train_examples.append(InputExample(texts=[q, neg], label=-1.0))
+    val_examples = None
+    if len(dataset_paths) > 1:
+        val_df = pd.read_json(dataset_paths[1], lines=True)
+        val_examples = []
+        for _, row in val_df.iterrows():
+            q, pos, neg = row["Question"], row["Positive"], row["Negative"]
+            val_examples.append(InputExample(texts=[q, pos], label=1.0))
+            val_examples.append(InputExample(texts=[q, neg], label=-1.0))
+    else:
+        val_split = int(0.1 * len(train_examples))
+        val_examples = train_examples[:val_split]
+        train_examples = train_examples[val_split:]
+    from src.vectorize.training.service import InputExampleDataset
+    train_dataset = InputExampleDataset(train_examples)
+    train_dataloader = DataLoader(
+        train_dataset,
+        batch_size=train_request.per_device_train_batch_size,
+        shuffle=True,
     )
-    trainer = DPOTrainer(
-        model=model,
-        args=config,
-        train_dataset=dataset,  # type: ignore
-        processing_class=tokenizer,
-    )
-    steps_per_epoch = 1
-    try:
-        steps_per_epoch = len(dataset)  # type: ignore
-        if not isinstance(steps_per_epoch, int) or steps_per_epoch <= 0:
-            steps_per_epoch = 1
-    except Exception:
-        steps_per_epoch = 1
-    total_steps = train_request.epochs * steps_per_epoch
-    for epoch in range(train_request.epochs):
+    loss = losses.CosineSimilarityLoss(model)
+    num_epochs = train_request.epochs
+    steps_per_epoch = len(train_dataloader)
+    total_steps = num_epochs * steps_per_epoch
+    for epoch in range(num_epochs):
         if await _is_task_canceled(db, task_id):
             logger.debug(
-                "Training canceled at epoch %s/%s", epoch + 1, train_request.epochs
+                "Training canceled at epoch %s/%s", epoch + 1, num_epochs
             )
             await update_training_task_status(
                 db, task_id, TaskStatus.CANCELED, error_msg="Training canceled by user"
             )
             return
-        trainer.train(resume_from_checkpoint=None)
+        model.fit(
+            train_objectives=[(train_dataloader, loss)],
+            epochs=1,
+            warmup_steps=train_request.warmup_steps or 0,
+            show_progress_bar=False,
+            output_path=str(Path(output_dir)),
+        )
         progress = ((epoch + 1) * steps_per_epoch) / total_steps
         await update_training_task_progress(db, task_id, progress)
     output_dir_path = Path(output_dir)
     output_dir_path.mkdir(parents=True, exist_ok=True)
-    model.save_pretrained(str(output_dir_path))
-    tokenizer.save_pretrained(str(output_dir_path))
-    logger.debug("DPO training complete. Model saved at: %s", output_dir_path)
+    model.save(str(output_dir_path))
+    logger.debug("SBERT training complete. Model saved at: %s", output_dir_path)
     try:
         del model
-        del tokenizer
     except Exception as exc:
-        logger.warning(f"Cleanup failed (model/tokenizer): {exc}")
+        logger.warning(f"Cleanup failed (model): {exc}")
     try:
         gc.collect()
         if hasattr(torch, "cuda") and torch.cuda.is_available():
