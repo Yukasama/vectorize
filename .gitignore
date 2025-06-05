@@ -73,6 +73,7 @@ data/
 models/
 checkpoints/
 hf_cache/
+gh_cache/
 
 # === Additional files ===
 startup.prof
