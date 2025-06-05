@@ -106,7 +106,10 @@ def train_sbert_triplet_service(
             fit_kwargs[key] = value
 
     logger.info(
-        f"Starte SBERT Contrastive-Training mit Parametern: {fit_kwargs} | Modell-Ordner: {model_dir if safetensors_path else model_path} | Output: {output_dir}"
+        "Starte SBERT Contrastive-Training mit Parametern: %s | Modell-Ordner: %s | Output: %s",
+        fit_kwargs,
+        model_dir if safetensors_path else model_path,
+        output_dir,
     )
     model.fit(
         train_objectives=[(train_dataloader, loss)],
@@ -114,6 +117,30 @@ def train_sbert_triplet_service(
     )
     model.save(output_dir)
     logger.info(f"SBERT Modell gespeichert unter {output_dir} (trainiert von: {model_dir if safetensors_path else model_path})")
+    # Nach dem Speichern: Modell als AIModel in die DB eintragen
+    try:
+        from vectorize.ai_model.models import AIModel
+        from vectorize.ai_model.model_source import ModelSource
+        from vectorize.ai_model.repository import save_ai_model_db
+        import datetime
+        from sqlmodel import Session, create_engine
+        # Parent-Tag bestimmen
+        parent_tag = os.path.basename(model_path.rstrip("/"))
+        tag_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        new_model_tag = f"{parent_tag}-finetuned-{tag_time}"
+        new_model = AIModel(
+            name=f"Fine-tuned: {parent_tag} {tag_time}",
+            model_tag=new_model_tag,
+            source=ModelSource.LOCAL,
+            trained_from_tag=parent_tag,
+        )
+        engine = create_engine("sqlite:///app.db")
+        with Session(engine) as session:
+            session.add(new_model)
+            session.commit()
+        logger.info(f"Finetuned Modell in DB gespeichert: {new_model_tag}")
+    except Exception as exc:
+        logger.error(f"Fehler beim Speichern des finetuned Modells in die DB: {exc}")
     try:
         del model
     except Exception as exc:

@@ -156,7 +156,7 @@ async def load_model_github(
     )
     await save_upload_task(db, task)
     background_tasks.add_task(
-        process_github_model_background, db, owner, repo, branch, data.repo_url, task.id
+        process_github_model_background, db, owner, repo, branch, str(data.repo_url), task.id
     )
 
     return Response(
@@ -208,10 +208,10 @@ async def load_model_local(
 
     models_info = [
         {
-            "id": model["model_id"],
+            "tag": model["model_tag"],
             "name": model["model_name"],
             "directory": model["model_dir"],
-            "url": f"{request.url.scheme}://{request.url.netloc}{request.url.path}/{model['model_id']}",
+            "url": f"{request.url.scheme}://{request.url.netloc}{request.url.path}/{model['model_tag']}"
         }
         for model in result["models"]
     ]
@@ -219,7 +219,7 @@ async def load_model_local(
     headers = {}
     if result["models"]:
         first_model = result["models"][0]
-        headers["Location"] = f"{request.url}/{first_model['model_id']}"
+        headers["Location"] = f"{request.url}/{first_model['model_tag']}"
 
     return JSONResponse(
         content={
