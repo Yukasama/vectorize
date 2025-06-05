@@ -77,8 +77,8 @@ async def process_huggingface_model_background(
         )
 
 
-async def process_github_model_background(  # noqa: D417, PLR0913, PLR0917
-    db: AsyncSession, owner: str, repo: str, branch: str, repo_url: str, task_id: UUID
+async def process_github_model_background(  # noqa: D417
+    db: AsyncSession, owner: str, repo: str, branch: str, task_id: UUID
 ) -> None:
     """Processes a GitHub model upload in the background.
 
@@ -91,7 +91,6 @@ async def process_github_model_background(  # noqa: D417, PLR0913, PLR0917
         owner (str):
         repo (str):
         branch (str):
-        repo_url (str):
         task_id (UUID): The unique identifier of the upload task.
 
     Raises:
@@ -102,7 +101,7 @@ async def process_github_model_background(  # noqa: D417, PLR0913, PLR0917
 
     try:
         logger.info("[BG] Starting model upload for task", taskId=task_id)
-        load_github_model_and_cache_only(repo_url)
+        load_github_model_and_cache_only(owner, repo, branch)
 
         ai_model = AIModel(
             model_tag=key,

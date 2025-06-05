@@ -153,7 +153,7 @@ async def load_model_github(
     )
     await save_upload_task(db, task)
     background_tasks.add_task(
-        process_github_model_background, db, owner, repo, branch, base_url, task.id
+        process_github_model_background, db, owner, repo, branch, task.id
     )
 
     return Response(
