@@ -135,5 +135,5 @@ def repo_info(repo_url: str, revision: str | None = None) -> bool:
     check_url = f"{api_url}/branches/{branch}"
     resp = httpx.get(check_url, timeout=10)
     if resp.status_code != status.HTTP_200_OK:
-        raise ModelNotFoundError(repo_url)
+        raise ModelNotFoundError(check_url)
     return True

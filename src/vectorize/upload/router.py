@@ -25,7 +25,8 @@ from vectorize.common.exceptions import InternalServerError, InvalidFileError
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
 
-from .exceptions import ModelAlreadyExistsError
+from .exceptions import InvalidUrlError, ModelAlreadyExistsError
+from .exceptions import ModelNotFoundError as RepoModelNotFound
 from .github_service import repo_info
 from .local_service import upload_zip_model
 from .models import UploadTask
@@ -118,7 +119,7 @@ async def load_model_github(
     processing. Returns a 201 response with a Location header.
 
     Args:
-        data: The GitHub Model request Url
+        data: The GitHub Model request Url object
         request: FastAPI request object.
         background_tasks: FastAPI background task manager.
         db: Async database session.
@@ -143,7 +144,7 @@ async def load_model_github(
 
     try:
         repo_info(repo_url=base_url, revision=branch)
-    except ModelNotFoundError:
+    except (RepoModelNotFound, InvalidUrlError):
         raise
     except Exception as e:
         raise InternalServerError("Error checking GitHub repository") from e

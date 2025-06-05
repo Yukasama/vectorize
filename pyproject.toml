@@ -184,3 +184,8 @@ exclude = ["**/__pycache__"]
 
 [tool.uv]
 default-groups = "all"
+
+[tool.uv.workspace]
+members = [
+    "app",
+]

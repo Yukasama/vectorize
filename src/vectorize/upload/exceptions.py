@@ -90,4 +90,4 @@ class ModelNotFoundError(AppError):
     """Exception raised when no model is found."""
     error_code = ErrorCode.NOT_FOUND
     message = "Model not found"
-    status_code = status.HTTP_400_BAD_REQUEST
+    status_code = status.HTTP_404_NOT_FOUND
