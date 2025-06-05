@@ -70,6 +70,7 @@ dependencies = [
     "accelerate>=1.7.0",
     "pyfiglet>=1.0.2",
     "trl>=0.18.1",
+    "sentence-transformers>=4.1.0",
 ]
 
 [project.scripts]

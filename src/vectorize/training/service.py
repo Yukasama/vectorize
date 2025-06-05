@@ -1,111 +1,121 @@
-"""Trains a model with DPOTrainer on prompt/chosen/rejected data."""
+"""Service layer for training (now SBERT/SentenceTransformer only)."""
+
+# No longer needed: all training logic is in tasks.py using sentence-transformers.
+# This file can be left empty or used for future service abstractions.
 
 import gc
-from collections.abc import Callable
+import os
 from pathlib import Path
+from typing import Any
 
-try:
-    import torch
-except ImportError:
-    torch = None
-
-from datasets import load_dataset
+import pandas as pd
 from loguru import logger
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from trl import DPOConfig, DPOTrainer
+from sentence_transformers import SentenceTransformer, InputExample, losses, evaluation
+from torch.utils.data import Dataset, DataLoader
 
-from .schemas import TrainRequest
-
-
-class ProgressCallback:
-    """Callback to update training progress in the database."""
-
-    def __init__(self, total_steps: int, on_update: Callable[[float], None]) -> None:
-        """Initialize ProgressCallback.
-
-        Args:
-            total_steps (int): Total number of steps for training.
-            on_update (Callable[[float], None]): Callback to update progress.
-        """
-        self.total_steps = max(total_steps, 1)
-        self.on_update = on_update
-        self.current_step = 0
-
-    def __call__(self, step: int | None = None) -> None:
-        """Update progress.
-
-        Args:
-            step (int | None): Current step number.
-        """
-        if step is not None:
-            self.current_step = step
-        else:
-            self.current_step += 1
-        progress = min(self.current_step / self.total_steps, 1.0)
-        self.on_update(progress)
+from .utils.safetensors_finder import find_safetensors_file
 
 
-def train_model_service_svc(
+class InputExampleDataset(Dataset):
+    """Kapselt eine Liste von InputExamples für den DataLoader."""
+    def __init__(self, examples):
+        self.examples = examples
+
+    def __getitem__(self, idx):
+        return self.examples[idx]
+
+    def __len__(self):
+        return len(self.examples)
+
+
+def train_sbert_triplet_service(
     model_path: str,
-    train_request: TrainRequest,
+    train_request: Any,  # Pydantic model, aber auch dict für Tests möglich
     dataset_paths: list[str],
     output_dir: str,
-    progress_callback: Callable[[int], None] | None = None,
+    progress_callback=None,
 ) -> None:
-    """Train a model with DPOTrainer on prompt/chosen/rejected data.
-
-    Args:
-        model_path (str): Path to the model.
-        train_request (TrainRequest): Training request parameters.
-        dataset_paths (list[str]): List of dataset file paths.
-        output_dir (str): Output directory for the trained model.
-        progress_callback (Callable[[int], None] | None): Optional callback for
-            progress updates.
-    """
-    logger.debug("Starting DPO training with Hugging Face TRL.")
-    if not dataset_paths:
-        raise ValueError("No datasets provided.")
-    dataset_file = Path(dataset_paths[0])
-    if not dataset_file.is_file():
-        raise FileNotFoundError(f"Dataset file not found: {dataset_file}")
-    dataset = load_dataset("json", data_files=str(dataset_file), split="train")
-    model = AutoModelForCausalLM.from_pretrained(model_path)
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    """Trainiert ein SentenceTransformer (SBERT) Modell mit CosineSimilarityLoss auf Tripletdaten (Contrastive Learning)."""
+    # Use safetensors finder for model loading
+    safetensors_path = find_safetensors_file(model_path)
+    if safetensors_path:
+        model_dir = os.path.dirname(safetensors_path)
+        logger.debug(f"Found .safetensors file for model: {safetensors_path} (using dir: {model_dir})")
+        model = SentenceTransformer(model_dir)
+    else:
+        logger.debug("No .safetensors file found, loading model from original path.")
+        model = SentenceTransformer(model_path)
+    # Padding-Token setzen, falls nicht vorhanden
+    tokenizer = model.tokenizer
     if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    dpo_config_kwargs = train_request.model_dump(exclude_unset=True)
-    dpo_config_kwargs["num_train_epochs"] = dpo_config_kwargs.pop("epochs")
-    dpo_config_kwargs.pop("model_id", None)
-    dpo_config_kwargs.pop("dataset_ids", None)
-    config = DPOConfig(**dpo_config_kwargs)
-    trainer = DPOTrainer(
-        model=model,
-        args=config,
-        train_dataset=dataset,  # type: ignore
-        processing_class=tokenizer,
-    )
-    try:
-        try:
-            steps_per_epoch = len(dataset)  # type: ignore
-        except Exception:
-            steps_per_epoch = 1
-        if progress_callback:
-            for epoch in range(train_request.epochs):
-                trainer.train(resume_from_checkpoint=None)
-                progress_callback((epoch + 1) * steps_per_epoch)
+        if tokenizer.eos_token is not None:
+            tokenizer.pad_token = tokenizer.eos_token
         else:
-            trainer.train()
-    finally:
-        output_dir_path = Path(output_dir)
-        output_dir_path.mkdir(parents=True, exist_ok=True)
-        model.save_pretrained(str(output_dir_path))
-        tokenizer.save_pretrained(str(output_dir_path))
-        logger.debug(f"DPO training finished. Model saved at: {output_dir_path}")
-        try:
-            del model
-            del tokenizer
-        except Exception as exc:
-            logger.warning(f"Cleanup failed: {exc}")
-        gc.collect()
-        if torch is not None and hasattr(torch, "cuda") and torch.cuda.is_available():
-            torch.cuda.empty_cache()
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+
+    # Triplet-Daten aus JSONL(s) laden und für Contrastive-Loss aufbereiten
+    def extract_triplet(row):
+        if all(k in row for k in ("Question", "Positive", "Negative")):
+            return [row["Question"], row["Positive"], row["Negative"]]
+        else:
+            raise ValueError(
+                "Jede Zeile muss die Keys 'Question', 'Positive', 'Negative' enthalten. Gefunden: %s" % list(row.keys())
+            )
+
+    df = pd.read_json(dataset_paths[0], lines=True)
+    train_examples = []
+    for _, row in df.iterrows():
+        q, pos, neg = extract_triplet(row)
+        train_examples.append(InputExample(texts=[q, pos], label=1.0))
+        train_examples.append(InputExample(texts=[q, neg], label=-1.0))
+
+    val_examples = None
+    if len(dataset_paths) > 1:
+        val_df = pd.read_json(dataset_paths[1], lines=True)
+        val_examples = []
+        for _, row in val_df.iterrows():
+            q, pos, neg = extract_triplet(row)
+            val_examples.append(InputExample(texts=[q, pos], label=1.0))
+            val_examples.append(InputExample(texts=[q, neg], label=-1.0))
+    else:
+        val_split = int(0.1 * len(train_examples))
+        val_examples = train_examples[:val_split]
+        train_examples = train_examples[val_split:]
+
+    train_dataset = InputExampleDataset(train_examples)
+    train_dataloader = DataLoader(
+        train_dataset,
+        batch_size=train_request.per_device_train_batch_size,
+        shuffle=True,
+        num_workers=train_request.dataloader_num_workers or 0,
+    )
+    loss = losses.CosineSimilarityLoss(model)
+
+    fit_kwargs = {
+        "epochs": train_request.epochs,
+        "warmup_steps": train_request.warmup_steps or 0,
+        "show_progress_bar": train_request.show_progress_bar if train_request.show_progress_bar is not None else True,
+        "output_path": output_dir,
+    }
+    for key in [
+        "optimizer_name", "scheduler", "weight_decay", "max_grad_norm", "use_amp",
+        "evaluation_steps", "save_best_model", "save_each_epoch", "save_optimizer_state", "device"
+    ]:
+        value = getattr(train_request, key, None)
+        if value is not None:
+            fit_kwargs[key] = value
+
+    logger.info(
+        f"Starte SBERT Contrastive-Training mit Parametern: {fit_kwargs} | Modell-Ordner: {model_dir if safetensors_path else model_path} | Output: {output_dir}"
+    )
+    model.fit(
+        train_objectives=[(train_dataloader, loss)],
+        **fit_kwargs,
+    )
+    model.save(output_dir)
+    logger.info(f"SBERT Modell gespeichert unter {output_dir} (trainiert von: {model_dir if safetensors_path else model_path})")
+    try:
+        del model
+    except Exception as exc:
+        logger.warning("Cleanup fehlgeschlagen (model): %s", exc)
+    gc.collect()

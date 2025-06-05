@@ -50,14 +50,14 @@ class TrainingTaskNotFoundError(AppError):
 
 
 class InvalidModelIdError(AppError):
-    """Exception raised when a model_id is not a valid UUID."""
+    """Exception raised when a model_tag is missing or invalid."""
 
     error_code = ErrorCode.NOT_FOUND
     status_code = status.HTTP_404_NOT_FOUND
 
-    def __init__(self, model_id: str) -> None:
-        """Initialize with the invalid model ID."""
-        super().__init__(f"Model ID is not a valid UUID: {model_id}")
+    def __init__(self, model_tag: str) -> None:
+        """Initialize with the invalid model tag."""
+        super().__init__(f"Model Tag is not valid or missing: {model_tag}")
 
 
 class InvalidDatasetIdError(AppError):
