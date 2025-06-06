@@ -6,6 +6,7 @@ from typing import Final
 
 from aiofiles.os import makedirs
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -58,6 +59,19 @@ app: Final = FastAPI(
 # --------------------------------------------------------
 Instrumentator().instrument(app).expose(app, include_in_schema=False)
 add_prometheus_metrics(app)
+
+
+# --------------------------------------------------------
+# C O R S
+# --------------------------------------------------------
+if settings.app_env != "production":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 # --------------------------------------------------------

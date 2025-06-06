@@ -14,8 +14,8 @@ from loguru import logger
 
 from vectorize.common.exceptions import InvalidFileError
 from vectorize.config import settings
-from vectorize.dataset.exceptions import InvalidXMLFormatError
 
+from ..exceptions import InvalidXMLFormatError
 from ..file_format import FileFormat
 
 __all__ = ["_load_file"]

@@ -80,6 +80,17 @@ class InvalidCSVColumnError(AppError):
         super().__init__(f"Column with name '{column_name}' not found in the dataset")
 
 
+class UnsupportedHuggingfaceFormatError(AppError):
+    """Exception raised when the Hugging Face dataset format is unsupported."""
+
+    error_code = ErrorCode.HUGGINGFACE_DATASET_FORMAT_ERROR
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, column_names: list[str]) -> None:
+        """Initialize with the column names."""
+        super().__init__(f"Dataset format '{column_names}' not supported")
+
+
 class EmptyFileError(AppError):
     """Exception raised when the CSV format is empty."""
 
@@ -94,9 +105,33 @@ class DatasetNotFoundError(AppError):
     error_code = ErrorCode.NOT_FOUND
     status_code = status.HTTP_404_NOT_FOUND
 
-    def __init__(self, dataset_id: UUID) -> None:
+    def __init__(self, dataset_id: UUID | str) -> None:
         """Initialize with the dataset ID."""
         super().__init__(f"Dataset with ID {dataset_id} not found")
+
+
+class DatasetAlreadyExistsError(AppError):
+    """Exception raised when the dataset already exists on Hugging Face Hub."""
+
+    error_code = ErrorCode.DATASET_ALREADY_EXISTS
+    status_code = status.HTTP_409_CONFLICT
+
+    def __init__(self, dataset_tag: str) -> None:
+        """Initialize with the dataset tag."""
+        super().__init__(f"Dataset with tag {dataset_tag} already exists in database")
+
+
+class HuggingfaceDatasetNotFoundError(AppError):
+    """Exception raised when the dataset is not found on Hugging Face Hub."""
+
+    error_code = ErrorCode.NOT_FOUND
+    status_code = status.HTTP_404_NOT_FOUND
+
+    def __init__(self, dataset_tag: str) -> None:
+        """Initialize with the dataset tag."""
+        super().__init__(
+            f"Dataset with tag {dataset_tag} not found on Hugging Face Hub"
+        )
 
 
 class TooManyFilesError(AppError):

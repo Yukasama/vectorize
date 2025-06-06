@@ -90,6 +90,11 @@ class Settings(BaseSettings):
         description="Maximum allowed file size for dataset uploads in bytes.",
     )
 
+    dataset_hf_allowed_schemas: list[list[str]] = Field(
+        default=_dataset_config.get("hf_allowed_schemas"),
+        description="List of allowed schema field combinations for dataset validation.",
+    )
+
     # Model configuration
     model_upload_dir: Path = Field(
         default=Path(_model_config.get("model_upload_dir")),

@@ -11,7 +11,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.config.db import get_session
 
 from .embedding_model import Embeddings
-from .request_model import EmbeddingRequest
+from .schemas import EmbeddingRequest
 from .service import get_embeddings_srv, get_model_stats_srv
 
 __all__ = ["router"]

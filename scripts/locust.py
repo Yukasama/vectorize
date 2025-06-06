@@ -30,7 +30,7 @@ class AppLoadTests(HttpUser):
     """Load tests for the API."""
 
     base_path = Path(__file__).parent.parent / "test_data" / "datasets"
-    host = "https://localhost/v1"
+    host = "http://localhost:8000/v1"
     wait_time = constant_pacing(0)
 
     def on_start(self) -> None:

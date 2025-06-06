@@ -21,13 +21,13 @@ from .repository import (
     upload_dataset_db,
 )
 from .router import router
+from .schemas import DatasetUploadOptions
 from .service import (
     get_dataset_svc,
     get_datasets_svc,
     update_dataset_svc,
     upload_dataset_svc,
 )
-from .upload_options_model import DatasetUploadOptions
 
 __all__ = [
     "Classification",

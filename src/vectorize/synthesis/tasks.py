@@ -11,10 +11,11 @@ from vectorize.common.task_status import TaskStatus
 from vectorize.config import settings
 from vectorize.config.db import engine
 from vectorize.dataset.classification import Classification
+from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.dataset.exceptions import DatasetNotFoundError
 from vectorize.dataset.models import Dataset
 from vectorize.dataset.repository import get_dataset_db, upload_dataset_db
-from vectorize.dataset.upload_options_model import DatasetUploadOptions
+from vectorize.dataset.schemas import DatasetUploadOptions
 from vectorize.dataset.utils.dataset_fs import _save_dataframe_to_fs
 
 from .repository import update_synthesis_task_status
@@ -121,6 +122,7 @@ async def process_existing_dataset_background(
                 file_name=unique_name,
                 classification=classification,
                 rows=len(df),
+                source=DatasetSource.SYNTHETIC,
                 synthesis_id=task_id,
             )
 
@@ -204,6 +206,7 @@ async def _process_single_file(
             name=file_path.stem,
             file_name=unique_name,
             classification=classification,
+            source=DatasetSource.SYNTHETIC,
             rows=len(df),
             synthesis_id=task_id,
         )

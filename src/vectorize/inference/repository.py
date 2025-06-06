@@ -52,7 +52,7 @@ async def get_model_count(
     ai_model = result.first()
 
     if ai_model is None:
-        logger.error("AI Model not found", model_tag=ai_model_tag)
+        logger.debug("AI Model not found", model_tag=ai_model_tag)
         raise ModelNotFoundError(ai_model_tag)
 
     counter_statement = select(InferenceCounter).where(
