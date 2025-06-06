@@ -18,10 +18,54 @@ pool_timeout = 30
 [app.dataset]
 dataset_upload_dir = "data/datasets"
 allowed_extensions = ["csv", "json", "jsonl", "xml", "xlsx", "xls"]
-max_upload_size = 53687091200                                       # 50 GB
+max_upload_size = 53687091200 # 50 GB
 max_filename_length = 255
 default_delimiter = ";"
 max_zip_members = 10000
+hf_allowed_schemas = [
+  # Standard prompt/chosen/rejected variations
+  ["prompt", "chosen", "rejected"],
+  ["prompt", "chosen_response", "rejected_response"],
+  ["prompt", "response_chosen", "response_rejected"],
+  ["prompt", "chosen"],
+  # Instruction-based formats
+  ["instruction", "chosen", "rejected"],
+  ["instruction", "chosen_response", "rejected_response"],
+  ["instruction", "response_a", "response_b"],
+  ["instruction", "output_1", "output_2"],
+  ["instruction", "output"],
+  # Query/question-based formats
+  ["query", "chosen", "rejected"],
+  ["query", "chosen_response", "rejected_response"],
+  ["question", "chosen", "rejected"],
+  ["question", "positive", "negative"],
+  ["question", "positive"],
+  ["question", "answer"],
+  # Input-based formats
+  ["input", "chosen", "rejected"],
+  ["input", "chosen_response", "rejected_response"],
+  ["input", "output_a", "output_b"],
+  ["input", "response_a", "response_b"],
+  ["input", "output"],
+  ["input", "target"],
+  # System/user conversation formats
+  ["system", "question", "chosen", "rejected"],
+  ["system", "user", "chosen", "rejected"],
+  ["system", "human", "chosen", "rejected"],
+  ["system", "prompt", "chosen", "rejected"],
+  # Response quality/preference formats
+  ["text", "chosen", "rejected"],
+  ["context", "chosen", "rejected"],
+  ["context", "response_a", "response_b"],
+  ["context", "answer_a", "answer_b"],
+  # Common dataset variations
+  ["conversations", "chosen", "rejected"],
+  ["messages", "chosen", "rejected"],
+  ["dialogue", "chosen", "rejected"],
+  # Anthropic HH-RLHF style
+  ["human", "assistant"],
+  ["human", "chosen", "rejected"],
+]
 
 [app.model]
 model_upload_dir = "data/models"

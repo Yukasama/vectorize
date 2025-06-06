@@ -2,7 +2,7 @@
 
 from .embedding_model import EmbeddingData, EmbeddingUsage, Embeddings
 from .repository import create_inference_counter, get_model_count
-from .request_model import EmbeddingRequest
+from .schemas import EmbeddingRequest
 from .router import router
 from .service import get_embeddings_srv, get_model_stats_srv
 

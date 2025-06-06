@@ -6,10 +6,11 @@ from datasets import get_dataset_infos
 from datasets.info import DatasetInfo
 from loguru import logger
 
+__all__ = ["_get_cached_dataset_infos"]
+
+
 _dataset_info_cache: dict[str, tuple[dict[str, DatasetInfo], float]] = {}
 _CACHE_TTL = 3600
-
-__all__ = ["_get_cached_dataset_infos"]
 
 
 def _get_cached_dataset_infos(dataset_tag: str) -> dict[str, DatasetInfo]:

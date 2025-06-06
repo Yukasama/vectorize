@@ -9,10 +9,7 @@ from vectorize.config.errors import ErrorNames
 
 from ..classification import Classification
 from ..column_mapper import ColumnMapping
-from ..exceptions import (
-    InvalidCSVColumnError,
-    MissingColumnError,
-)
+from ..exceptions import InvalidCSVColumnError, MissingColumnError
 
 __all__ = ["_classify_dataset"]
 

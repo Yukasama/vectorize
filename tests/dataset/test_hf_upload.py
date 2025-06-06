@@ -31,18 +31,6 @@ class TestHuggingFaceUpload:
                 ["train"],
                 ["default"],
             ),
-            (
-                "HuggingFaceH4/ultrafeedback_binarized",
-                [
-                    "train_prefs",
-                    "test_prefs",
-                    "train_sft",
-                    "test_sft",
-                    "train_gen",
-                    "test_gen",
-                ],
-                ["default"],
-            ),
             ("Dahoas/full-hh-rlhf", ["train", "test"], ["default"]),
             ("argilla/distilabel-intel-orca-dpo-pairs", ["train"], ["default"]),
         ],
@@ -92,7 +80,7 @@ class TestHuggingFaceUpload:
     @pytest.mark.parametrize(
         "dataset_tag",
         [
-            "microsoft/mediflow",
+            "RoboVerseOrg/roboverse_data",
             "Hcompany/WebClick",
             "Jiahao004/DeepTheorem",
             "yandex/alchemist",

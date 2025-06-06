@@ -10,7 +10,7 @@ from vectorize.ai_model.exceptions import ModelLoadError, UnsupportedModelError
 from vectorize.config import settings
 
 from ..embedding_model import EmbeddingData
-from ..request_model import EmbeddingRequest
+from ..schemas import EmbeddingRequest
 from .pool_mean import _mean_pool
 
 __all__ = ["_generate_embeddings"]

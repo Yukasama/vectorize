@@ -110,7 +110,7 @@ def _find_common_prefix(file_paths: list[str]) -> str | None:
     return common_prefix
 
 
-async def process_model_directory(  # ruff: noqa: PLR0912
+async def process_model_directory(
     zip_ref: zipfile.ZipFile,
     model_name: str,
     file_paths: list[str],
