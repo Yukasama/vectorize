@@ -3,24 +3,38 @@
 from pathlib import Path
 from uuid import UUID, uuid4
 
-from fastapi import Request, UploadFile
+from datasets.exceptions import DatasetNotFoundError as HFDatasetNotFoundError
+from fastapi import BackgroundTasks, Request, UploadFile
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config import settings
-from vectorize.dataset.column_mapper import ColumnMapping
 from vectorize.utils.etag_parser import parse_etag
 from vectorize.utils.file_sanitizer import sanitize_filename
 
+from .column_mapper import ColumnMapping
+from .dataset_source import DatasetSource
+from .exceptions import (
+    DatasetAlreadyExistsError,
+    DatasetNotFoundError,
+    UnsupportedHuggingfaceFormatError,
+)
 from .models import Dataset, DatasetAll, DatasetPublic, DatasetUpdate
 from .repository import (
     delete_dataset_db,
+    find_dataset_by_name_db,
     get_dataset_db,
     get_datasets_db,
+    get_upload_dataset_task_db,
+    save_upload_dataset_task_db,
     update_dataset_db,
     upload_dataset_db,
 )
-from .upload_options_model import DatasetUploadOptions
+from .schemas import DatasetUploadOptions
+from .task_model import UploadDatasetTask
+from .tasks import upload_hf_dataset_bg
+from .utils.cache_dataset_infos import _get_cached_dataset_infos
+from .utils.check_hf_schema import _match_schema
 from .utils.csv_escaper import _escape_csv_formulas
 from .utils.dataset_classifier import _classify_dataset
 from .utils.dataset_fs import _delete_dataset_from_fs, _save_dataframe_to_fs
@@ -113,6 +127,7 @@ async def upload_dataset_svc(
             name=safe_name,
             file_name=unique_name,
             classification=classification,
+            source=DatasetSource.LOCAL,
             rows=len(df),
         )
         logger.debug("Dataset DTO created", dataset=dataset)
@@ -125,6 +140,64 @@ async def upload_dataset_svc(
             file_path.unlink()
             logger.debug("Cleaned up file after database error", file_path=file_path)
         raise
+
+
+async def upload_hf_dataset_svc(
+    db: AsyncSession, background_tasks: BackgroundTasks, dataset_tag: str
+) -> UUID:
+    """Upload a Hugging Face dataset in the database.
+
+    This function downloads a Hugging Face dataset, validates its schema,
+    converts it to JSONL format, and saves it to the database.
+
+    Args:
+        db: Database session for persistence operations
+        background_tasks: FastAPI background task manager
+        dataset_tag: Tag identifier for the Hugging Face dataset
+
+    Returns:
+        The created dataset record.
+    """
+    dataset_db = await find_dataset_by_name_db(db, dataset_tag)
+    if dataset_db is not None:
+        raise DatasetAlreadyExistsError(dataset_tag)
+
+    try:
+        dataset_infos = _get_cached_dataset_infos(dataset_tag)
+    except HFDatasetNotFoundError as e:
+        raise DatasetNotFoundError(dataset_tag) from e
+
+    first_info = next(iter(dataset_infos.values()))
+    if first_info.features:
+        column_names = list(first_info.features.keys())
+        if not _match_schema(set(column_names)):
+            raise UnsupportedHuggingfaceFormatError(column_names)
+
+    upload_dataset_task = UploadDatasetTask(dataset_tag=dataset_tag)
+    await save_upload_dataset_task_db(db, upload_dataset_task)
+
+    background_tasks.add_task(
+        upload_hf_dataset_bg, db, dataset_tag, upload_dataset_task.id, dataset_infos
+    )
+
+    return upload_dataset_task.id
+
+
+async def get_hf_upload_status_svc(
+    db: AsyncSession, task_id: UUID
+) -> UploadDatasetTask:
+    """Get the status of a Hugging Face dataset upload task.
+
+    This function retrieves the status of a dataset upload task by its ID.
+
+    Args:
+        db: Database session for persistence operations
+        task_id: The UUID of the upload task
+
+    Returns:
+        The upload task with its current status.
+    """
+    return await get_upload_dataset_task_db(db, task_id)
 
 
 async def update_dataset_svc(

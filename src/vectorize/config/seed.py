@@ -48,7 +48,7 @@ async def seed_db(session: AsyncSession) -> None:
         Dataset(
             id=DATASET_READ_ID,
             name="read_dataset",
-            file_name="read_dataset.csv",
+            file_name="read_dataset.jsonl",
             classification=Classification.SENTENCE_DUPLES,
             source=DatasetSource.LOCAL,
             rows=5,
@@ -58,7 +58,7 @@ async def seed_db(session: AsyncSession) -> None:
         Dataset(
             id=DATASET_PUT_ID,
             name="put_dataset",
-            file_name="put_dataset.csv",
+            file_name="put_dataset.jsonl",
             classification=Classification.SENTENCE_DUPLES,
             source=DatasetSource.LOCAL,
             rows=5,
@@ -68,7 +68,7 @@ async def seed_db(session: AsyncSession) -> None:
         Dataset(
             id=DATASET_DELETE_ID,
             name="delete_dataset",
-            file_name="delete_dataset.csv",
+            file_name="delete_dataset.jsonl",
             classification=Classification.SENTENCE_DUPLES,
             source=DatasetSource.LOCAL,
             rows=5,
@@ -78,7 +78,7 @@ async def seed_db(session: AsyncSession) -> None:
         Dataset(
             id=DATASET_BACKUP_ID,
             name="backup_dataset",
-            file_name="backup_dataset.csv",
+            file_name="backup_dataset.jsonl",
             classification=Classification.SENTENCE_DUPLES,
             source=DatasetSource.LOCAL,
             rows=5,
@@ -88,7 +88,7 @@ async def seed_db(session: AsyncSession) -> None:
         Dataset(
             id=DATASET_BACKUP2_ID,
             name="backup2_dataset",
-            file_name="backup2_dataset.csv",
+            file_name="backup2_dataset.jsonl",
             classification=Classification.SENTENCE_DUPLES,
             source=DatasetSource.LOCAL,
             rows=5,
@@ -98,7 +98,7 @@ async def seed_db(session: AsyncSession) -> None:
         Dataset(
             id=DATASET_FAIL_ID,
             name="fail_dataset",
-            file_name="fail_dataset.csv",
+            file_name="fail_dataset.jsonl",
             classification=Classification.SENTENCE_DUPLES,
             source=DatasetSource.LOCAL,
             rows=5,
@@ -128,7 +128,6 @@ async def seed_db(session: AsyncSession) -> None:
             model_tag="huge_model",
         ),
     )
-    # For Paged Models
     session.add(
         AIModel(
             name="Any Paged Model 01",
@@ -165,4 +164,4 @@ async def seed_db(session: AsyncSession) -> None:
         ),
     )
     await session.commit()
-    logger.debug("Database seeded with initial data")
+    logger.info("Database seeded with initial data")

@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     Request,
@@ -19,16 +20,19 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.common.app_error import AppError
 from vectorize.common.exceptions import InvalidFileError
 from vectorize.config.db import get_session
+from vectorize.dataset.task_model import UploadDatasetTask
 
 from .models import DatasetAll, DatasetPublic, DatasetUpdate
+from .schemas import DatasetUploadOptions, HuggingFaceDatasetRequest
 from .service import (
     delete_dataset_svc,
     get_dataset_svc,
     get_datasets_svc,
+    get_hf_upload_status_svc,
     update_dataset_svc,
     upload_dataset_svc,
+    upload_hf_dataset_svc,
 )
-from .upload_options_model import DatasetUploadOptions
 from .utils.validate_zip import _handle_zip_upload
 
 __all__ = ["router"]
@@ -167,6 +171,52 @@ async def upload_dataset(
         status_code=status.HTTP_201_CREATED,
         headers={"Location": f"{request.url}/{last_id}"},
     )
+
+
+@router.post("/huggingface", summary="Upload datasets from Hugging Face")
+async def upload_hf_dataset(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_session)],
+    background_tasks: BackgroundTasks,
+    data: HuggingFaceDatasetRequest,
+) -> Response:
+    """Upload dataset files from Hugging Face.
+
+    This endpoint allows uploading datasets directly from Hugging Face repositories.
+    It processes the files and returns the dataset ID in the response.
+
+    Args:
+        request: The HTTP request object
+        db: Database session for persistence operations
+        background_tasks: FastAPI background task manager
+        data: The request body containing the Hugging Face dataset tag
+
+    Returns:
+        Response with status code 201 Created and the task ID in the Location header.
+    """
+    logger.debug("Hugging Face dataset upload initiated", dataset_tag=data.dataset_tag)
+    task_id = await upload_hf_dataset_svc(db, background_tasks, data.dataset_tag)
+
+    return Response(
+        status_code=status.HTTP_201_CREATED,
+        headers={"Location": f"{request.url}/status/{task_id}"},
+    )
+
+
+@router.get("/huggingface/status/{task_id}", summary="Get HF upload dataset status")
+async def get_hf_upload_status(
+    task_id: UUID, db: Annotated[AsyncSession, Depends(get_session)]
+) -> UploadDatasetTask:
+    """Get the status of a Hugging Face dataset upload task.
+
+    Args:
+        task_id: The UUID of the upload task
+        db: Database session for persistence operations
+
+    Returns:
+        Response with the status of the upload task.
+    """
+    return await get_hf_upload_status_svc(db, task_id)
 
 
 @router.put("/{dataset_id}", summary="Update dataset by ID")

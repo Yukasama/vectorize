@@ -1,27 +1,26 @@
-"""UploadTask model."""
+"""UploadDatasetTask model."""
 
 from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
-from vectorize.ai_model.model_source import RemoteModelSource
 from vectorize.common.task_status import TaskStatus
 
 
-class UploadTask(SQLModel, table=True):
-    """UploadTask model."""
+class UploadDatasetTask(SQLModel, table=True):
+    """Dataset upload task model for tracking dataset processing operations."""
 
-    __tablename__ = "upload_task"
+    __tablename__ = "upload_dataset_task"
 
     id: UUID = Field(
         default_factory=uuid4,
         primary_key=True,
-        description="Unique identifier for the upload task.",
+        description="Unique identifier for the dataset upload task.",
     )
 
-    model_tag: str = Field(
-        description="Tag of the model file being uploaded.",
+    dataset_tag: str = Field(
+        description="Tag or identifier of the dataset being uploaded.",
         index=True,
         min_length=1,
         max_length=128,
@@ -30,31 +29,27 @@ class UploadTask(SQLModel, table=True):
     task_status: TaskStatus = Field(
         default=TaskStatus.PENDING,
         index=True,
-        description="Status of the upload task.",
-    )
-
-    source: RemoteModelSource = Field(
-        description="Source of the model (github or huggingface)."
+        description="Current status of the dataset upload task.",
     )
 
     end_date: datetime | None = Field(
         default=None,
-        description="Optional end time of the synthetic generation.",
+        description="Timestamp when the dataset upload task completed.",
     )
 
     error_msg: str | None = Field(
         default=None,
-        description="Optional error message encountered during upload.",
+        description="Error message if the dataset upload task failed.",
     )
 
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
-        description="Timestamp when the upload task was created.",
+        description="Timestamp when the dataset upload task was created.",
     )
 
     updated_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True), onupdate=func.now(), insert_default=func.now()
         ),
-        description="Timestamp when the upload task was last updated.",
+        description="Timestamp when the dataset upload task was last updated.",
     )
