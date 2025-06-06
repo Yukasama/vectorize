@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
+from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.synthesis.models import SynthesisTask
 
 from .classification import Classification
@@ -110,6 +111,10 @@ class Dataset(SQLModel, table=True):
     )
 
     rows: int = Field(description="Number of rows in the dataset", gt=0)
+
+    source: DatasetSource = Field(
+        description="Source of the dataset, e.g., Hugging Face",
+    )
 
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
