@@ -10,6 +10,7 @@ from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
 from vectorize.config.config import settings
 from vectorize.dataset.classification import Classification
+from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.dataset.models import Dataset
 
 __all__ = ["seed_db"]
@@ -49,6 +50,7 @@ async def seed_db(session: AsyncSession) -> None:
             name="read_dataset",
             file_name="read_dataset.csv",
             classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
             rows=5,
         ),
     )
@@ -58,6 +60,7 @@ async def seed_db(session: AsyncSession) -> None:
             name="put_dataset",
             file_name="put_dataset.csv",
             classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
             rows=5,
         ),
     )
@@ -67,6 +70,7 @@ async def seed_db(session: AsyncSession) -> None:
             name="delete_dataset",
             file_name="delete_dataset.csv",
             classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
             rows=5,
         ),
     )
@@ -76,6 +80,7 @@ async def seed_db(session: AsyncSession) -> None:
             name="backup_dataset",
             file_name="backup_dataset.csv",
             classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
             rows=5,
         ),
     )
@@ -85,6 +90,7 @@ async def seed_db(session: AsyncSession) -> None:
             name="backup2_dataset",
             file_name="backup2_dataset.csv",
             classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
             rows=5,
         ),
     )
@@ -94,6 +100,7 @@ async def seed_db(session: AsyncSession) -> None:
             name="fail_dataset",
             file_name="fail_dataset.csv",
             classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
             rows=5,
         ),
     )
