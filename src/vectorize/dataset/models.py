@@ -6,10 +6,10 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
-from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.synthesis.models import SynthesisTask
 
 from .classification import Classification
+from .dataset_source import DatasetSource
 
 if TYPE_CHECKING:
     from vectorize.synthesis.models import SynthesisTask

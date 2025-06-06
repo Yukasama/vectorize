@@ -20,7 +20,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.common.app_error import AppError
 from vectorize.common.exceptions import InvalidFileError
 from vectorize.config.db import get_session
-from vectorize.dataset.task_model import UploadDatasetTask
 
 from .models import DatasetAll, DatasetPublic, DatasetUpdate
 from .schemas import DatasetUploadOptions, HuggingFaceDatasetRequest
@@ -33,6 +32,7 @@ from .service import (
     upload_dataset_svc,
     upload_hf_dataset_svc,
 )
+from .task_model import UploadDatasetTask
 from .utils.validate_zip import _handle_zip_upload
 
 __all__ = ["router"]
