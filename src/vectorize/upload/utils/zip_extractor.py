@@ -23,6 +23,8 @@ from .zip_validator import validate_model_files
 
 __all__ = ["process_model_directory", "process_single_model", "save_zip_to_temp"]
 
+ALLOWED_EXTENSIONS = {".pt", ".pth", ".bin", ".model", ".safetensors", ".json"}
+
 
 async def save_zip_to_temp(file: UploadFile) -> Path:
     """Save ZIP file to a temporary location.
@@ -40,7 +42,7 @@ async def save_zip_to_temp(file: UploadFile) -> Path:
         temp_path = Path(temp_file.name)
 
     size = 0
-    chunk_size = 1024 * 1024  # 1MB chunks
+    chunk_size = 1024 * 1024
     with Path.open(temp_path, "wb") as dest_file:
         while chunk := await file.read(chunk_size):
             size += len(chunk)
@@ -54,7 +56,61 @@ async def save_zip_to_temp(file: UploadFile) -> Path:
     return temp_path
 
 
-async def process_model_directory(
+def _extract_file_from_zip(
+    zip_ref: zipfile.ZipFile,
+    file_path: str,
+    target_path: Path,
+    common_prefix: str | None = None,
+) -> bool:
+    """Extract a single file from ZIP to target path."""
+    try:
+        if file_path.endswith("/"):
+            return False
+
+        file_extension = Path(file_path).suffix.lower()
+        if file_extension not in ALLOWED_EXTENSIONS:
+            logger.debug("Skipping file with non-allowed extension: {}", file_path)
+            return False
+
+        if common_prefix and file_path.startswith(common_prefix + "/"):
+            relative_path = file_path[len(common_prefix) + 1 :]
+        else:
+            relative_path = Path(file_path).name
+
+        final_target_path = target_path / relative_path
+        final_target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with (
+            zip_ref.open(file_path) as source,
+            Path.open(final_target_path, "wb") as target,
+        ):
+            shutil.copyfileobj(source, target)
+
+        logger.debug("Extracted {} to {}", file_path, final_target_path)
+        return True
+    except Exception as e:
+        logger.error("Error extracting {}: {}", file_path, e)
+        return False
+
+
+def _find_common_prefix(file_paths: list[str]) -> str | None:
+    """Find common prefix for file paths."""
+    common_prefix = None
+    files = 2
+    for path in file_paths:
+        if path.endswith("/"):
+            continue
+
+        parts = path.split("/")
+        if len(parts) >= files:
+            prefix = "/".join(parts[:-1])
+            if common_prefix is None or len(prefix) < len(common_prefix):
+                common_prefix = prefix
+
+    return common_prefix
+
+
+async def process_model_directory(  # ruff: noqa: PLR0912
     zip_ref: zipfile.ZipFile,
     model_name: str,
     file_paths: list[str],
@@ -79,7 +135,6 @@ async def process_model_directory(
     safe_model_name = "".join(c if c.isalnum() else "_" for c in model_name)
     try:
         await get_ai_model_db(db, safe_model_name)
-
         raise ModelAlreadyExistsError(
             f"Model with tag '{safe_model_name}' already exists"
         )
@@ -90,44 +145,15 @@ async def process_model_directory(
     model_dir.mkdir(parents=True, exist_ok=True)
 
     extracted_files = []
-
-    common_prefix = None
-    files = 2
-    for path in file_paths:
-        if path.endswith("/"):
-            continue
-
-        parts = path.split("/")
-        if len(parts) >= files:
-            prefix = "/".join(parts[:-1])
-            if common_prefix is None or len(prefix) < len(common_prefix):
-                common_prefix = prefix
+    common_prefix = _find_common_prefix(file_paths)
 
     for file_path in file_paths:
-        try:
-            if file_path.endswith("/"):
-                continue
-
+        if _extract_file_from_zip(zip_ref, file_path, model_dir, common_prefix):
             if common_prefix and file_path.startswith(common_prefix + "/"):
                 relative_path = file_path[len(common_prefix) + 1 :]
             else:
                 relative_path = Path(file_path).name
-
-            target_path = model_dir / relative_path
-
-            target_path.parent.mkdir(parents=True, exist_ok=True)
-
-            with (
-                zip_ref.open(file_path) as source,
-                Path.open(target_path, "wb") as target,
-            ):
-                shutil.copyfileobj(source, target)
-
-            extracted_files.append(target_path)
-            logger.debug("Extracted {} to {}", file_path, target_path)
-        except Exception as e:
-            logger.error("Error extracting {}: {}", file_path, e)
-            continue
+            extracted_files.append(model_dir / relative_path)
 
     if not extracted_files:
         raise NoValidModelsFoundError(
@@ -175,7 +201,6 @@ async def process_single_model(
 
     try:
         await get_ai_model_db(db, safe_model_name)
-
         raise ModelAlreadyExistsError(
             f"Model with tag '{safe_model_name}' already exists"
         )
@@ -189,6 +214,13 @@ async def process_single_model(
 
     for file_info in file_list:
         if file_info.is_dir() or file_info.file_size <= 0:
+            continue
+
+        file_extension = Path(file_info.filename).suffix.lower()
+        if file_extension not in ALLOWED_EXTENSIONS:
+            logger.debug(
+                "Skipping file with non-allowed extension: {}", file_info.filename
+            )
             continue
 
         target_name = Path(file_info.filename).name
