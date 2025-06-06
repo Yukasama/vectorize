@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 from loguru import logger
 
-from vectorize.dataset.upload_options_model import DatasetUploadOptions
+from vectorize.dataset.schemas import DatasetUploadOptions
 
 __all__ = ["extract_text_from_media"]
 
