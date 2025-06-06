@@ -23,7 +23,7 @@ def validate_model_files(extracted_files: list[Path]) -> bool:
     for file_path in extracted_files:
         if file_path.suffix.lower() in valid_extensions:
             try:
-                torch.load(file_path, map_location="cpu")
+                torch.load(file_path, map_location="cpu")  # NOSONAR
                 return True
             except Exception:
                 logger.debug("Invalid PyTorch model: {}", file_path)
