@@ -1,247 +1,88 @@
-"""Extraction utilities for model ZIP files."""
+"""Validation utilities for model ZIP files."""
 
-import shutil
-import tempfile
 import zipfile
 from pathlib import Path
 
-from fastapi import UploadFile
+import torch
 from loguru import logger
-from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.ai_model import AIModel, ModelSource
-from vectorize.ai_model.exceptions import ModelNotFoundError
-from vectorize.ai_model.repository import get_ai_model_db, save_ai_model_db
-from vectorize.config.config import settings
-
-from ..exceptions import (
-    ModelAlreadyExistsError,
-    ModelTooLargeError,
-    NoValidModelsFoundError,
-)
-from .zip_validator import validate_model_files
-
-__all__ = ["process_model_directory", "process_single_model", "save_zip_to_temp"]
-
-ALLOWED_EXTENSIONS = {".pt", ".pth", ".bin", ".model", ".safetensors", ".json"}
+__all__ = ["get_toplevel_directories", "is_valid_zip", "validate_model_files"]
 
 
-async def save_zip_to_temp(file: UploadFile) -> Path:
-    """Save ZIP file to a temporary location.
+def validate_model_files(extracted_files: list[Path]) -> bool:
+    """Check if at least one valid PyTorch model exists in the list of files.
 
     Args:
-        file: The uploaded ZIP file
+        extracted_files: List of paths to extracted files
 
     Returns:
-        Path to the saved temporary file
-
-    Raises:
-        ModelTooLargeError: If the file exceeds maximum upload size
+        bool: True if at least one valid PyTorch model was found, False otherwise
     """
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        temp_path = Path(temp_file.name)
+    valid_extensions = {".pt", ".pth", ".bin", ".model", ".safetensors"}
 
-    size = 0
-    chunk_size = 1024 * 1024
-    with Path.open(temp_path, "wb") as dest_file:
-        while chunk := await file.read(chunk_size):
-            size += len(chunk)
-            if size > settings.model_max_upload_size:
-                Path.unlink(temp_path)
-                raise ModelTooLargeError(size)
-            dest_file.write(chunk)
+    for file_path in extracted_files:
+        if file_path.suffix.lower() in valid_extensions:
+            try:
+                torch.load(file_path, map_location="cpu")
+                return True
+            except Exception:
+                logger.debug("Invalid PyTorch model: {}", file_path)
+                continue
 
-    await file.seek(0)
-
-    return temp_path
+    return False
 
 
-def _extract_file_from_zip(
-    zip_ref: zipfile.ZipFile,
-    file_path: str,
-    target_path: Path,
-    common_prefix: str | None = None,
-) -> bool:
-    """Extract a single file from ZIP to target path."""
-    try:
-        if file_path.endswith("/"):
-            return False
+def is_valid_zip(file_path: Path) -> bool:
+    """Check if a file is a valid ZIP archive.
 
-        file_extension = Path(file_path).suffix.lower()
-        if file_extension not in ALLOWED_EXTENSIONS:
-            logger.debug("Skipping file with non-allowed extension: {}", file_path)
-            return False
+    Args:
+        file_path: Path to the file to check
 
-        if common_prefix and file_path.startswith(common_prefix + "/"):
-            relative_path = file_path[len(common_prefix) + 1 :]
-        else:
-            relative_path = Path(file_path).name
+    Returns:
+        bool: True if file is a valid ZIP archive, False otherwise
+    """
+    return zipfile.is_zipfile(file_path)
 
-        final_target_path = target_path / relative_path
-        final_target_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with (
-            zip_ref.open(file_path) as source,
-            Path.open(final_target_path, "wb") as target,
+def get_toplevel_directories(zip_file: zipfile.ZipFile) -> dict[str, list[str]]:
+    """Identify model directories in the ZIP and group their contents.
+
+    Args:
+        zip_file: The opened ZIP file object
+
+    Returns:
+        Dictionary mapping potential model directory names to their contents
+    """
+    all_files = zip_file.namelist()
+    potential_model_dirs = set()
+    file_count = 2
+
+    for file_path in all_files:
+        parts = file_path.split("/")
+        if len(parts) >= file_count and any(
+            file_path.lower().endswith(ext)
+            for ext in [".pt", ".pth", ".bin", ".model", ".safetensors"]
         ):
-            shutil.copyfileobj(source, target)
+            potential_model_dirs.add("/".join(parts[:-1]))
 
-        logger.debug("Extracted {} to {}", file_path, final_target_path)
-        return True
-    except Exception as e:
-        logger.error("Error extracting {}: {}", file_path, e)
-        return False
+    model_dirs = set()
+    for dir1 in sorted(potential_model_dirs):
+        if not any(
+            dir1 != dir2 and dir1.startswith(f"{dir2}/")
+            for dir2 in potential_model_dirs
+        ):
+            model_dirs.add(dir1)
 
+    dir_files = {}
+    for model_dir in model_dirs:
+        dir_files[model_dir] = [f for f in all_files if f.startswith(f"{model_dir}/")]
 
-def _find_common_prefix(file_paths: list[str]) -> str | None:
-    """Find common prefix for file paths."""
-    common_prefix = None
-    files = 2
-    for path in file_paths:
-        if path.endswith("/"):
-            continue
+    if not dir_files:
+        for file_path in all_files:
+            if "/" in file_path:
+                dir_name = file_path.split("/")[0]
+                if dir_name not in dir_files:
+                    dir_files[dir_name] = []
+                dir_files[dir_name].append(file_path)
 
-        parts = path.split("/")
-        if len(parts) >= files:
-            prefix = "/".join(parts[:-1])
-            if common_prefix is None or len(prefix) < len(common_prefix):
-                common_prefix = prefix
-
-    return common_prefix
-
-
-async def process_model_directory(  # ruff: noqa: PLR0912
-    zip_ref: zipfile.ZipFile,
-    model_name: str,
-    file_paths: list[str],
-    base_dir: Path,
-    db: AsyncSession,
-) -> tuple[Path, str]:
-    """Process a single model directory from the ZIP file.
-
-    Args:
-        zip_ref: Open ZIP file reference
-        model_name: Name for this specific model
-        file_paths: List of paths within this model's directory
-        base_dir: Base directory where to extract files
-        db: Database session for persistence
-
-    Returns:
-        Tuple of (model directory path, model database ID)
-
-    Raises:
-        NoValidModelsFoundError: When no valid model files were found
-    """
-    safe_model_name = "".join(c if c.isalnum() else "_" for c in model_name)
-    try:
-        await get_ai_model_db(db, safe_model_name)
-        raise ModelAlreadyExistsError(
-            f"Model with tag '{safe_model_name}' already exists"
-        )
-    except ModelNotFoundError:
-        pass
-
-    model_dir = base_dir / safe_model_name
-    model_dir.mkdir(parents=True, exist_ok=True)
-
-    extracted_files = []
-    common_prefix = _find_common_prefix(file_paths)
-
-    for file_path in file_paths:
-        if _extract_file_from_zip(zip_ref, file_path, model_dir, common_prefix):
-            if common_prefix and file_path.startswith(common_prefix + "/"):
-                relative_path = file_path[len(common_prefix) + 1 :]
-            else:
-                relative_path = Path(file_path).name
-            extracted_files.append(model_dir / relative_path)
-
-    if not extracted_files:
-        raise NoValidModelsFoundError(
-            f"No files could be extracted for model {model_name}"
-        )
-
-    if not validate_model_files(extracted_files):
-        raise NoValidModelsFoundError(
-            f"No valid PyTorch model found in directory {model_name}"
-        )
-
-    ai_model = AIModel(
-        model_tag=safe_model_name,
-        name=model_name,
-        source=ModelSource.LOCAL,
-    )
-    model_id = await save_ai_model_db(db, ai_model)
-
-    return (model_dir, str(model_id))
-
-
-async def process_single_model(
-    zip_ref: zipfile.ZipFile,
-    model_name: str,
-    file_list: list,
-    base_dir: Path,
-    db: AsyncSession,
-) -> tuple[Path, str]:
-    """Process the ZIP contents as a single model.
-
-    Args:
-        zip_ref: Open ZIP file reference
-        model_name: Name for the model
-        file_list: List of all files in the ZIP
-        base_dir: Base directory where to extract files
-        db: Database session for persistence
-
-    Returns:
-        Tuple of (model directory path, model database ID)
-
-    Raises:
-        NoValidModelsFoundError: When no valid model files were found
-    """
-    safe_model_name = "".join(c if c.isalnum() else "_" for c in model_name)
-
-    try:
-        await get_ai_model_db(db, safe_model_name)
-        raise ModelAlreadyExistsError(
-            f"Model with tag '{safe_model_name}' already exists"
-        )
-    except ModelNotFoundError:
-        pass
-
-    model_dir = base_dir / safe_model_name
-    model_dir.mkdir(parents=True, exist_ok=True)
-
-    extracted_files = []
-
-    for file_info in file_list:
-        if file_info.is_dir() or file_info.file_size <= 0:
-            continue
-
-        file_extension = Path(file_info.filename).suffix.lower()
-        if file_extension not in ALLOWED_EXTENSIONS:
-            logger.debug(
-                "Skipping file with non-allowed extension: {}", file_info.filename
-            )
-            continue
-
-        target_name = Path(file_info.filename).name
-        target_path = model_dir / target_name
-
-        with zip_ref.open(file_info) as source, Path.open(target_path, "wb") as target:
-            shutil.copyfileobj(source, target)
-
-        extracted_files.append(target_path)
-
-    if not extracted_files:
-        raise NoValidModelsFoundError("No valid files found in the archive")
-
-    if not validate_model_files(extracted_files):
-        raise NoValidModelsFoundError("No valid PyTorch model found in the archive")
-
-    ai_model = AIModel(
-        model_tag=safe_model_name,
-        name=model_name,
-        source=ModelSource.LOCAL,
-    )
-    model_id = await save_ai_model_db(db, ai_model)
-
-    return (model_dir, str(model_id))
+    return dir_files
