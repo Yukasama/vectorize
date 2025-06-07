@@ -80,7 +80,7 @@ class InvalidCSVColumnError(AppError):
         super().__init__(f"Column with name '{column_name}' not found in the dataset")
 
 
-class UnsupportedHuggingfaceFormatError(AppError):
+class UnsupportedHuggingFaceFormatError(AppError):
     """Exception raised when the Hugging Face dataset format is unsupported."""
 
     error_code = ErrorCode.HUGGINGFACE_DATASET_FORMAT_ERROR
@@ -121,7 +121,7 @@ class DatasetAlreadyExistsError(AppError):
         super().__init__(f"Dataset with tag {dataset_tag} already exists in database")
 
 
-class HuggingfaceDatasetNotFoundError(AppError):
+class HuggingFaceDatasetNotFoundError(AppError):
     """Exception raised when the dataset is not found on Hugging Face Hub."""
 
     error_code = ErrorCode.NOT_FOUND

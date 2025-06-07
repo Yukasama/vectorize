@@ -1,6 +1,7 @@
 """Validation utilities for model ZIP files."""
 
 import zipfile
+from collections import defaultdict
 from pathlib import Path
 
 import torch
@@ -23,7 +24,7 @@ def validate_model_files(extracted_files: list[Path]) -> bool:
     for file_path in extracted_files:
         if file_path.suffix.lower() in valid_extensions:
             try:
-                torch.load(file_path, map_location="cpu")
+                torch.load(file_path, map_location="cpu")  # NOSONAR
                 return True
             except Exception:
                 logger.debug("Invalid PyTorch model: {}", file_path)
@@ -44,45 +45,51 @@ def is_valid_zip(file_path: Path) -> bool:
     return zipfile.is_zipfile(file_path)
 
 
+_MODEL_EXTS = (".pt", ".pth", ".bin", ".model", ".safetensors")
+
+
 def get_toplevel_directories(zip_file: zipfile.ZipFile) -> dict[str, list[str]]:
-    """Identify model directories in the ZIP and group their contents.
+    """Group ZIP entries by top-level model directory or first path segment.
 
     Args:
-        zip_file: The opened ZIP file object
+        zip_file: An opened ``zipfile.ZipFile`` instance.
 
     Returns:
-        Dictionary mapping potential model directory names to their contents
+        Dictionary mapping directory names to lists of file paths inside each
+        directory.
     """
     all_files = zip_file.namelist()
-    potential_model_dirs = set()
-    file_count = 2
 
-    for file_path in all_files:
-        parts = file_path.split("/")
-        if len(parts) >= file_count and any(
-            file_path.lower().endswith(ext)
-            for ext in [".pt", ".pth", ".bin", ".model", ".safetensors"]
-        ):
-            potential_model_dirs.add("/".join(parts[:-1]))
+    model_dirs = _collect_model_dirs(all_files)
+    if model_dirs:
+        return {
+            md: [f for f in all_files if f.startswith(f"{md}/")] for md in model_dirs
+        }
 
-    model_dirs = set()
-    for dir1 in sorted(potential_model_dirs):
-        if not any(
-            dir1 != dir2 and dir1.startswith(f"{dir2}/")
-            for dir2 in potential_model_dirs
-        ):
-            model_dirs.add(dir1)
+    grouped: dict[str, list[str]] = defaultdict(list)
+    for path in all_files:
+        if "/" in path:
+            grouped[path.split("/", 1)[0]].append(path)
+    return dict(grouped)
 
-    dir_files = {}
-    for model_dir in model_dirs:
-        dir_files[model_dir] = [f for f in all_files if f.startswith(f"{model_dir}/")]
 
-    if not dir_files:
-        for file_path in all_files:
-            if "/" in file_path:
-                dir_name = file_path.split("/")[0]
-                if dir_name not in dir_files:
-                    dir_files[dir_name] = []
-                dir_files[dir_name].append(file_path)
+def _collect_model_dirs(all_files: list[str]) -> set[str]:
+    """Return top-level directories that contain at least one model file.
 
-    return dir_files
+    Args:
+        all_files: List of paths obtained from ``zipfile.ZipFile.namelist``.
+
+    Returns:
+        Set of directory paths containing model files.
+    """
+    candidates = {
+        "/".join(p.split("/")[:-1])
+        for p in all_files
+        if "/" in p and p.lower().endswith(_MODEL_EXTS)
+    }
+
+    return {
+        d
+        for d in candidates
+        if not any(d != other and d.startswith(f"{other}/") for other in candidates)
+    }

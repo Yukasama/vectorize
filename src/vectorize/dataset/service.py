@@ -17,7 +17,7 @@ from .dataset_source import DatasetSource
 from .exceptions import (
     DatasetAlreadyExistsError,
     DatasetNotFoundError,
-    UnsupportedHuggingfaceFormatError,
+    UnsupportedHuggingFaceFormatError,
 )
 from .models import Dataset, DatasetAll, DatasetPublic, DatasetUpdate
 from .repository import (
@@ -171,7 +171,7 @@ async def upload_hf_dataset_svc(
     if first_info.features:
         column_names = list(first_info.features.keys())
         if not _match_schema(set(column_names)):
-            raise UnsupportedHuggingfaceFormatError(column_names)
+            raise UnsupportedHuggingFaceFormatError(column_names)
 
     upload_dataset_task = UploadDatasetTask(dataset_tag=dataset_tag)
     await save_upload_dataset_task_db(db, upload_dataset_task)

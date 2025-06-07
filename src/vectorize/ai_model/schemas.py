@@ -22,4 +22,6 @@ class PagedResponse[T](BaseModel):
     ) -> "PagedResponse[T]":
         """Factory method to create a PagedResponse from query results."""
         totalpages = (total + size - 1) // size
-        return cls(page=page, size=size, totalpages=totalpages, items=items)
+        return cls(
+            page=page, size=size, totalpages=totalpages, total=total, items=items
+        )

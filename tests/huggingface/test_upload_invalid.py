@@ -1,6 +1,6 @@
 # ruff: noqa: S101
 
-"""Test für das Laden eines ungültigen Huggingface-Modells."""
+"""Test für das Laden eines ungültigen HuggingFace-Modells."""
 
 import pytest
 from fastapi import status

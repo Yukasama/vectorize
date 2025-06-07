@@ -15,6 +15,41 @@ from .models import AIModel, AIModelUpdate
 __all__ = ["get_ai_model_db", "save_ai_model_db", "update_ai_model_db"]
 
 
+async def get_models_paged_db(
+    db: AsyncSession,
+    page: int = 1,
+    size: int = 5,
+) -> tuple[Sequence[AIModel], int]:
+    """Fetches a page of AIModel entries from the database.
+
+    Args:
+        db (AsyncSession): The database session.
+        page (int, optional): Page number, starts at 1. Defaults to 1.
+        size (int, optional): Number of items per page. Defaults to 5.
+
+    Returns:
+        tuple[list[AIModel], int]: A tuple containing the list of AIModel
+        objects for the requested page,
+        and the total number of models in the database.
+
+    Raises:
+        NoModelFoundError: If there are no models in the database.
+    """
+    total_stmt = select(func.count()).select_from(AIModel)
+    total = await db.scalar(total_stmt)
+
+    if not total:
+        raise NoModelFoundError()
+
+    offset = (page - 1) * size
+    stmt = select(AIModel).offset(offset).limit(size)
+    result = await db.exec(stmt)
+    items = result.all()
+
+    logger.debug("AIModels retrieved", items_fetched=len(items), total_items=total)
+    return items, total
+
+
 async def get_ai_model_db(db: AsyncSession, model_tag: str) -> AIModel:
     """Retrieve an AI model by its ID.
 
@@ -115,38 +150,3 @@ async def delete_model_db(db: AsyncSession, model_id: UUID) -> None:
     await db.delete(model)
     await db.commit()
     logger.debug("Model deleted", model=model)
-
-
-async def get_models_paged_db(
-    db: AsyncSession,
-    page: int = 1,
-    size: int = 5,
-) -> tuple[Sequence[AIModel], int]:
-    """Fetches a page of AIModel entries from the database.
-
-    Args:
-        db (AsyncSession): The database session.
-        page (int, optional): Page number, starts at 1. Defaults to 1.
-        size (int, optional): Number of items per page. Defaults to 5.
-
-    Returns:
-        tuple[list[AIModel], int]: A tuple containing the list of AIModel
-        objects for the requested page,
-        and the total number of models in the database.
-
-    Raises:
-        NoModelFoundError: If there are no models in the database.
-    """
-    total_stmt = select(func.count()).select_from(AIModel)
-    total = await db.scalar(total_stmt)
-
-    if not total:
-        raise NoModelFoundError()
-
-    offset = (page - 1) * size
-    stmt = select(AIModel).offset(offset).limit(size)
-    result = await db.exec(stmt)
-    items = result.all()
-
-    logger.debug("AIModels retrieved", items_fetched=len(items), total_items=total)
-    return items, total
