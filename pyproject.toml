@@ -97,6 +97,7 @@ dev = [
     "pytest-asyncio>=0.26.0",
     "snakeviz>=2.2.2",
     "pyright>=1.1.401",
+    "pytest-cov>=6.1.1",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -123,7 +124,7 @@ markers = [
 ]
 minversion = "8.3.5"
 testpaths = ["tests"]
-addopts = "--html report.html"
+addopts = "--cov=vectorize --cov-report=term-missing --cov-report=html --html=report.html"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
 

@@ -126,3 +126,11 @@ jobs:
           name: Pytest HTML report
           path: pytest-report.html
           retention-days: 14
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage HTML report
+          path: htmlcov
+          retention-days: 14
