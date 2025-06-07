@@ -17,9 +17,9 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.common.app_error import AppError
 from vectorize.common.exceptions import InvalidFileError
 from vectorize.config.db import get_session
+from vectorize.dataset.utils.process_upload import _process_uploads
 
 from .models import DatasetAll, DatasetPublic, DatasetUpdate
 from .schemas import DatasetUploadOptions, HuggingFaceDatasetRequest
@@ -29,7 +29,6 @@ from .service import (
     get_datasets_svc,
     get_hf_upload_status_svc,
     update_dataset_svc,
-    upload_dataset_svc,
     upload_hf_dataset_svc,
 )
 from .task_model import UploadDatasetTask
@@ -121,33 +120,14 @@ async def upload_dataset(
         raise InvalidFileError("No files provided")
 
     first = files[0]
-    zip_files = None
-    dataset_ids = []
-    failed_uploads = []
-
     if len(files) == 1 and first.filename and first.filename.lower().endswith(".zip"):
-        zip_files = await _handle_zip_upload(first)
-    elif any(f.filename and f.filename.lower().endswith(".zip") for f in files):
-        raise InvalidFileError("Cannot mix ZIP and individual files")
+        files_for_upload = await _handle_zip_upload(first)
+    else:
+        if any(f.filename and f.filename.lower().endswith(".zip") for f in files):
+            raise InvalidFileError("Cannot mix ZIP and individual files")
+        files_for_upload = files
 
-    files_for_upload = (
-        zip_files if zip_files is not None and len(zip_files) > 1 else files
-    )
-    for file in files_for_upload:
-        try:
-            dataset_id = await upload_dataset_svc(db, file, options)
-            dataset_ids.append(dataset_id)
-        except AppError as e:
-            if len(files_for_upload) == 1:
-                raise e
-            logger.debug(f"Failed to upload file {file.filename}: {e!s}")
-            failed_uploads.append({"filename": file.filename, "error": str(e.message)})
-        except Exception as e:
-            logger.debug(f"Unknown error during file upload {file.filename}: {e!s}")
-            failed_uploads.append({
-                "filename": file.filename,
-                "error": "An unknown error occurred",
-            })
+    dataset_ids, failed_uploads = await _process_uploads(files_for_upload, db, options)
 
     if not dataset_ids:
         return JSONResponse(
