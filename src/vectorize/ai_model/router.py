@@ -55,6 +55,7 @@ async def get_ai_models(
         page=page,
         size=size,
         totalpages=totalpages,
+        total=total,
         items_count=len(response.items),
     )
     return response

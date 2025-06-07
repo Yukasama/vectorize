@@ -25,7 +25,7 @@ rectangle "Backend (FastAPI)" {
   
   ' --- INTERNAL PROCESSES ---
   package "Internal Processes" {
-    [GitHub Pull / HuggingFace Pull]
+    [GitHub Pull / Hugging Face Pull]
     [Save model to file system (~vectorize/models)]
     [Create database entry for model]
     
@@ -41,10 +41,10 @@ rectangle "Backend (FastAPI)" {
 }
 
 ' Upload processes (models)
-[POST /models/upload] --> [GitHub Pull / HuggingFace Pull]
-[POST /models/batch-upload] --> [GitHub Pull / HuggingFace Pull]
-[GitHub Pull / HuggingFace Pull] --> [Save model to file system (~vectorize/models)]
-[GitHub Pull / HuggingFace Pull] --> [Create database entry for model]
+[POST /models/upload] --> [GitHub Pull / Hugging Face Pull]
+[POST /models/batch-upload] --> [GitHub Pull / Hugging Face Pull]
+[GitHub Pull / Hugging Face Pull] --> [Save model to file system (~vectorize/models)]
+[GitHub Pull / Hugging Face Pull] --> [Create database entry for model]
 
 ' Dataset processes
 [POST /datasets/generate] --> [Generate synthetic data using script]

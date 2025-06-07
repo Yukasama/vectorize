@@ -1,6 +1,6 @@
 # ruff: noqa: S101
 
-"""Test für das Hochladen eines Huggingface-Modells."""
+"""Test für das Hochladen eines HuggingFace-Modells."""
 
 import pytest
 from fastapi import status
@@ -13,7 +13,7 @@ _REVISION = "main"
 
 @pytest.mark.huggingface
 def test_load_distilbert_model(client: TestClient) -> None:
-    """Testet das Laden des distilbert-base-uncased Modells von Huggingface."""
+    """Testet das Laden des distilbert-base-uncased Modells von HuggingFace."""
     response = client.post(
         "/uploads/huggingface", json={"model_tag": _MODEL_TAG, "revision": _REVISION}
     )
@@ -22,7 +22,7 @@ def test_load_distilbert_model(client: TestClient) -> None:
 
 @pytest.mark.huggingface
 def test_load_distilbert_model_without_revision(client: TestClient) -> None:
-    """Testet das Laden des distilbert-base-uncased Modells von Huggingface.
+    """Testet das Laden des distilbert-base-uncased Modells von HuggingFace.
 
     ohne Revision.
     """
