@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 
-import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -32,7 +31,7 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
-from .service import train_model_task
+from .training_orchestrator import run_training
 from .utils.uuid_validator import is_valid_uuid
 from .utils.validators import TrainingDataValidator
 
@@ -47,7 +46,10 @@ async def train_model(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Starts SBERT triplet training as a background task. Expects JSONL with question, positive, negative."""
+    """Starts SBERT triplet training as a background task.
+
+    Expects JSONL with question, positive, negative.
+    """
     if not hasattr(train_request, "model_tag"):
         raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
     model = await get_ai_model_db(db, train_request.model_tag)
@@ -72,7 +74,6 @@ async def train_model(
         ds_uuid = uuid.UUID(ds_id)
         ds = await get_dataset_db(db, ds_uuid)
         dataset_path = Path("data/datasets") / ds.file_name
-        # Zentrale Validierung
         TrainingDataValidator.validate_dataset(dataset_path)
         dataset_paths.append(str(dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
@@ -93,7 +94,7 @@ async def train_model(
     ).info("SBERT-Triplet-Training requested.")
     await save_training_task(db, task)
     background_tasks.add_task(
-        train_model_task,
+        run_training,
         db,
         model_path,
         train_request,
