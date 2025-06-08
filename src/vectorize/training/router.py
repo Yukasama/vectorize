@@ -45,19 +45,21 @@ async def train_model(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Starts SBERT triplet training as a background task. Expects CSVs with question,positive,negative."""
+    """Start SBERT triplet training as a background task.
+
+    Expects CSVs with question, positive, negative columns.
+    """
     if not hasattr(train_request, "model_tag"):
         raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
     model = await get_ai_model_db(db, train_request.model_tag)
     if not model:
         raise ModelNotFoundError(train_request.model_tag)
     model_path = str(Path("data/models") / model.model_tag)
-    model_weights_path = Path(model_path)
 
-    def has_model_weights(path):
-        for root, dirs, files in os.walk(path):
+    def has_model_weights(path: str) -> bool:
+        for _root, _dirs, files in os.walk(path):
             for file in files:
-                if file.endswith('.safetensors') or file.endswith('.bin'):
+                if file.endswith((".safetensors", ".bin")):
                     return True
         return False
     if not has_model_weights(model_path):
@@ -74,7 +76,9 @@ async def train_model(
         dataset_paths.append(str(dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
     if missing:
-        raise TrainingDatasetNotFoundError("Missing datasets: %s" % ", ".join(missing))
+        raise TrainingDatasetNotFoundError(
+            f"Missing datasets: {', '.join(missing)}"
+        )
     tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     output_dir = (
@@ -104,7 +108,10 @@ async def train_model(
         model_path=model_path,
     ).info("SBERT-Triplet-Training started in background.")
     location = f"/training/{task.id}/status"
-    return Response(status_code=status.HTTP_202_ACCEPTED, headers={"Location": location})
+    return Response(
+        status_code=status.HTTP_202_ACCEPTED,
+        headers={"Location": location},
+    )
 
 
 @router.get("/{task_id}/status")

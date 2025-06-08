@@ -31,6 +31,8 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest
+from .service import InputExampleDataset
+from .utils.safetensors_finder import find_safetensors_file
 
 TRAINING_TIMEOUT_SECONDS = int(
     os.environ.get("TRAINING_TIMEOUT_SECONDS", str(60 * 60 * 2))
@@ -88,7 +90,9 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
         return
     try:
         if not hasattr(train_request, "model_tag"):
-            raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
+            raise InvalidModelIdError(
+                "TrainRequest must include a model_tag!"
+            )
         orig_model = await get_ai_model_db(db, train_request.model_tag)
 
         try:
@@ -137,16 +141,22 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
 
         tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         new_model_tag = f"{orig_model.model_tag}-finetuned-{tag_time}"
-        # Statt ID: Parent-Tag speichern
         new_model = AIModel(
             name=f"Fine-tuned: {orig_model.name} {tag_time}",
             model_tag=new_model_tag,
             source=ModelSource.LOCAL,
-            trained_from_id=None,  # ID nicht mehr nutzen
-            trained_from_tag=orig_model.model_tag,  # <--- NEU
+            trained_from_id=None,
+            trained_from_tag=orig_model.model_tag,
         )
         new_model_id = await save_ai_model_db(db, new_model)
-        logger.info(f"Neues finetuned Modell in DB gespeichert: {new_model.name} | model_tag={new_model_tag} | trained_from_tag={orig_model.model_tag} | new_model_id={new_model_id}")
+        logger.info(
+            "Saved new finetuned model in DB: %s | model_tag=%s | "
+            "trained_from_tag=%s | new_model_id=%s",
+            new_model.name,
+            new_model_tag,
+            orig_model.model_tag,
+            new_model_id,
+        )
         task = await get_train_task_by_id(db, task_id)
         if task:
             task.trained_model_id = new_model_id
@@ -181,27 +191,53 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
 
 
 class ProgressDBCallback:
-    def __init__(self, db, task_id, total_steps):
+    """Callback to update training progress in the database after each batch.
+
+    Args:
+        db (AsyncSession): The database session.
+        task_id (UUID): The training task ID.
+        total_steps (int): The total number of steps in training.
+    """
+    def __init__(self, db: AsyncSession, task_id: UUID, total_steps: int) -> None:
+        """Initializes the callback.
+
+        Args:
+            db (AsyncSession): The database session.
+            task_id (UUID): The training task ID.
+            total_steps (int): The total number of steps in training.
+        """
         self.db = db
         self.task_id = task_id
         self.total_steps = total_steps
         self.current_step = 0
+        self._async_task = None  # Store reference to avoid RUF006
 
-    def __call__(self, *args, **kwargs):
-        # Wird nach jedem Batch aufgerufen
+    def __call__(
+        self,
+        _score: float | None = None,
+        _epoch: int | None = None,
+        _steps: float | None = None,
+    ) -> None:
+        """Updates progress after each batch.
+
+        Args:
+            score (float, optional): The current score (unused).
+            epoch (int, optional): The current epoch (unused).
+            _steps (float, optional): The current step (unused, intentionally ignored).
+        """
         self.current_step += 1
         progress = self.current_step / self.total_steps
-        # Async DB update
-        import asyncio
         loop = asyncio.get_event_loop()
-        loop.create_task(update_training_task_progress(self.db, self.task_id, progress))
+        self._async_task = loop.create_task(
+            update_training_task_progress(self.db, self.task_id, progress)
+        )
 
 
 # NOTE: Progress is updated after each epoch.
 # For batch-level progress, a custom callback is needed.
 # NOTE: Argument count exceeds 5 due to business logic and clarity requirements.
 # This is an accepted exception for these training orchestration functions.
-async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
+async def _run_training_with_progress(  # noqa: PLR0913, PLR0917, PLR0914, RUF029
     db: AsyncSession,
     model_path: str,
     train_request: TrainRequest,
@@ -209,38 +245,50 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
     dataset_paths: list[str],
     output_dir: str,
 ) -> None:
-    """Run SBERT triplet training and update progress after each batch using callback."""
+    """Run SBERT triplet training and update progress after each batch using callback.
+
+    Args:
+        db (AsyncSession): The database session.
+        model_path (str): Path to the base model.
+        train_request (TrainRequest): Training configuration.
+        task_id (UUID): The training task ID.
+        dataset_paths (list[str]): List of dataset file paths.
+        output_dir (str): Output directory for the trained model.
+    """
     dataset_file = dataset_paths[0]
-    # Modell laden (wie in service.py, robust für Huggingface und lokale Modelle)
-    from .utils.safetensors_finder import find_safetensors_file
     safetensors_path = find_safetensors_file(model_path)
     if safetensors_path:
-        model_dir = os.path.dirname(safetensors_path)
-        logger.debug(f"Found .safetensors file for model: {safetensors_path} (using dir: {model_dir})")
-        model = SentenceTransformer(model_dir)
+        model_dir = Path(safetensors_path).parent
+        logger.debug(
+            "Found .safetensors file for model: %s (using dir: %s)",
+            safetensors_path,
+            model_dir,
+        )
+        model = SentenceTransformer(str(model_dir))
     else:
         logger.debug("No .safetensors file found, loading model from original path.")
         model = SentenceTransformer(model_path)
-    # Triplet-Daten aus JSONL(s) laden und für Contrastive-Loss aufbereiten
     df = pd.read_json(dataset_file, lines=True)
     train_examples = []
     for _, row in df.iterrows():
         q, pos, neg = row["Question"], row["Positive"], row["Negative"]
-        train_examples.append(InputExample(texts=[q, pos], label=1.0))
-        train_examples.append(InputExample(texts=[q, neg], label=-1.0))
-    val_examples = None
+        train_examples.extend([
+            InputExample(texts=[q, pos], label=1.0),
+            InputExample(texts=[q, neg], label=-1.0),
+        ])
     if len(dataset_paths) > 1:
         val_df = pd.read_json(dataset_paths[1], lines=True)
         val_examples = []
         for _, row in val_df.iterrows():
             q, pos, neg = row["Question"], row["Positive"], row["Negative"]
-            val_examples.append(InputExample(texts=[q, pos], label=1.0))
-            val_examples.append(InputExample(texts=[q, neg], label=-1.0))
+            val_examples.extend([
+                InputExample(texts=[q, pos], label=1.0),
+                InputExample(texts=[q, neg], label=-1.0),
+            ])
     else:
         val_split = int(0.1 * len(train_examples))
         val_examples = train_examples[:val_split]
         train_examples = train_examples[val_split:]
-    from .service import InputExampleDataset
     train_dataset = InputExampleDataset(train_examples)
     train_dataloader = DataLoader(
         train_dataset,
@@ -253,7 +301,6 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
     steps_per_epoch = len(train_dataloader)
     total_steps = num_epochs * steps_per_epoch
     progress_callback = ProgressDBCallback(db, task_id, total_steps)
-    # Nutze model.fit() mit Callback
     model.fit(
         train_objectives=[(train_dataloader, loss)],
         epochs=num_epochs,
@@ -269,10 +316,10 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
     try:
         del model
     except Exception as exc:
-        logger.warning(f"Cleanup failed (model): {exc}")
+        logger.warning("Cleanup failed (model): %s", exc)
     try:
         gc.collect()
         if hasattr(torch, "cuda") and torch.cuda.is_available():
             torch.cuda.empty_cache()
     except Exception as exc:
-        logger.warning(f"Cleanup failed (GC/CUDA): {exc}")
+        logger.warning("Cleanup failed (GC/CUDA): %s", exc)
