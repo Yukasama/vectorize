@@ -11,6 +11,7 @@ __all__ = [
     "TrainingDatasetNotFoundError",
     "TrainingModelWeightsNotFoundError",
     "TrainingTaskNotFoundError",
+    "DatasetValidationError",
 ]
 
 
@@ -69,3 +70,13 @@ class InvalidDatasetIdError(AppError):
     def __init__(self, dataset_id: str) -> None:
         """Initialize with the invalid dataset ID."""
         super().__init__(f"Dataset ID is not a valid UUID: {dataset_id}")
+
+
+class DatasetValidationError(AppError):
+    """Exception raised when the training dataset is invalid or inconsistent (e.g. missing columns)."""
+
+    error_code = ErrorCode.INVALID_FILE
+    status_code = status.HTTP_400_BAD_REQUEST
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(f"Dataset validation failed: {msg}")
