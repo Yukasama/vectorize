@@ -21,6 +21,7 @@ from vectorize.ai_model.models import AIModel
 from vectorize.ai_model.repository import get_ai_model_db, save_ai_model_db
 from vectorize.common.task_status import TaskStatus
 
+from .exceptions import DatasetValidationError, InvalidModelIdError
 from .repository import (
     get_train_task_by_id,
     update_training_task_progress,
@@ -71,12 +72,19 @@ class InputExampleDataset(Dataset):
 
 
 def _load_sbert_model(model_path: str) -> SentenceTransformer:
+    """Load a SentenceTransformer model from a path, preferring safetensors if available.
+
+    Args:
+        model_path (str): Path to the base model directory.
+
+    Returns:
+        SentenceTransformer: The loaded model.
+    """
     safetensors_path = find_safetensors_file(model_path)
     if safetensors_path:
         model_dir = Path(safetensors_path).parent
         logger.debug(
-            "Found .safetensors file for model: {safetensors_path} "
-            "(using dir: {model_dir})",
+            "Found .safetensors file for model: {safetensors_path} (using dir: {model_dir})",
             safetensors_path=safetensors_path,
             model_dir=model_dir,
         )
@@ -88,7 +96,11 @@ def _load_sbert_model(model_path: str) -> SentenceTransformer:
 
 
 def _prepare_tokenizer(tokenizer) -> None:  # noqa: ANN001
-    """Prepare the tokenizer by setting a pad token if needed."""
+    """Prepare the tokenizer by setting a pad token if needed.
+
+    Args:
+        tokenizer: The tokenizer object to prepare.
+    """
     if tokenizer.pad_token is None:
         if tokenizer.eos_token is not None:
             tokenizer.pad_token = tokenizer.eos_token
@@ -97,63 +109,34 @@ def _prepare_tokenizer(tokenizer) -> None:  # noqa: ANN001
 
 
 def _extract_triplet(row: pd.Series) -> list:
+    """Extract a triplet from a DataFrame row.
+
+    Args:
+        row (pd.Series): Row with keys 'Question', 'Positive', 'Negative'.
+
+    Returns:
+        list: [question, positive, negative]
+
+    Raises:
+        ValueError: If required keys are missing.
+    """
     if all(k in row for k in ("Question", "Positive", "Negative")):
         return [row["Question"], row["Positive"], row["Negative"]]
-    raise ValueError(
-        "Each row must contain the keys 'Question', 'Positive', 'Negative'. "
-        f"Found: {list(row.keys())}"
+    raise DatasetValidationError(
+        f"Each row must contain the keys 'Question', 'Positive', 'Negative'. Found: {list(row.keys())}"
     )
 
 
-def _prepare_examples(df: pd.DataFrame) -> list[InputExample]:
-    return prepare_input_examples(df)
-
-
-def _get_train_val_examples(
-    dataset_paths: list[str],
-) -> tuple[list[InputExample], list[InputExample]]:
-    train_examples = _prepare_examples(pd.read_json(dataset_paths[0], lines=True))
-    if len(dataset_paths) > 1:
-        val_examples = _prepare_examples(pd.read_json(dataset_paths[1], lines=True))
-    else:
-        val_split = int(0.1 * len(train_examples))
-        val_examples = train_examples[:val_split]
-        train_examples = train_examples[val_split:]
-    return train_examples, val_examples
-
-
-def _save_finetuned_model(model_path: str) -> None:
-    """Save the finetuned model metadata to the database."""
-    try:
-        parent_tag = Path(model_path.rstrip("/")).name
-        tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
-        new_model_tag = f"{parent_tag}-finetuned-{tag_time}"
-        new_model = AIModel(
-            name=f"Fine-tuned: {parent_tag} {tag_time}",
-            model_tag=new_model_tag,
-            source=ModelSource.LOCAL,
-            trained_from_tag=parent_tag,
-        )
-        engine = create_engine("sqlite:///app.db")
-        with Session(engine) as session:
-            session.add(new_model)
-            session.commit()
-        logger.info(
-            "Finetuned model saved in DB: {new_model_tag} | model_tag={new_model_tag} "
-            "| trained_from_tag={parent_tag} | new_model_id={new_model_id}",
-            new_model_tag=new_model_tag,
-            parent_tag=parent_tag,
-            new_model_id=new_model.id,
-        )
-    except Exception as exc:
-        logger.error(
-            "Error saving finetuned model to DB: {exc}",
-            exc=exc,
-        )
-
-
 def check_disk_space(path: str, min_gb: int = MIN_FREE_DISK_GB) -> bool:
-    """Check if the given path has at least min_gb gigabytes free."""
+    """Check if the given path has at least min_gb gigabytes free.
+
+    Args:
+        path (str): Directory path to check.
+        min_gb (int): Minimum required free space in GB.
+
+    Returns:
+        bool: True if enough space, False otherwise.
+    """
     try:
         _total, _used, free = shutil.disk_usage(path)
         return free >= min_gb * 1024**3
@@ -166,31 +149,6 @@ def check_disk_space(path: str, min_gb: int = MIN_FREE_DISK_GB) -> bool:
         return False
 
 
-class ProgressDBCallback:
-    """Callback to update training progress in the database after each batch."""
-    def __init__(self, db: AsyncSession, task_id: UUID, total_steps: int) -> None:
-        """Initializes the callback."""
-        self.db = db
-        self.task_id = task_id
-        self.total_steps = total_steps
-        self.current_step = 0
-        self._async_task = None
-
-    def __call__(
-        self,
-        _score: float | None = None,
-        _epoch: int | None = None,
-        _steps: float | None = None,
-    ) -> None:
-        """Updates progress after each batch."""
-        self.current_step += 1
-        progress = self.current_step / self.total_steps
-        loop = asyncio.get_event_loop()
-        self._async_task = loop.create_task(
-            update_training_task_progress(self.db, self.task_id, progress)
-        )
-
-
 async def train_model_task(
     db: AsyncSession,
     model_path: str,
@@ -199,7 +157,16 @@ async def train_model_task(
     dataset_paths: list[str],
     output_dir: str,
 ) -> None:
-    """Background task: trains the model, saves new AIModel, updates TrainingTask."""
+    """Background task: trains the model, saves new AIModel, updates TrainingTask.
+
+    Args:
+        db (AsyncSession): The database session.
+        model_path (str): Path to the base model.
+        train_request (TrainRequest): Training configuration.
+        task_id (UUID): The training task ID.
+        dataset_paths (list[str]): List of dataset file paths.
+        output_dir (str): Output directory for the trained model.
+    """
     logger.debug(
         "Training started for model_path={model_path}, dataset_paths={dataset_paths}, "
         "task_id={task_id}, output_dir={output_dir}",
@@ -225,7 +192,7 @@ async def train_model_task(
         return
     try:
         if not hasattr(train_request, "model_tag"):
-            raise ValueError("TrainRequest must include a model_tag!")
+            raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
         orig_model = await get_ai_model_db(db, train_request.model_tag)
         try:
             await asyncio.wait_for(
@@ -249,9 +216,18 @@ async def train_model_task(
                 db, task_id, TaskStatus.FAILED, error_msg="Training timed out."
             )
             return
-        except (OSError, ValueError, RuntimeError) as exc:
+        except (OSError, RuntimeError) as exc:
             logger.error(
                 "Training failed due to system/runtime error: {exc}",
+                exc=exc,
+            )
+            await update_training_task_status(
+                db, task_id, TaskStatus.FAILED, error_msg=str(exc)
+            )
+            return
+        except DatasetValidationError as exc:
+            logger.error(
+                "Dataset validation failed: {exc}",
                 exc=exc,
             )
             await update_training_task_status(
@@ -307,7 +283,7 @@ async def train_model_task(
             task_id=task_id,
             new_model_id=new_model_id,
         )
-    except (OSError, ValueError, RuntimeError) as exc:
+    except (OSError, RuntimeError) as exc:
         logger.error(
             "Training failed due to system/runtime error: {exc}",
             exc=exc,
@@ -351,15 +327,15 @@ async def _run_training_with_progress(
     dataset_paths: list[str],
     output_dir: str,
 ) -> None:
-    """Run SBERT triplet training and update progress after each batch.
+    """Run SBERT triplet training and save model after training.
 
     Args:
-        db: The database session.
-        model_path: Path to the base model.
-        train_request: Training configuration.
-        task_id: The training task ID.
-        dataset_paths: List of dataset file paths.
-        output_dir: Output directory for the trained model.
+        db (AsyncSession): The database session.
+        model_path (str): Path to the base model.
+        train_request (TrainRequest): Training configuration.
+        task_id (UUID): The training task ID.
+        dataset_paths (list[str]): List of dataset file paths.
+        output_dir (str): Output directory for the trained model.
     """
     dataset_file = dataset_paths[0]
     safetensors_path = find_safetensors_file(model_path)
@@ -380,11 +356,11 @@ async def _run_training_with_progress(
     df = pd.read_json(dataset_file, lines=True)
     train_examples = prepare_input_examples(df)
     if len(dataset_paths) > 1:
-        # Only used for validation, not needed here
-        _ = pd.read_json(dataset_paths[1], lines=True)
+        val_df = pd.read_json(dataset_paths[1], lines=True)
+        val_examples = prepare_input_examples(val_df)
     else:
         val_split = int(0.1 * len(train_examples))
-        # val_examples = train_examples[:val_split]  # unused
+        val_examples = train_examples[:val_split]
         train_examples = train_examples[val_split:]
     train_dataset = InputExampleDataset(train_examples)
     train_dataloader = DataLoader(
@@ -395,16 +371,12 @@ async def _run_training_with_progress(
     )
     loss = losses.CosineSimilarityLoss(model)
     num_epochs = train_request.epochs
-    steps_per_epoch = len(train_dataloader)
-    total_steps = num_epochs * steps_per_epoch
-    progress_callback = ProgressDBCallback(db, task_id, total_steps)
     model.fit(
         train_objectives=[(train_dataloader, loss)],
         epochs=num_epochs,
         warmup_steps=train_request.warmup_steps or 0,
         show_progress_bar=False,
         output_path=str(Path(output_dir)),
-        callback=progress_callback,
     )
     output_dir_path = Path(output_dir)
     output_dir_path.mkdir(parents=True, exist_ok=True)
@@ -447,7 +419,15 @@ def train_sbert_triplet_service(
     """
     model = _load_sbert_model(model_path)
     _prepare_tokenizer(model.tokenizer)
-    train_examples, _val_examples = _get_train_val_examples(dataset_paths)
+    df = pd.read_json(dataset_paths[0], lines=True)
+    train_examples = prepare_input_examples(df)
+    if len(dataset_paths) > 1:
+        val_df = pd.read_json(dataset_paths[1], lines=True)
+        val_examples = prepare_input_examples(val_df)
+    else:
+        val_split = int(0.1 * len(train_examples))
+        val_examples = train_examples[:val_split]
+        train_examples = train_examples[val_split:]
     train_dataset = InputExampleDataset(train_examples)
     train_dataloader = DataLoader(
         train_dataset,
@@ -491,7 +471,6 @@ def train_sbert_triplet_service(
         output_dir=output_dir,
         model_path=model_path,
     )
-    _save_finetuned_model(model_path)
     try:
         del model
     except Exception as exc:

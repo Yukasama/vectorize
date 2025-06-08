@@ -71,6 +71,10 @@ class TrainRequest(BaseModel):
     device: str | None = Field(
         None, description="Device for training ('cpu', 'cuda', 'mps', etc.)"
     )
+    timeout_seconds: int | None = Field(
+        None,
+        description="Timeout for training in seconds (default: 7200, i.e. 2 hours)"
+    )
 
 
 class TrainingStatusResponse(BaseModel):

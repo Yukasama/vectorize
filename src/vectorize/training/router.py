@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 
+import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -45,10 +46,7 @@ async def train_model(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Start SBERT triplet training as a background task.
-
-    Expects CSVs with question, positive, negative columns.
-    """
+    """Starts SBERT triplet training as a background task. Expects JSONL with question, positive, negative."""
     if not hasattr(train_request, "model_tag"):
         raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
     model = await get_ai_model_db(db, train_request.model_tag)
@@ -67,12 +65,24 @@ async def train_model(
             f"Model weights not found in {model_path} (searched recursively)"
         )
     dataset_paths = []
+    required_columns = {"Question", "Positive", "Negative"}
     for ds_id in train_request.dataset_ids:
         if not is_valid_uuid(ds_id):
             raise InvalidDatasetIdError(ds_id)
         ds_uuid = uuid.UUID(ds_id)
         ds = await get_dataset_db(db, ds_uuid)
         dataset_path = Path("data/datasets") / ds.file_name
+        # Validate JSONL columns
+        try:
+            df = pd.read_json(dataset_path, lines=True)
+        except Exception as exc:
+            raise TrainingDatasetNotFoundError(
+                f"Dataset {dataset_path} is not a valid JSONL file: {exc}"
+            )
+        if not required_columns.issubset(df.columns):
+            raise TrainingDatasetNotFoundError(
+                f"Dataset {dataset_path} is missing required columns: {required_columns - set(df.columns)}"
+            )
         dataset_paths.append(str(dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
     if missing:
@@ -85,14 +95,11 @@ async def train_model(
         f"data/models/trained_models/{model.model_tag}-finetuned-"
         f"{tag_time}-{str(task.id)[:8]}"
     )
-
     logger.bind(
         model_tag=train_request.model_tag,
         dataset_count=len(dataset_paths),
         model_path=model_path,
-    ).info(
-        "SBERT-Triplet-Training requested."
-    )
+    ).info("SBERT-Triplet-Training requested.")
     await save_training_task(db, task)
     background_tasks.add_task(
         train_model_task,
@@ -108,9 +115,7 @@ async def train_model(
         model_tag=train_request.model_tag,
         dataset_count=len(dataset_paths),
         model_path=model_path,
-    ).info(
-        "SBERT-Triplet-Training started in background."
-    )
+    ).info("SBERT-Triplet-Training started in background.")
     location = f"/training/{task.id}/status"
     return Response(
         status_code=status.HTTP_202_ACCEPTED,
