@@ -22,8 +22,8 @@ async def save_training_task(db: AsyncSession, task: TrainingTask) -> None:
     """Persist a new TrainingTask to the database.
 
     Args:
-        db (AsyncSession): The database session.
-        task (TrainingTask): The training task to save.
+        db: The database session.
+        task: The training task to save.
     """
     db.add(task)
     await db.commit()
@@ -36,7 +36,7 @@ async def update_training_task_status(
     """Update the status and error message of a TrainingTask.
 
     Args:
-        db (AsyncSession): The database session.
+        db: The database session.
         task_id (UUID): The ID of the training task.
         status (TaskStatus): The new status.
         error_msg (str | None): Optional error message.
