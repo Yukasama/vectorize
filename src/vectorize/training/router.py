@@ -34,6 +34,7 @@ from .repository import (
 from .schemas import TrainRequest, TrainingStatusResponse
 from .service import train_model_task
 from .utils.uuid_validator import is_valid_uuid
+from .utils.validators import TrainingDataValidator
 
 __all__ = ["router"]
 
@@ -65,24 +66,14 @@ async def train_model(
             f"Model weights not found in {model_path} (searched recursively)"
         )
     dataset_paths = []
-    required_columns = {"Question", "Positive", "Negative"}
     for ds_id in train_request.dataset_ids:
         if not is_valid_uuid(ds_id):
             raise InvalidDatasetIdError(ds_id)
         ds_uuid = uuid.UUID(ds_id)
         ds = await get_dataset_db(db, ds_uuid)
         dataset_path = Path("data/datasets") / ds.file_name
-        # Validate JSONL columns
-        try:
-            df = pd.read_json(dataset_path, lines=True)
-        except Exception as exc:
-            raise TrainingDatasetNotFoundError(
-                f"Dataset {dataset_path} is not a valid JSONL file: {exc}"
-            )
-        if not required_columns.issubset(df.columns):
-            raise TrainingDatasetNotFoundError(
-                f"Dataset {dataset_path} is missing required columns: {required_columns - set(df.columns)}"
-            )
+        # Zentrale Validierung
+        TrainingDataValidator.validate_dataset(dataset_path)
         dataset_paths.append(str(dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
     if missing:
