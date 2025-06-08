@@ -9,7 +9,7 @@ from vectorize.training.models import TrainingTask
 class TrainRequest(BaseModel):
     """Request for SBERT triplet training.
 
-    Expects CSVs with columns: question, positive, negative. Supports all important
+    Expects JSONL with columns: question, positive, negative. Supports all important
     and optional sentence-transformers parameters.
     """
 
