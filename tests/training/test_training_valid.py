@@ -2,7 +2,10 @@
 
 """Tests for the training endpoint (/training/train) with valid data."""
 
+import re
 import shutil
+import time
+import uuid
 from pathlib import Path
 
 import pytest
@@ -10,6 +13,16 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 MINILM_MODEL_TAG = "models--sentence-transformers--all-MiniLM-L6-v2"
+DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
+DATASET_ID_2 = "0a9d5e87-e497-4737-9829-2070780d10df"
+DEFAULT_EPOCHS = 3
+DEFAULT_LR = 0.00005
+DEFAULT_BATCH_SIZE = 8
+TRAINED_MODELS_DIR = Path("data/models/trained_models")
+
+HTTP_200_OK = status.HTTP_200_OK
+HTTP_202_ACCEPTED = status.HTTP_202_ACCEPTED
+HTTP_404_NOT_FOUND = status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.training
@@ -18,46 +31,46 @@ class TestTrainingValid:
 
     @staticmethod
     def test_valid_training(client: TestClient) -> None:
-        """Tests training with valid data and checks the response and status tracking."""
+        """Test training with valid data and check response and status tracking."""
         payload = {
             "model_tag": MINILM_MODEL_TAG,
-            "dataset_ids": [
-                "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
-                "0a9d5e87-e497-4737-9829-2070780d10df",
-            ],
-            "epochs": 3,
-            "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8,
+            "dataset_ids": [DATASET_ID_1, DATASET_ID_2],
+            "epochs": DEFAULT_EPOCHS,
+            "learning_rate": DEFAULT_LR,
+            "per_device_train_batch_size": DEFAULT_BATCH_SIZE,
         }
         response = client.post("/training/train", json=payload)
-        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert response.status_code == HTTP_202_ACCEPTED
         task_id = None
         if response.headers.get("Location"):
-            import re
-            match = re.search(r"/training/([a-f0-9\-]+)/status", response.headers["Location"])
+            match = re.search(
+                r"/training/([a-f0-9\-]+)/status",
+                response.headers["Location"],
+            )
             if match:
                 task_id = match.group(1)
-        elif response.content and response.headers.get("content-type", "").startswith("application/json"):
+        elif response.content and response.headers.get(
+            "content-type", ""
+        ).startswith("application/json"):
             data = response.json()
             task_id = data.get("task_id")
         assert task_id, "No task_id found in response or headers"
         status_response = client.get(f"/training/{task_id}/status")
-        assert status_response.status_code == 200
+        assert status_response.status_code == HTTP_200_OK
         status_data = status_response.json()
         assert status_data["status"] in {"PENDING", "RUNNING", "DONE", "FAILED"}
         progress = status_data.get("progress", 0)
         assert 0.0 <= progress <= 1.0
-        model_dirs = Path("data/models/trained_models").glob("*-finetuned-*")
+        model_dirs = TRAINED_MODELS_DIR.glob("*-finetuned-*")
         for d in model_dirs:
             shutil.rmtree(d, ignore_errors=True)
 
     @staticmethod
     def test_get_training_status(client: TestClient) -> None:
         """Test the status endpoint for a training task with random ID (should fail)."""
-        import uuid
         random_id = str(uuid.uuid4())
         response = client.get(f"/training/{random_id}/status")
-        assert response.status_code == 404
+        assert response.status_code == HTTP_404_NOT_FOUND
         data = response.json()
         assert "not found" in str(data).lower()
 
@@ -66,20 +79,24 @@ class TestTrainingValid:
         """Test training with only one dataset (should succeed)."""
         payload = {
             "model_tag": MINILM_MODEL_TAG,
-            "dataset_ids": ["0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"],
+            "dataset_ids": [DATASET_ID_1],
             "epochs": 1,
-            "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8,
+            "learning_rate": DEFAULT_LR,
+            "per_device_train_batch_size": DEFAULT_BATCH_SIZE,
         }
         response = client.post("/training/train", json=payload)
-        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert response.status_code == HTTP_202_ACCEPTED
         task_id = None
         if response.headers.get("Location"):
-            import re
-            match = re.search(r"/training/([a-f0-9\-]+)/status", response.headers["Location"])
+            match = re.search(
+                r"/training/([a-f0-9\-]+)/status",
+                response.headers["Location"],
+            )
             if match:
                 task_id = match.group(1)
-        elif response.content and response.headers.get("content-type", "").startswith("application/json"):
+        elif response.content and response.headers.get(
+            "content-type", ""
+        ).startswith("application/json"):
             data = response.json()
             task_id = data.get("task_id")
         assert task_id, "No task_id found in response or headers"
@@ -89,26 +106,29 @@ class TestTrainingValid:
         """Test that progress is tracked and >0 after training start."""
         payload = {
             "model_tag": MINILM_MODEL_TAG,
-            "dataset_ids": ["0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"],
+            "dataset_ids": [DATASET_ID_1],
             "epochs": 1,
-            "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8,
+            "learning_rate": DEFAULT_LR,
+            "per_device_train_batch_size": DEFAULT_BATCH_SIZE,
         }
         response = client.post("/training/train", json=payload)
-        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert response.status_code == HTTP_202_ACCEPTED
         task_id = None
         if response.headers.get("Location"):
-            import re
-            match = re.search(r"/training/([a-f0-9\-]+)/status", response.headers["Location"])
+            match = re.search(
+                r"/training/([a-f0-9\-]+)/status",
+                response.headers["Location"],
+            )
             if match:
                 task_id = match.group(1)
-        elif response.content and response.headers.get("content-type", "").startswith("application/json"):
+        elif response.content and response.headers.get(
+            "content-type", ""
+        ).startswith("application/json"):
             data = response.json()
             task_id = data.get("task_id")
         assert task_id, "No task_id found in response or headers"
-        import time
         time.sleep(0.5)
         status_response = client.get(f"/training/{task_id}/status")
-        assert status_response.status_code == 200
+        assert status_response.status_code == HTTP_200_OK
         status_data = status_response.json()
         assert 0.0 <= status_data.get("progress", 0) <= 1.0

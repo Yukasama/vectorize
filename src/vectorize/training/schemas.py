@@ -7,62 +7,69 @@ from vectorize.training.models import TrainingTask
 
 
 class TrainRequest(BaseModel):
-    """Request für SBERT Triplet-Training: CSVs mit question,positive,negative. Alle wichtigen und optionalen sentence-transformers Parameter unterstützt."""
+    """Request for SBERT triplet training.
 
-    model_tag: str = Field(description="Tag des lokalen Modells in der Datenbank")
+    Expects CSVs with columns: question, positive, negative. Supports all important
+    and optional sentence-transformers parameters.
+    """
+
+    model_tag: str = Field(
+        description="Tag of the local model in the database"
+    )
     dataset_ids: list[str] = Field(
-        description="IDs der Trainingsdatensätze (CSV, Spalten: question,positive,negative)",
+        description=(
+            "IDs of training datasets (CSV, columns: question, positive, negative)"
+        ),
         min_length=1,
     )
-    epochs: int = Field(1, description="Anzahl Trainingsepochen", gt=0)
+    epochs: int = Field(1, description="Number of training epochs", gt=0)
     per_device_train_batch_size: int = Field(
-        8, description="Batch-Größe pro Gerät", gt=0
+        8, description="Batch size per device", gt=0
     )
     learning_rate: float = Field(
-        2e-5, description="Learning Rate", gt=0
+        2e-5, description="Learning rate", gt=0
     )
-
     warmup_steps: int | None = Field(
-        None, description="Anzahl Warmup-Schritte"
+        None, description="Number of warmup steps"
     )
     optimizer_name: str | None = Field(
-        None, description="Optimizer (z.B. AdamW, Adam, RMSprop)"
+        None, description="Optimizer (e.g. AdamW, Adam, RMSprop)"
     )
     scheduler: str | None = Field(
-        None, description="Lernraten-Scheduler (z.B. 'constantlr', 'warmuplinear')"
+        None, description="Learning rate scheduler (e.g. 'constantlr', 'warmuplinear')"
     )
     weight_decay: float | None = Field(
-        None, description="Weight Decay (L2 Regularisierung)"
+        None, description="Weight decay (L2 regularization)"
     )
     max_grad_norm: float | None = Field(
-        None, description="Maximaler Gradient-Norm für Clipping"
+        None, description="Max gradient norm for clipping"
     )
     use_amp: bool | None = Field(
-        None, description="Automatisches Mixed Precision Training (AMP) nutzen"
+        None, description="Use automatic mixed precision (AMP)"
     )
     show_progress_bar: bool | None = Field(
-        None, description="Fortschrittsbalken anzeigen"
+        None, description="Show progress bar"
     )
     evaluation_steps: int | None = Field(
-        None, description="Evaluiere alle X Schritte (optional, falls Val-Set)"
+        None, description="Evaluate every X steps (optional, if val set)"
     )
     output_path: str | None = Field(
-        None, description="Pfad zum Speichern des Modells (optional, wird sonst automatisch gewählt)"
+        None, description="Path to save model (optional, auto if not set)"
     )
     save_best_model: bool | None = Field(
-        None, description="Bestes Modell speichern (bei Val-Set)"
+        None, description="Save best model (if val set)"
     )
     save_each_epoch: bool | None = Field(
-        None, description="Modell nach jeder Epoche speichern"
+        None, description="Save model after each epoch"
     )
     save_optimizer_state: bool | None = Field(
-        None, description="Optimizer-Status mit speichern"
+        None, description="Save optimizer state"
     )
     dataloader_num_workers: int | None = Field(
-        None, description="Anzahl DataLoader-Worker (default: 0)"
+        None, description="Number of DataLoader workers (default: 0)"
     )
     device: str | None = Field(
-        None, description="Gerät für Training ('cpu', 'cuda', 'mps', etc.)"
+        None, description="Device for training ('cpu', 'cuda', 'mps', etc.)"
     )
 
 
@@ -79,14 +86,24 @@ class TrainingStatusResponse(BaseModel):
 
     @classmethod
     def from_task(cls, task: TrainingTask) -> "TrainingStatusResponse":
+        """Create a TrainingStatusResponse from a TrainingTask object.
+
+        Args:
+            task: The TrainingTask instance.
+
+        Returns:
+            TrainingStatusResponse: The response object.
+        """
+        allowed_statuses = {"PENDING", "RUNNING", "DONE", "FAILED"}
+        status_value = str(getattr(task, "task_status", "")).upper()
+        if status_value not in allowed_statuses:
+            status_value = "FAILED"
         return cls(
             task_id=str(task.id),
-            status=task.task_status.name,
-            created_at=task.created_at.isoformat() if task.created_at else None,
-            end_date=task.end_date.isoformat() if task.end_date else None,
-            error_msg=task.error_msg,
-            trained_model_id=str(task.trained_model_id)
-            if task.trained_model_id
-            else None,
-            progress=task.progress if hasattr(task, "progress") else None,
+            status=status_value,
+            created_at=str(getattr(task, "created_at", None)),
+            end_date=str(getattr(task, "end_date", None)),
+            error_msg=getattr(task, "error_msg", None),
+            trained_model_id=str(getattr(task, "trained_model_id", "")) or None,
+            progress=getattr(task, "progress", None),
         )
