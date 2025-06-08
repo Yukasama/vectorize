@@ -31,7 +31,7 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
-from .tasks import train_model_task
+from .service import train_model_task
 from .utils.uuid_validator import is_valid_uuid
 
 __all__ = ["router"]
@@ -90,7 +90,9 @@ async def train_model(
         model_tag=train_request.model_tag,
         dataset_count=len(dataset_paths),
         model_path=model_path,
-    ).info("SBERT-Triplet-Training requested.")
+    ).info(
+        "SBERT-Triplet-Training requested."
+    )
     await save_training_task(db, task)
     background_tasks.add_task(
         train_model_task,
@@ -106,7 +108,9 @@ async def train_model(
         model_tag=train_request.model_tag,
         dataset_count=len(dataset_paths),
         model_path=model_path,
-    ).info("SBERT-Triplet-Training started in background.")
+    ).info(
+        "SBERT-Triplet-Training started in background."
+    )
     location = f"/training/{task.id}/status"
     return Response(
         status_code=status.HTTP_202_ACCEPTED,
@@ -143,5 +147,8 @@ async def cancel_training(
     await update_training_task_status(
         db, task_id, TaskStatus.CANCELED, error_msg="Training canceled by user"
     )
-    logger.debug(f"Training task {task_id} marked for cancellation")
+    logger.debug(
+        "Training task marked for cancellation.",
+        task_id=task_id,
+    )
     return Response(status_code=status.HTTP_200_OK)
