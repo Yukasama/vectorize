@@ -46,7 +46,10 @@ async def train_model(
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
-    """Starts SBERT triplet training as a background task. Expects JSONL with question, positive, negative."""
+    """Starts SBERT triplet training as a background task.
+
+    Expects JSONL with question, positive, negative.
+    """
     if not hasattr(train_request, "model_tag"):
         raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
     model = await get_ai_model_db(db, train_request.model_tag)
@@ -72,16 +75,16 @@ async def train_model(
         ds_uuid = uuid.UUID(ds_id)
         ds = await get_dataset_db(db, ds_uuid)
         dataset_path = Path("data/datasets") / ds.file_name
-        # Validate JSONL columns
         try:
             df = pd.read_json(dataset_path, lines=True)
         except Exception as exc:
             raise TrainingDatasetNotFoundError(
                 f"Dataset {dataset_path} is not a valid JSONL file: {exc}"
-            )
+            ) from exc
         if not required_columns.issubset(df.columns):
+            missing_cols = required_columns - set(df.columns)
             raise TrainingDatasetNotFoundError(
-                f"Dataset {dataset_path} is missing required columns: {required_columns - set(df.columns)}"
+                f"Dataset {dataset_path} is missing required columns: {missing_cols}"
             )
         dataset_paths.append(str(dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
@@ -96,7 +99,8 @@ async def train_model(
         f"{tag_time}-{str(task.id)[:8]}"
     )
     logger.debug(
-        "SBERT-Triplet-Training requested. model_tag={}, dataset_count={}, model_path={}",
+        "SBERT-Triplet-Training requested."
+        "model_tag={}, dataset_count={}, model_path={}",
         train_request.model_tag,
         len(dataset_paths),
         model_path,

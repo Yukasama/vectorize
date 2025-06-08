@@ -6,12 +6,12 @@ from vectorize.common.app_error import AppError
 from vectorize.config.errors import ErrorCode
 
 __all__ = [
+    "DatasetValidationError",
     "InvalidDatasetIdError",
     "InvalidModelIdError",
     "TrainingDatasetNotFoundError",
     "TrainingModelWeightsNotFoundError",
     "TrainingTaskNotFoundError",
-    "DatasetValidationError",
 ]
 
 
@@ -73,10 +73,11 @@ class InvalidDatasetIdError(AppError):
 
 
 class DatasetValidationError(AppError):
-    """Exception raised when the training dataset is invalid or inconsistent (e.g. missing columns)."""
+    """Exception raised when the training dataset is invalid."""
 
     error_code = ErrorCode.INVALID_FILE
     status_code = status.HTTP_400_BAD_REQUEST
 
     def __init__(self, msg: str) -> None:
+        """Initialize with a validation error message."""
         super().__init__(f"Dataset validation failed: {msg}")

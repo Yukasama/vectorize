@@ -87,7 +87,6 @@ class TrainingStatusResponse(BaseModel):
     end_date: str | None = None
     error_msg: str | None = None
     trained_model_id: str | None = None
-    progress: float | None = None
 
     @classmethod
     def from_task(cls, task: TrainingTask) -> "TrainingStatusResponse":
@@ -99,7 +98,6 @@ class TrainingStatusResponse(BaseModel):
         Returns:
             TrainingStatusResponse: The response object.
         """
-        # Nutze Enum für Status-Mapping, robust gegen Schreibweise
         status = getattr(task, "task_status", None)
         if isinstance(status, TaskStatus):
             status_value = status.name
@@ -117,5 +115,4 @@ class TrainingStatusResponse(BaseModel):
             end_date=str(getattr(task, "end_date", None)),
             error_msg=getattr(task, "error_msg", None),
             trained_model_id=str(getattr(task, "trained_model_id", "")) or None,
-            progress=getattr(task, "progress", None),
         )
