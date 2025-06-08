@@ -19,7 +19,7 @@ class TestTrainingInvalid:
     def test_invalid_model_id(client: TestClient) -> None:
         """Tests training with an invalid model_id and checks the error response."""
         payload = {
-            "model_id": "00000000-0000-0000-0000-000000000000",
+            "model_tag": "00000000-0000-0000-0000-000000000000",
             "dataset_ids": ["0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"],
             "epochs": 1,
             "learning_rate": 0.00005,
@@ -27,12 +27,14 @@ class TestTrainingInvalid:
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code in {404, 422}
+        data = response.json()
+        assert "model" in str(data).lower() or "not found" in str(data).lower()
 
     @staticmethod
     def test_invalid_dataset_id(client: TestClient) -> None:
         """Tests training with an invalid dataset_id and checks the error response."""
         payload = {
-            "model_id": LOCALTRAINMODEL_ID,
+            "model_tag": LOCALTRAINMODEL_ID,
             "dataset_ids": ["00000000-0000-0000-0000-000000000000"],
             "epochs": 1,
             "learning_rate": 0.00005,
@@ -40,10 +42,12 @@ class TestTrainingInvalid:
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code in {404, 422}
+        data = response.json()
+        assert "dataset" in str(data).lower() or "not found" in str(data).lower()
 
     @staticmethod
     def test_empty_dataset_list(client: TestClient) -> None:
-        """Tests training with an empty dataset_paths list."""
+        """Tests training with an empty dataset_ids list."""
         payload = {
             "model_id": LOCALTRAINMODEL_ID,
             "dataset_ids": [],
