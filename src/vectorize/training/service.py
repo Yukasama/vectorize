@@ -30,6 +30,7 @@ from .repository import (
 from .schemas import TrainRequest
 from .utils.input_examples import prepare_input_examples
 from .utils.safetensors_finder import find_safetensors_file
+from .utils.validators import TrainingDataValidator
 
 TRAINING_TIMEOUT_SECONDS = int(
     os.environ.get("TRAINING_TIMEOUT_SECONDS", str(60 * 60 * 2))
@@ -71,15 +72,8 @@ class InputExampleDataset(Dataset):
         return len(self.examples)
 
 
-def _load_sbert_model(model_path: str) -> SentenceTransformer:
-    """Load a SentenceTransformer model from a path, preferring safetensors if available.
-
-    Args:
-        model_path (str): Path to the base model directory.
-
-    Returns:
-        SentenceTransformer: The loaded model.
-    """
+def _load_and_prepare_model(model_path: str) -> SentenceTransformer:
+    """Zentrale Funktion zum Laden und Vorbereiten des Modells."""
     safetensors_path = find_safetensors_file(model_path)
     if safetensors_path:
         model_dir = Path(safetensors_path).parent
@@ -88,11 +82,34 @@ def _load_sbert_model(model_path: str) -> SentenceTransformer:
             safetensors_path=safetensors_path,
             model_dir=model_dir,
         )
-        return SentenceTransformer(str(model_dir))
-    logger.debug(
-        "No .safetensors file found, loading model from original path."
-    )
-    return SentenceTransformer(model_path)
+        model = SentenceTransformer(str(model_dir))
+    else:
+        logger.debug(
+            "No .safetensors file found, loading model from original path."
+        )
+        model = SentenceTransformer(model_path)
+    _prepare_tokenizer(model.tokenizer)
+    return model
+
+
+def _load_sbert_model(model_path: str) -> SentenceTransformer:
+    """[DEPRECATED] Use _load_and_prepare_model instead."""
+    return _load_and_prepare_model(model_path)
+
+
+def _cleanup_resources(model=None):
+    """Zentrale Cleanup-Funktion."""
+    if model is not None:
+        try:
+            del model
+        except Exception as exc:
+            logger.warning("Cleanup failed (model): {exc}", exc=exc)
+    try:
+        gc.collect()
+        if hasattr(torch, "cuda") and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception as exc:
+        logger.warning("Cleanup failed (GC/CUDA): {exc}", exc=exc)
 
 
 def _prepare_tokenizer(tokenizer) -> None:  # noqa: ANN001
@@ -301,22 +318,7 @@ async def train_model_task(
             db, task_id, TaskStatus.FAILED, error_msg=str(exc)
         )
     finally:
-        try:
-            del orig_model
-        except Exception as exc:
-            logger.warning(
-                "Cleanup failed for orig_model: {exc}",
-                exc=exc,
-            )
-        try:
-            gc.collect()
-            if hasattr(torch, "cuda") and torch.cuda.is_available():
-                torch.cuda.empty_cache()
-        except Exception as exc:
-            logger.warning(
-                "Cleanup failed (GC/CUDA): {exc}",
-                exc=exc,
-            )
+        _cleanup_resources()
 
 
 async def _run_training_with_progress(
@@ -338,25 +340,11 @@ async def _run_training_with_progress(
         output_dir (str): Output directory for the trained model.
     """
     dataset_file = dataset_paths[0]
-    safetensors_path = find_safetensors_file(model_path)
-    if safetensors_path:
-        model_dir = Path(safetensors_path).parent
-        logger.debug(
-            "Found .safetensors file for model: {safetensors_path} "
-            "(using dir: {model_dir})",
-            safetensors_path=safetensors_path,
-            model_dir=model_dir,
-        )
-        model = SentenceTransformer(str(model_dir))
-    else:
-        logger.debug(
-            "No .safetensors file found, loading model from original path."
-        )
-        model = SentenceTransformer(model_path)
-    df = pd.read_json(dataset_file, lines=True)
+    model = _load_and_prepare_model(model_path)
+    df = TrainingDataValidator.validate_dataset(Path(dataset_file))
     train_examples = prepare_input_examples(df)
     if len(dataset_paths) > 1:
-        val_df = pd.read_json(dataset_paths[1], lines=True)
+        val_df = TrainingDataValidator.validate_dataset(Path(dataset_paths[1]))
         val_examples = prepare_input_examples(val_df)
     else:
         val_split = int(0.1 * len(train_examples))
@@ -385,22 +373,7 @@ async def _run_training_with_progress(
         "SBERT training complete. Model saved at: {output_dir_path}",
         output_dir_path=output_dir_path,
     )
-    try:
-        del model
-    except Exception as exc:
-        logger.warning(
-            "Cleanup failed (model): {exc}",
-            exc=exc,
-        )
-    try:
-        gc.collect()
-        if hasattr(torch, "cuda") and torch.cuda.is_available():
-            torch.cuda.empty_cache()
-    except Exception as exc:
-        logger.warning(
-            "Cleanup failed (GC/CUDA): {exc}",
-            exc=exc,
-        )
+    _cleanup_resources(model)
 
 
 def train_sbert_triplet_service(
@@ -417,12 +390,11 @@ def train_sbert_triplet_service(
         dataset_paths (list[str]): List of dataset file paths.
         output_dir (str): Output directory for the trained model.
     """
-    model = _load_sbert_model(model_path)
-    _prepare_tokenizer(model.tokenizer)
-    df = pd.read_json(dataset_paths[0], lines=True)
+    model = _load_and_prepare_model(model_path)
+    df = TrainingDataValidator.validate_dataset(Path(dataset_paths[0]))
     train_examples = prepare_input_examples(df)
     if len(dataset_paths) > 1:
-        val_df = pd.read_json(dataset_paths[1], lines=True)
+        val_df = TrainingDataValidator.validate_dataset(Path(dataset_paths[1]))
         val_examples = prepare_input_examples(val_df)
     else:
         val_split = int(0.1 * len(train_examples))
@@ -471,11 +443,4 @@ def train_sbert_triplet_service(
         output_dir=output_dir,
         model_path=model_path,
     )
-    try:
-        del model
-    except Exception as exc:
-        logger.warning(
-            "Cleanup failed (model): {exc}",
-            exc=exc,
-        )
-    gc.collect()
+    _cleanup_resources(model)
