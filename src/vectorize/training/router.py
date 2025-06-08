@@ -95,11 +95,12 @@ async def train_model(
         f"data/models/trained_models/{model.model_tag}-finetuned-"
         f"{tag_time}-{str(task.id)[:8]}"
     )
-    logger.bind(
-        model_tag=train_request.model_tag,
-        dataset_count=len(dataset_paths),
-        model_path=model_path,
-    ).info("SBERT-Triplet-Training requested.")
+    logger.debug(
+        "SBERT-Triplet-Training requested. model_tag={}, dataset_count={}, model_path={}",
+        train_request.model_tag,
+        len(dataset_paths),
+        model_path,
+    )
     await save_training_task(db, task)
     background_tasks.add_task(
         train_model_task,
@@ -110,12 +111,13 @@ async def train_model(
         dataset_paths,
         output_dir,
     )
-    logger.bind(
+    logger.debug(
+        "SBERT-Triplet-Training started in background.",
         task_id=str(task.id),
         model_tag=train_request.model_tag,
         dataset_count=len(dataset_paths),
         model_path=model_path,
-    ).info("SBERT-Triplet-Training started in background.")
+    )
     location = f"/training/{task.id}/status"
     return Response(
         status_code=status.HTTP_202_ACCEPTED,

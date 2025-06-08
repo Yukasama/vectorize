@@ -3,6 +3,7 @@
 
 from pydantic import BaseModel, Field
 
+from vectorize.common.task_status import TaskStatus
 from vectorize.training.models import TrainingTask
 
 
@@ -98,9 +99,16 @@ class TrainingStatusResponse(BaseModel):
         Returns:
             TrainingStatusResponse: The response object.
         """
-        allowed_statuses = {"PENDING", "RUNNING", "DONE", "FAILED"}
-        status_value = str(getattr(task, "task_status", "")).upper()
-        if status_value not in allowed_statuses:
+        # Nutze Enum für Status-Mapping, robust gegen Schreibweise
+        status = getattr(task, "task_status", None)
+        if isinstance(status, TaskStatus):
+            status_value = status.name
+        elif isinstance(status, str):
+            try:
+                status_value = TaskStatus[status.upper()].name
+            except Exception:
+                status_value = "FAILED"
+        else:
             status_value = "FAILED"
         return cls(
             task_id=str(task.id),
