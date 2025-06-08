@@ -8,16 +8,20 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
 
-import torch
 import pandas as pd
+import torch
 from loguru import logger
+from sentence_transformers import (
+    InputExample,
+    SentenceTransformer,
+    losses,
+)
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sentence_transformers import SentenceTransformer, InputExample, losses
 from torch.utils.data import DataLoader
 
 from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
-from vectorize.ai_model.repository import save_ai_model_db, get_ai_model_db
+from vectorize.ai_model.repository import get_ai_model_db, save_ai_model_db
 from vectorize.common.task_status import TaskStatus
 
 from .exceptions import InvalidModelIdError
@@ -85,11 +89,6 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
     try:
         if not hasattr(train_request, "model_tag"):
             raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
-        # model_id wird nicht mehr verwendet
-        # if not is_valid_uuid(train_request.model_id):
-        #     raise InvalidModelIdError(train_request.model_id)
-        # norm_model_id = UUID(train_request.model_id)
-        # orig_model = await get_ai_model_by_id(db, norm_model_id)
         orig_model = await get_ai_model_db(db, train_request.model_tag)
 
         try:
@@ -181,6 +180,23 @@ async def train_model_task(  # noqa: PLR0913,PLR0917, PLR0912, PLR0915
             logger.warning(f"Cleanup failed (GC/CUDA): {exc}")
 
 
+class ProgressDBCallback:
+    def __init__(self, db, task_id, total_steps):
+        self.db = db
+        self.task_id = task_id
+        self.total_steps = total_steps
+        self.current_step = 0
+
+    def __call__(self, *args, **kwargs):
+        # Wird nach jedem Batch aufgerufen
+        self.current_step += 1
+        progress = self.current_step / self.total_steps
+        # Async DB update
+        import asyncio
+        loop = asyncio.get_event_loop()
+        loop.create_task(update_training_task_progress(self.db, self.task_id, progress))
+
+
 # NOTE: Progress is updated after each epoch.
 # For batch-level progress, a custom callback is needed.
 # NOTE: Argument count exceeds 5 due to business logic and clarity requirements.
@@ -193,7 +209,7 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
     dataset_paths: list[str],
     output_dir: str,
 ) -> None:
-    """Run SBERT triplet training and update progress after each epoch."""
+    """Run SBERT triplet training and update progress after each batch using callback."""
     dataset_file = dataset_paths[0]
     # Modell laden (wie in service.py, robust für Huggingface und lokale Modelle)
     from .utils.safetensors_finder import find_safetensors_file
@@ -224,35 +240,28 @@ async def _run_training_with_progress(  # noqa: PLR0913,PLR0917
         val_split = int(0.1 * len(train_examples))
         val_examples = train_examples[:val_split]
         train_examples = train_examples[val_split:]
-    from src.vectorize.training.service import InputExampleDataset
+    from .service import InputExampleDataset
     train_dataset = InputExampleDataset(train_examples)
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=train_request.per_device_train_batch_size,
         shuffle=True,
+        collate_fn=lambda x: x,
     )
     loss = losses.CosineSimilarityLoss(model)
     num_epochs = train_request.epochs
     steps_per_epoch = len(train_dataloader)
     total_steps = num_epochs * steps_per_epoch
-    for epoch in range(num_epochs):
-        if await _is_task_canceled(db, task_id):
-            logger.debug(
-                "Training canceled at epoch %s/%s", epoch + 1, num_epochs
-            )
-            await update_training_task_status(
-                db, task_id, TaskStatus.CANCELED, error_msg="Training canceled by user"
-            )
-            return
-        model.fit(
-            train_objectives=[(train_dataloader, loss)],
-            epochs=1,
-            warmup_steps=train_request.warmup_steps or 0,
-            show_progress_bar=False,
-            output_path=str(Path(output_dir)),
-        )
-        progress = ((epoch + 1) * steps_per_epoch) / total_steps
-        await update_training_task_progress(db, task_id, progress)
+    progress_callback = ProgressDBCallback(db, task_id, total_steps)
+    # Nutze model.fit() mit Callback
+    model.fit(
+        train_objectives=[(train_dataloader, loss)],
+        epochs=num_epochs,
+        warmup_steps=train_request.warmup_steps or 0,
+        show_progress_bar=False,
+        output_path=str(Path(output_dir)),
+        callback=progress_callback,
+    )
     output_dir_path = Path(output_dir)
     output_dir_path.mkdir(parents=True, exist_ok=True)
     model.save(str(output_dir_path))

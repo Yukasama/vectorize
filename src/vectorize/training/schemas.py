@@ -2,13 +2,13 @@
 
 
 from pydantic import BaseModel, Field
+
 from vectorize.training.models import TrainingTask
 
 
 class TrainRequest(BaseModel):
     """Request für SBERT Triplet-Training: CSVs mit question,positive,negative. Alle wichtigen und optionalen sentence-transformers Parameter unterstützt."""
 
-    # Pflichtparameter
     model_tag: str = Field(description="Tag des lokalen Modells in der Datenbank")
     dataset_ids: list[str] = Field(
         description="IDs der Trainingsdatensätze (CSV, Spalten: question,positive,negative)",
@@ -22,7 +22,6 @@ class TrainRequest(BaseModel):
         2e-5, description="Learning Rate", gt=0
     )
 
-    # Optionale sentence-transformers Parameter
     warmup_steps: int | None = Field(
         None, description="Anzahl Warmup-Schritte"
     )
@@ -65,7 +64,6 @@ class TrainRequest(BaseModel):
     device: str | None = Field(
         None, description="Gerät für Training ('cpu', 'cuda', 'mps', etc.)"
     )
-    # ...weitere optionale Parameter können ergänzt werden
 
 
 class TrainingStatusResponse(BaseModel):

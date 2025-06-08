@@ -31,6 +31,7 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
+from .tasks import train_model_task
 from .utils.uuid_validator import is_valid_uuid
 
 __all__ = ["router"]
@@ -52,7 +53,7 @@ async def train_model(
         raise ModelNotFoundError(train_request.model_tag)
     model_path = str(Path("data/models") / model.model_tag)
     model_weights_path = Path(model_path)
-    # Recursively check for .safetensors or .bin files in model_path
+
     def has_model_weights(path):
         for root, dirs, files in os.walk(path):
             for file in files:
@@ -87,11 +88,12 @@ async def train_model(
         model_path=model_path,
     ).info("SBERT-Triplet-Training requested.")
     await save_training_task(db, task)
-    from .service import train_sbert_triplet_service
     background_tasks.add_task(
-        train_sbert_triplet_service,
+        train_model_task,
+        db,
         model_path,
         train_request,
+        task.id,
         dataset_paths,
         output_dir,
     )
@@ -101,7 +103,8 @@ async def train_model(
         dataset_count=len(dataset_paths),
         model_path=model_path,
     ).info("SBERT-Triplet-Training started in background.")
-    return Response(status_code=status.HTTP_202_ACCEPTED)
+    location = f"/training/{task.id}/status"
+    return Response(status_code=status.HTTP_202_ACCEPTED, headers={"Location": location})
 
 
 @router.get("/{task_id}/status")

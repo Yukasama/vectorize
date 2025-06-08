@@ -1,17 +1,13 @@
 """Service layer for training (now SBERT/SentenceTransformer only)."""
 
-# No longer needed: all training logic is in tasks.py using sentence-transformers.
-# This file can be left empty or used for future service abstractions.
-
 import gc
 import os
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
 from loguru import logger
-from sentence_transformers import SentenceTransformer, InputExample, losses, evaluation
-from torch.utils.data import Dataset, DataLoader
+from sentence_transformers import InputExample, SentenceTransformer, losses
+from torch.utils.data import DataLoader, Dataset
 
 from .utils.safetensors_finder import find_safetensors_file
 
@@ -30,13 +26,12 @@ class InputExampleDataset(Dataset):
 
 def train_sbert_triplet_service(
     model_path: str,
-    train_request: Any,  # Pydantic model, aber auch dict für Tests möglich
+    train_request: Any,
     dataset_paths: list[str],
     output_dir: str,
     progress_callback=None,
 ) -> None:
     """Trainiert ein SentenceTransformer (SBERT) Modell mit CosineSimilarityLoss auf Tripletdaten (Contrastive Learning)."""
-    # Use safetensors finder for model loading
     safetensors_path = find_safetensors_file(model_path)
     if safetensors_path:
         model_dir = os.path.dirname(safetensors_path)
@@ -45,7 +40,6 @@ def train_sbert_triplet_service(
     else:
         logger.debug("No .safetensors file found, loading model from original path.")
         model = SentenceTransformer(model_path)
-    # Padding-Token setzen, falls nicht vorhanden
     tokenizer = model.tokenizer
     if tokenizer.pad_token is None:
         if tokenizer.eos_token is not None:
@@ -53,14 +47,12 @@ def train_sbert_triplet_service(
         else:
             tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
-    # Triplet-Daten aus JSONL(s) laden und für Contrastive-Loss aufbereiten
     def extract_triplet(row):
         if all(k in row for k in ("Question", "Positive", "Negative")):
             return [row["Question"], row["Positive"], row["Negative"]]
-        else:
-            raise ValueError(
-                "Jede Zeile muss die Keys 'Question', 'Positive', 'Negative' enthalten. Gefunden: %s" % list(row.keys())
-            )
+        raise ValueError(
+            "Jede Zeile muss die Keys 'Question', 'Positive', 'Negative' enthalten. Gefunden: %s" % list(row.keys())
+        )
 
     df = pd.read_json(dataset_paths[0], lines=True)
     train_examples = []
@@ -117,14 +109,13 @@ def train_sbert_triplet_service(
     )
     model.save(output_dir)
     logger.info(f"SBERT Modell gespeichert unter {output_dir} (trainiert von: {model_dir if safetensors_path else model_path})")
-    # Nach dem Speichern: Modell als AIModel in die DB eintragen
     try:
-        from vectorize.ai_model.models import AIModel
-        from vectorize.ai_model.model_source import ModelSource
-        from vectorize.ai_model.repository import save_ai_model_db
         import datetime
+
         from sqlmodel import Session, create_engine
-        # Parent-Tag bestimmen
+
+        from vectorize.ai_model.model_source import ModelSource
+        from vectorize.ai_model.models import AIModel
         parent_tag = os.path.basename(model_path.rstrip("/"))
         tag_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         new_model_tag = f"{parent_tag}-finetuned-{tag_time}"
