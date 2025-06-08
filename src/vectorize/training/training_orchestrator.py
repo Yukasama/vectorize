@@ -8,10 +8,13 @@ from sentence_transformers import losses
 from sqlmodel.ext.asyncio.session import AsyncSession
 from torch.utils.data import DataLoader
 
+from vectorize.ai_model.model_source import ModelSource
+from vectorize.ai_model.models import AIModel
+from vectorize.ai_model.repository import get_ai_model_db, save_ai_model_db
 from vectorize.common.task_status import TaskStatus
 
 from .exceptions import DatasetValidationError
-from .repository import update_training_task_status
+from .repository import get_train_task_by_id, update_training_task_status
 from .schemas import TrainRequest
 from .utils.cleanup import cleanup_resources
 from .utils.input_examples import InputExampleDataset, prepare_input_examples
@@ -37,7 +40,7 @@ async def run_training(  # noqa: PLR0913, PLR0917
         dataset_paths (list[str]): List of dataset file paths.
         output_dir (str): Output directory for the trained model.
     """
-    logger.info(
+    logger.debug(
         "Starting SBERT training",
         model_path=model_path,
         dataset_paths=dataset_paths,
@@ -69,7 +72,23 @@ async def run_training(  # noqa: PLR0913, PLR0917
         )
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         model.save(str(output_dir))
-        logger.info(
+        parent_model = await get_ai_model_db(db, train_request.model_tag)
+        tag_time = Path(output_dir).name
+        new_model_tag = str(Path(output_dir).relative_to("data/models"))
+        new_model = AIModel(
+            name=f"Fine-tuned: {parent_model.name} {tag_time}",
+            model_tag=new_model_tag,
+            source=ModelSource.LOCAL,
+            trained_from_id=parent_model.id,
+            trained_from_tag=parent_model.model_tag,
+        )
+        new_model_id = await save_ai_model_db(db, new_model)
+        task = await get_train_task_by_id(db, task_id)
+        if task:
+            task.trained_model_id = new_model_id
+            await db.commit()
+            await db.refresh(task)
+        logger.debug(
             "SBERT training complete. Model saved at: {}",
             output_dir,
         )
@@ -89,7 +108,7 @@ async def run_training(  # noqa: PLR0913, PLR0917
         return
     cleanup_resources(model)
     await update_training_task_status(db, task_id, TaskStatus.DONE)
-    logger.info(
+    logger.debug(
         "Training finished successfully",
         model_path=model_path,
         task_id=str(task_id),
