@@ -8,34 +8,47 @@ from ..exceptions import DatasetValidationError
 
 
 class TrainingDataValidator:
+    """Validates training data for SBERT training pipeline.
+
+    Ensures required columns, non-empty data, and no null values.
+    """
+
     REQUIRED_COLUMNS = {"Question", "Positive", "Negative"}
 
     @classmethod
     def validate_dataset(cls, dataset_path: Path) -> pd.DataFrame:
-        """Zentrale Validierung für alle Datasets.
+        """Central validation for all datasets.
 
         Args:
-            dataset_path (Path): Pfad zur JSONL-Datei.
+            dataset_path (Path): Path to the JSONL file.
 
         Returns:
-            pd.DataFrame: Validiertes DataFrame.
+            pd.DataFrame: Validated DataFrame.
 
         Raises:
-            DatasetValidationError: Bei ungültigen oder inkonsistenten Daten.
+            DatasetValidationError: For invalid or inconsistent data.
         """
         try:
             df = pd.read_json(dataset_path, lines=True)
         except Exception as exc:
-            raise DatasetValidationError(f"Invalid JSONL file {dataset_path}: {exc}")
+            raise DatasetValidationError(
+                f"Invalid JSONL file {dataset_path}: {exc}"
+            ) from exc
 
         missing_cols = cls.REQUIRED_COLUMNS - set(df.columns)
         if missing_cols:
-            raise DatasetValidationError(f"Missing columns in {dataset_path}: {missing_cols}")
+            raise DatasetValidationError(
+                f"Missing columns in {dataset_path}: {missing_cols}"
+            )
 
         if df.empty:
-            raise DatasetValidationError(f"Dataset {dataset_path} is empty")
+            raise DatasetValidationError(
+                f"Dataset {dataset_path} is empty"
+            )
 
         if df.isnull().any().any():
-            raise DatasetValidationError(f"Dataset {dataset_path} contains null values")
+            raise DatasetValidationError(
+                f"Dataset {dataset_path} contains null values"
+            )
 
         return df

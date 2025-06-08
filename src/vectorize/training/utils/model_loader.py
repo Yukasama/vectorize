@@ -22,8 +22,8 @@ def load_and_prepare_model(model_path: str) -> SentenceTransformer:
     if safetensors_path:
         model_dir = Path(safetensors_path).parent
         logger.debug(
-            "Found .safetensors file",
-            safetensors_path=safetensors_path, model_dir=model_dir,
+            "Found .safetensors file for model: %s (using dir: %s)",
+            safetensors_path, model_dir
         )
         model = SentenceTransformer(str(model_dir))
     else:
