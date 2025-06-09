@@ -47,6 +47,7 @@ async def run_training(  # noqa: PLR0913, PLR0917
         output_dir=output_dir,
         task_id=str(task_id),
     )
+    model = None
     try:
         model = load_and_prepare_model(model_path)
         df = TrainingDataValidator.validate_dataset(Path(dataset_paths[0]))
@@ -104,9 +105,11 @@ async def run_training(  # noqa: PLR0913, PLR0917
             TaskStatus.FAILED,
             error_msg=str(exc),
         )
-        cleanup_resources(model)
+        if model is not None:
+            cleanup_resources(model)
         return
-    cleanup_resources(model)
+    if model is not None:
+        cleanup_resources(model)
     await update_training_task_status(db, task_id, TaskStatus.DONE)
     logger.debug(
         "Training finished successfully",
