@@ -115,6 +115,7 @@ async def seed_db(session: AsyncSession) -> None:
             name="rm_dataset_1",
             file_name="__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.jsonl",
             classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
             rows=5,
         ),
     )
@@ -124,6 +125,7 @@ async def seed_db(session: AsyncSession) -> None:
             name="rm_dataset_2",
             file_name="__rm_-rf__2F_0b30b284-f7fe-4e6c-a270-17cafc5b5bcb.jsonl",
             classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
             rows=5,
         ),
     )

@@ -66,15 +66,12 @@ dependencies = [
     "prometheus-fastapi-instrumentator>=7.1.0",
     "gitpython>=3.1.44",
     "loki-logger-handler>=1.1.1",
-    "datasets>=3.6.0",
-    "accelerate>=1.7.0",
     "pyfiglet>=1.0.2",
     "polars>=1.30.0",
     "orjson>=3.10.18",
     "pyarrow>=20.0.0",
     "chardet>=5.2.0",
     "datasets>=3.6.0",
-    "trl>=0.18.1",
     "sentence-transformers>=4.1.0",
 ]
 
@@ -124,10 +121,8 @@ markers = [
     "ai_model: mark test as ai model related",
     "ai_model_read: mark test as ai model read related",
     "ai_model_write: mark test as ai model write related",
-    "training: mark test as training related",
     "synthesis: marks test as synthesis related",
 ]
-filterwarnings = ["ignore:co_lnotab is deprecated"]
 minversion = "8.3.5"
 testpaths = ["tests"]
 addopts = "--cov=vectorize --cov-report=term-missing --cov-report=html --html=report.html"
