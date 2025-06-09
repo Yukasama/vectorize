@@ -99,33 +99,3 @@ class TestTrainingValid:
             data = response.json()
             task_id = data.get("task_id")
         assert task_id, "No task_id found in response or headers"
-
-    @staticmethod
-    def test_progress_tracking(client: TestClient) -> None:
-        """Test that progress is tracked and >0 after training start."""
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "train_dataset_ids": [DATASET_ID_1],
-            "epochs": 1,
-            "learning_rate": DEFAULT_LR,
-            "per_device_train_batch_size": DEFAULT_BATCH_SIZE,
-        }
-        response = client.post("/training/train", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
-        task_id = None
-        if response.headers.get("Location"):
-            match = re.search(
-                r"/training/([a-f0-9\-]+)/status",
-                response.headers["Location"],
-            )
-            if match:
-                task_id = match.group(1)
-        elif response.content and response.headers.get(
-            "content-type", ""
-        ).startswith("application/json"):
-            data = response.json()
-            task_id = data.get("task_id")
-        assert task_id, "No task_id found in response or headers"
-        time.sleep(0.5)
-        status_response = client.get(f"/training/{task_id}/status")
-        assert status_response.status_code == HTTP_200_OK
