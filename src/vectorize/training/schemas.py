@@ -10,20 +10,28 @@ from vectorize.training.models import TrainingTask
 class TrainRequest(BaseModel):
     """Request for SBERT triplet training.
 
-    Expects JSONL with columns: question, positive, negative. Supports all important
-    and optional sentence-transformers parameters.
-    If val_dataset_id is not provided, 10% of the training data will be used for validation.
+    Expects JSONL with columns: question, positive, negative. Supports all
+    important and optional sentence-transformers parameters. If val_dataset_id is
+    not provided, 10% of the first training dataset will be used for validation.
     """
 
     model_tag: str = Field(
         description="Tag of the local model in the database"
     )
-    train_dataset_id: str = Field(
-        description="ID of the training dataset (CSV/JSONL, columns: question, positive, negative)"
+    train_dataset_ids: list[str] = Field(
+        description=(
+            "IDs of the training datasets (CSV/JSONL, columns: question, "
+            "positive, negative). If multiple are given, they will be "
+            "concatenated for training."
+        ),
+        min_length=1,
     )
     val_dataset_id: str | None = Field(
         default=None,
-        description="Optional ID of the validation dataset (same format as training). If not set, 10% split is used."
+        description=(
+            "Optional ID of the validation dataset (same format as training). "
+            "If not set, 10% split from the first training dataset is used."
+        ),
     )
     epochs: int = Field(1, description="Number of training epochs", gt=0)
     per_device_train_batch_size: int = Field(
