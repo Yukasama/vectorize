@@ -16,7 +16,7 @@ from vectorize.ai_model.exceptions import ModelNotFoundError
 from vectorize.ai_model.repository import get_ai_model_db
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
-from vectorize.datasets.repository import get_dataset_db
+from vectorize.dataset.repository import get_dataset_db
 
 from .exceptions import (
     InvalidDatasetIdError,
