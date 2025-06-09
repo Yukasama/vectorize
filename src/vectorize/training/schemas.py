@@ -12,16 +12,18 @@ class TrainRequest(BaseModel):
 
     Expects JSONL with columns: question, positive, negative. Supports all important
     and optional sentence-transformers parameters.
+    If val_dataset_id is not provided, 10% of the training data will be used for validation.
     """
 
     model_tag: str = Field(
         description="Tag of the local model in the database"
     )
-    dataset_ids: list[str] = Field(
-        description=(
-            "IDs of training datasets (CSV, columns: question, positive, negative)"
-        ),
-        min_length=1,
+    train_dataset_id: str = Field(
+        description="ID of the training dataset (CSV/JSONL, columns: question, positive, negative)"
+    )
+    val_dataset_id: str | None = Field(
+        default=None,
+        description="Optional ID of the validation dataset (same format as training). If not set, 10% split is used."
     )
     epochs: int = Field(1, description="Number of training epochs", gt=0)
     per_device_train_batch_size: int = Field(
