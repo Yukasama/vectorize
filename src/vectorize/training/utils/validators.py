@@ -46,7 +46,9 @@ class TrainingDataValidator:
                 f"Dataset {dataset_path} is empty"
             )
 
-        if df.isnull().any().any():
+        nulls = df.isnull().any()
+        has_nulls = nulls if isinstance(nulls, bool) else nulls.any()
+        if has_nulls:
             raise DatasetValidationError(
                 f"Dataset {dataset_path} contains null values"
             )

@@ -51,7 +51,9 @@ def prepare_input_examples(df: pd.DataFrame) -> list[InputExample]:
     """
     examples = []
     for _, row in df.iterrows():
-        q, pos, neg = row["Question"], row["Positive"], row["Negative"]
+        q = str(row["Question"])
+        pos = str(row["Positive"])
+        neg = str(row["Negative"])
         examples.extend([
             InputExample(texts=[q, pos], label=1.0),
             InputExample(texts=[q, neg], label=-1.0),
