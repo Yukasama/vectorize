@@ -1,5 +1,4 @@
-# # ruff: noqa: S101
-
+"""Tests for the training endpoint (/training/train) with valid data."""
 # """Tests for the training endpoint (/training/train) with valid data."""
 
 # import re
@@ -25,7 +24,7 @@
 
 
 # def ensure_minilm_model_available() -> None:
-#     """Ensure the required model files are present in data/models for training tests."""
+#     """Ensure the required model files are present in data/models for training"""
 #     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
 #     dst = Path("data/models/models--sentence-transformers--all-MiniLM-L6-v2")
 #     if not dst.exists() and src.exists():
@@ -74,7 +73,7 @@
 
 #     @staticmethod
 #     def test_get_training_status(client: TestClient) -> None:
-#         """Test the status endpoint for a training task with random ID (should fail)."""
+#         """Test the status endpoint for a training task with random ID."""
 #         random_id = str(uuid.uuid4())
 #         response = client.get(f"/training/{random_id}/status")
 #         assert response.status_code == HTTP_404_NOT_FOUND
