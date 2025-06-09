@@ -7,8 +7,8 @@ from vectorize.common.router import router as common_router
 from vectorize.config.config import settings
 from vectorize.dataset.router import router as dataset_router
 from vectorize.inference.router import router as embeddings_router
-from vectorize.training.router import router as training_router
 from vectorize.synthesis.router import router as synthesis_router
+from vectorize.training.router import router as training_router
 from vectorize.upload.router import router as upload_router
 
 
