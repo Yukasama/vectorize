@@ -40,7 +40,7 @@ def test_list_models_pagination_size_10(client: TestClient) -> None:
 @pytest.mark.ai_model
 def test_list_models_pagination_size_5(client: TestClient) -> None:
     """Test for default page size."""
-    page_size = 5  # Korrigiert: auf 5 gesetzt
+    page_size = 5
     page_number = 1
     last_pagenum = math.ceil(SEEDED_MODEL_COUNT / page_size)
     expected_last_page_items = SEEDED_MODEL_COUNT % page_size or page_size
