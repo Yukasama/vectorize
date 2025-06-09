@@ -24,7 +24,7 @@ HTTP_202_ACCEPTED = status.HTTP_202_ACCEPTED
 HTTP_404_NOT_FOUND = status.HTTP_404_NOT_FOUND
 
 
-def ensure_minilm_model_available():
+def ensure_minilm_model_available() -> None:
     """Ensure the required model files are present in data/models for training tests."""
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
     dst = Path("data/models/models--sentence-transformers--all-MiniLM-L6-v2")
@@ -38,8 +38,8 @@ class TestTrainingValid:
 
     @staticmethod
     def test_valid_training(client: TestClient) -> None:
-        ensure_minilm_model_available()
         """Test training with valid data and check response and status tracking."""
+        ensure_minilm_model_available()
         payload = {
             "model_tag": MINILM_MODEL_TAG,
             "train_dataset_ids": [DATASET_ID_1],
@@ -83,8 +83,8 @@ class TestTrainingValid:
 
     @staticmethod
     def test_training_with_single_dataset(client: TestClient) -> None:
-        ensure_minilm_model_available()
         """Test training with only one dataset (should succeed)."""
+        ensure_minilm_model_available()
         payload = {
             "model_tag": MINILM_MODEL_TAG,
             "train_dataset_ids": [DATASET_ID_1],
