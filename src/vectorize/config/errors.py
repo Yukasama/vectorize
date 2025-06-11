@@ -30,7 +30,6 @@ class ErrorCode(StrEnum):
     INVALID_LEARNING_RATE = "INVALID_LEARNING_RATE"
 
     INVALID_URL = "INVALID_URL"
-    INVALID_UUID = "INVALID_UUID"
 
 
 class ErrorNames(StrEnum):

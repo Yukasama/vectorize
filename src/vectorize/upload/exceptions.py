@@ -1,6 +1,6 @@
 """Exception classes for model upload handling."""
 
-from fastapi import HTTPException, status
+from fastapi import status
 
 from vectorize.common.app_error import AppError
 from vectorize.config.errors import ErrorCode
@@ -91,14 +91,3 @@ class ModelNotFoundError(AppError):
     error_code = ErrorCode.NOT_FOUND
     message = "Model not found"
     status_code = status.HTTP_404_NOT_FOUND
-
-
-class InvalidUUIDError(HTTPException):
-    """Exception raised when the UUID is invalid."""
-
-    def __init__(self) -> None:
-        """Initialize with a specific error message."""
-        super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid UUID format"
-        )
