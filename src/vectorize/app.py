@@ -17,6 +17,10 @@ from vectorize.config import (
     seed_db,
     settings,
 )
+from vectorize.model_loader import (  # ← Sauberer Import
+    cleanup_models_on_shutdown,
+    preload_models_on_startup,
+)
 from vectorize.utils.banner import create_banner
 from vectorize.utils.error_handler import register_exception_handlers
 from vectorize.utils.prometheus import add_prometheus_metrics
@@ -38,14 +42,20 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
             await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
 
-    # if settings.app_env != "production":
     async with AsyncSession(engine) as session:
         await seed_db(session)
 
+    # Model preloading
+    await preload_models_on_startup()
+
     yield
+
+    # Cleanup
+    await cleanup_models_on_shutdown()
     await engine.dispose()
 
 
+# Rest der Datei bleibt unverändert...
 app: Final = FastAPI(
     title="Vectorize Service",
     description="Service for text embedding and vector operations",
@@ -53,6 +63,7 @@ app: Final = FastAPI(
     lifespan=lifespan,
 )
 
+# ... Rest wie vorher
 
 # --------------------------------------------------------
 # P R O M E T H E U S
