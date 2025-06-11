@@ -1,6 +1,8 @@
 """Schemas for importing models."""
 
+from datetime import datetime
 from typing import Annotated
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -28,3 +30,14 @@ class GitHubModelRequest(BaseModel):
         description="Repository name")]
     revision: Annotated[str, Field("main", alias="tag",
         description="Branch or tag name (defaults to 'main')")]
+
+
+class UploadTaskResponse(BaseModel):
+    id: UUID
+    model_tag: str
+    task_status: str
+    source: str
+    created_at: datetime
+    end_date: datetime | None
+    updated_at: datetime
+    error_msg: str | None

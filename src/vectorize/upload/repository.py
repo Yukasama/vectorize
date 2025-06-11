@@ -61,3 +61,20 @@ async def update_upload_task_status(
         logger.exception(
             "[update_upload_task_status] Task mit ID nicht gefunden!", task_id=task_id
         )
+
+
+async def get_upload_task_by_id(
+    db: AsyncSession,
+    task_id: UUID
+) -> UploadTask | None:
+    """Retrieves a single upload task by its ID.
+
+    Args:
+        db (AsyncSession): The asynchronous database session.
+        task_id (UUID): The unique identifier of the upload task.
+
+    Returns:
+        UploadTask | None: The found task, or None if not found.
+    """
+    result = await db.exec(select(UploadTask).where(UploadTask.id == task_id))
+    return result.one_or_none()

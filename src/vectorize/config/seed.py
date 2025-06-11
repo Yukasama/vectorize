@@ -1,17 +1,20 @@
 """Seed the database with initial data."""
 
+from datetime import UTC, datetime
 from uuid import UUID
 
 from loguru import logger
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.ai_model.model_source import ModelSource
+from vectorize.ai_model.model_source import ModelSource, RemoteModelSource
 from vectorize.ai_model.models import AIModel
+from vectorize.common.task_status import TaskStatus
 from vectorize.config.config import settings
 from vectorize.dataset.classification import Classification
 from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.dataset.models import Dataset
+from vectorize.upload.models import UploadTask
 
 __all__ = ["seed_db"]
 
@@ -31,6 +34,10 @@ AI_MODEL_MINILM_ID = UUID("45e16930-a99d-4b15-9f49-2b4b2c67f86d")
 
 DATASET_TRAINING_1_ID = UUID("0a9d5e87-e497-4737-9829-2070780d10df")
 DATASET_TRAINING_2_ID = UUID("0b30b284-f7fe-4e6c-a270-17cafc5b5bcb")
+
+
+UPLOAD_TASK_GH_ID = UUID("d2f3e4b8-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+UPLOAD_TASK_HF_ID = UUID("d2f3e4b8-8c7f-4d2a-9f1e-0a6f3e4d2a5c")
 
 
 async def seed_db(session: AsyncSession) -> None:
@@ -204,5 +211,30 @@ async def seed_db(session: AsyncSession) -> None:
             model_tag="models--sentence-transformers--all-MiniLM-L6-v2",
         ),
     )
+    session.add(
+        UploadTask(
+            id=UPLOAD_TASK_GH_ID,
+            model_tag="example-github-model",
+            task_status=TaskStatus.PENDING,
+            source=RemoteModelSource.GITHUB,
+            created_at=datetime(2025, 6, 10, 9, 0, tzinfo=UTC),
+            updated_at=datetime(2025, 6, 10, 9, 5, tzinfo=UTC),
+            end_date=datetime(2025, 6, 10, 9, 5, tzinfo=UTC),
+            error_msg=None,
+        ),
+    )
+    session.add(
+        UploadTask(
+            id=UPLOAD_TASK_HF_ID,
+            model_tag="example-hf-model",
+            task_status=TaskStatus.PENDING,
+            source=RemoteModelSource.HUGGINGFACE,
+            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
+            updated_at=datetime(2025, 6, 11, 14, 31, tzinfo=UTC),
+            end_date=datetime(2025, 6, 11, 14, 31, tzinfo=UTC),
+            error_msg=None,
+        ),
+    )
+
     await session.commit()
     logger.info("Database seeded with initial data")

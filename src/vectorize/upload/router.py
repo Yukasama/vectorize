@@ -1,6 +1,7 @@
 """Router for model upload and management."""
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import (
     APIRouter,
@@ -24,14 +25,15 @@ from vectorize.ai_model.service import get_ai_model_svc
 from vectorize.common.exceptions import InternalServerError, InvalidFileError
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
+from vectorize.upload.utils.uuid_validator import parse_uuid
 
 from .exceptions import InvalidUrlError, ModelAlreadyExistsError
 from .exceptions import ModelNotFoundError as RepoModelNotFound
 from .github_service import repo_info
 from .local_service import upload_zip_model
 from .models import UploadTask
-from .repository import save_upload_task
-from .schemas import GitHubModelRequest, HuggingFaceModelRequest
+from .repository import get_upload_task_by_id, save_upload_task
+from .schemas import GitHubModelRequest, HuggingFaceModelRequest, UploadTaskResponse
 from .tasks import (
     process_github_model_background,
     process_huggingface_model_background,
@@ -213,3 +215,16 @@ async def load_model_local(
         status_code=status.HTTP_201_CREATED,
         headers=headers,
     )
+
+
+@router.get("/{task_id}", summary="Get status of a model upload task")
+async def get_upload_status(
+    task_id: Annotated[UUID, Depends(parse_uuid)],
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> UploadTaskResponse:
+    """Endpoint to retrieve the status of an upload task by its ID."""
+    task = await get_upload_task_by_id(db, task_id)
+    if not task:
+        raise ModelNotFoundError(f"Upload task with ID {task_id} not found")
+
+    return UploadTaskResponse.model_validate(task.model_dump())
