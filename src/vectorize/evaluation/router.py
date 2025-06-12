@@ -21,16 +21,16 @@ async def evaluate_model(
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> EvaluationResponse:
     """Evaluate a trained model on a dataset.
-    
+
     Computes cosine similarity metrics between question-positive-negative triplets
     to assess training quality. Optionally compares against a baseline model.
-    
+
     Main metrics computed:
     - Average cosine similarity between question and positive examples
-    - Average cosine similarity between question and negative examples  
+    - Average cosine similarity between question and negative examples
     - Ratio of positive to negative similarities (should be > 1)
     - Spearman correlation for similarity ranking
-    
+
     A training is considered successful if:
     - Positive similarities > negative similarities
     - Similarity ratio > 1.2

@@ -23,13 +23,12 @@ def load_and_prepare_model(model_path: str) -> SentenceTransformer:
         model_dir = Path(safetensors_path).parent
         logger.debug(
             "Found .safetensors file for",
-            safetensors_path=safetensors_path, model_dir=model_dir
+            safetensors_path=safetensors_path,
+            model_dir=model_dir,
         )
         model = SentenceTransformer(str(model_dir))
     else:
-        logger.debug(
-            "No .safetensors file found, loading model from original path."
-        )
+        logger.debug("No .safetensors file found, loading model from original path.")
         model = SentenceTransformer(model_path)
     _prepare_tokenizer(model.tokenizer)
     return model
@@ -45,4 +44,4 @@ def _prepare_tokenizer(tokenizer: PreTrainedTokenizer) -> None:
         if tokenizer.eos_token is not None:
             tokenizer.pad_token = tokenizer.eos_token
         else:
-            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            tokenizer.add_special_tokens({"pad_token": "[PAD]"})

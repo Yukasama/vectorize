@@ -65,6 +65,7 @@ async def train_model(  # noqa: PLR0914, PLR0915
                 if file.endswith((".safetensors", ".bin")):
                     return True
         return False
+
     if not has_model_weights(model_path):
         raise TrainingModelWeightsNotFoundError(
             f"Model weights not found in {model_path} (searched recursively)"
@@ -113,9 +114,7 @@ async def train_model(  # noqa: PLR0914, PLR0915
         dataset_paths.append(str(val_dataset_path))
     missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
     if missing:
-        raise TrainingDatasetNotFoundError(
-            f"Missing datasets: {', '.join(missing)}"
-        )
+        raise TrainingDatasetNotFoundError(f"Missing datasets: {', '.join(missing)}")
     tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     task = TrainingTask(id=uuid4(), task_status=TaskStatus.PENDING)
     output_dir = (

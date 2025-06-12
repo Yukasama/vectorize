@@ -1,6 +1,5 @@
 """Schemas for SBERT/SentenceTransformer triplet training."""
 
-
 from pydantic import BaseModel, Field
 
 from vectorize.common.task_status import TaskStatus
@@ -15,9 +14,7 @@ class TrainRequest(BaseModel):
     not provided, 10% of the first training dataset will be used for validation.
     """
 
-    model_tag: str = Field(
-        description="Tag of the local model in the database"
-    )
+    model_tag: str = Field(description="Tag of the local model in the database")
     train_dataset_ids: list[str] = Field(
         description=(
             "IDs of the training datasets (CSV/JSONL, columns: question, "
@@ -37,12 +34,8 @@ class TrainRequest(BaseModel):
     per_device_train_batch_size: int = Field(
         8, description="Batch size per device", gt=0
     )
-    learning_rate: float = Field(
-        2e-5, description="Learning rate", gt=0
-    )
-    warmup_steps: int | None = Field(
-        None, description="Number of warmup steps"
-    )
+    learning_rate: float = Field(2e-5, description="Learning rate", gt=0)
+    warmup_steps: int | None = Field(None, description="Number of warmup steps")
     optimizer_name: str | None = Field(
         None, description="Optimizer (e.g. AdamW, Adam, RMSprop)"
     )
@@ -58,9 +51,7 @@ class TrainRequest(BaseModel):
     use_amp: bool | None = Field(
         None, description="Use automatic mixed precision (AMP)"
     )
-    show_progress_bar: bool | None = Field(
-        None, description="Show progress bar"
-    )
+    show_progress_bar: bool | None = Field(None, description="Show progress bar")
     evaluation_steps: int | None = Field(
         None, description="Evaluate every X steps (optional, if val set)"
     )
@@ -73,9 +64,7 @@ class TrainRequest(BaseModel):
     save_each_epoch: bool | None = Field(
         None, description="Save model after each epoch"
     )
-    save_optimizer_state: bool | None = Field(
-        None, description="Save optimizer state"
-    )
+    save_optimizer_state: bool | None = Field(None, description="Save optimizer state")
     dataloader_num_workers: int | None = Field(
         None, description="Number of DataLoader workers (default: 0)"
     )
@@ -84,7 +73,7 @@ class TrainRequest(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Timeout for training in seconds (default: 7200, i.e. 2 hours)"
+        description="Timeout for training in seconds (default: 7200, i.e. 2 hours)",
     )
 
 

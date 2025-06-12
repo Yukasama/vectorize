@@ -3,7 +3,7 @@
 Computes cosine similarity metrics between question-positive-negative triplets
 to assess training effectiveness. Main metrics:
 - Average cosine similarity between question and positive examples
-- Average cosine similarity between question and negative examples  
+- Average cosine similarity between question and negative examples
 - Ratio of positive to negative similarities (should be > 1)
 - Spearman correlation for similarity ranking
 """
@@ -22,6 +22,9 @@ from ..training.exceptions import DatasetValidationError
 
 __all__ = ["EvaluationMetrics", "TrainingEvaluator"]
 
+# Training success threshold for similarity ratio
+TRAINING_SUCCESS_THRESHOLD = 1.2
+
 
 class EvaluationMetrics:
     """Container for training evaluation metrics."""
@@ -38,7 +41,7 @@ class EvaluationMetrics:
 
         Args:
             avg_positive_similarity: Average cosine similarity (question, positive)
-            avg_negative_similarity: Average cosine similarity (question, negative)  
+            avg_negative_similarity: Average cosine similarity (question, negative)
             similarity_ratio: Ratio of positive to negative similarities
             spearman_correlation: Spearman correlation coefficient
             num_samples: Number of triplets evaluated
@@ -62,13 +65,13 @@ class EvaluationMetrics:
 
     def is_training_successful(self) -> bool:
         """Simple heuristic to determine if training was successful.
-        
+
         Returns:
             True if positive similarities > negative similarities and ratio > 1.2
         """
         return (
             self.avg_positive_similarity > self.avg_negative_similarity
-            and self.similarity_ratio > 1.2
+            and self.similarity_ratio > TRAINING_SUCCESS_THRESHOLD
         )
 
     def __str__(self) -> str:
@@ -134,7 +137,6 @@ class TrainingEvaluator:
         if df.empty:
             raise DatasetValidationError(f"Dataset {dataset_path} is empty")
 
-        # Check for null values in required columns
         for col in self.REQUIRED_COLUMNS:
             if df[col].isnull().any():
                 raise DatasetValidationError(
@@ -143,7 +145,9 @@ class TrainingEvaluator:
 
         return df
 
-    def evaluate_dataset(self, dataset_path: Path, max_samples: int | None = None) -> EvaluationMetrics:
+    def evaluate_dataset(  # noqa: PLR0914  # Complex evaluation requires many variables
+        self, dataset_path: Path, max_samples: int | None = None
+    ) -> EvaluationMetrics:
         """Evaluate training quality on a dataset.
 
         Args:
@@ -157,67 +161,63 @@ class TrainingEvaluator:
             DatasetValidationError: If dataset is invalid
         """
         logger.info("Starting evaluation", dataset_path=str(dataset_path))
-        
-        # Load and validate dataset
+
         df = self._validate_dataset(dataset_path)
-        
-        # Limit samples if specified
+
         if max_samples and len(df) > max_samples:
             df = df.sample(n=max_samples, random_state=42)
             logger.debug(f"Limited evaluation to {max_samples} samples")
 
-        # Load model
         model = self._load_model()
 
-        # Extract texts
         questions = df["Question"].tolist()
         positives = df["Positive"].tolist()
         negatives = df["Negative"].tolist()
 
         logger.debug(f"Computing embeddings for {len(questions)} triplets")
 
-        # Compute embeddings
         question_embeddings = model.encode(questions, show_progress_bar=False)
         positive_embeddings = model.encode(positives, show_progress_bar=False)
         negative_embeddings = model.encode(negatives, show_progress_bar=False)
 
-        # Compute cosine similarities
         positive_similarities = []
         negative_similarities = []
 
         for i in range(len(questions)):
-            # Cosine similarity between question and positive
             pos_sim = cosine_similarity(
                 question_embeddings[i].reshape(1, -1),
-                positive_embeddings[i].reshape(1, -1)
+                positive_embeddings[i].reshape(1, -1),
             )[0, 0]
             positive_similarities.append(pos_sim)
 
-            # Cosine similarity between question and negative
             neg_sim = cosine_similarity(
                 question_embeddings[i].reshape(1, -1),
-                negative_embeddings[i].reshape(1, -1)
+                negative_embeddings[i].reshape(1, -1),
             )[0, 0]
             negative_similarities.append(neg_sim)
 
-        # Convert to numpy arrays for calculations
         pos_sims = np.array(positive_similarities)
         neg_sims = np.array(negative_similarities)
 
-        # Compute metrics
         avg_positive_similarity = float(np.mean(pos_sims))
         avg_negative_similarity = float(np.mean(neg_sims))
-        similarity_ratio = avg_positive_similarity / avg_negative_similarity if avg_negative_similarity > 0 else float('inf')
+        similarity_ratio = (
+            avg_positive_similarity / avg_negative_similarity
+            if avg_negative_similarity > 0
+            else float("inf")
+        )
 
-        # Compute Spearman correlation
-        # Create expected ranking: positive similarities should be higher
-        expected_scores = [1] * len(positive_similarities) + [0] * len(negative_similarities)
+        expected_scores = [1] * len(positive_similarities) + [0] * len(
+            negative_similarities
+        )
         actual_scores = positive_similarities + negative_similarities
-        
-        if len(set(actual_scores)) > 1:  # Avoid correlation with constant values
+
+        if len(set(actual_scores)) > 1:
             correlation_result = spearmanr(expected_scores, actual_scores)
             correlation_value = correlation_result[0]  # type: ignore
-            spearman_corr = float(correlation_value) if not np.isnan(correlation_value) else 0.0  # type: ignore
+            spearman_corr = (
+                float(correlation_value) if not np.isnan(correlation_value) else 0.0  # type: ignore
+            )
         else:
             spearman_corr = 0.0
 
@@ -233,10 +233,10 @@ class TrainingEvaluator:
         return metrics
 
     def compare_models(
-        self, 
-        baseline_model_path: str, 
+        self,
+        baseline_model_path: str,
         dataset_path: Path,
-        max_samples: int | None = None
+        max_samples: int | None = None,
     ) -> dict[str, EvaluationMetrics]:
         """Compare trained model against baseline model.
 
@@ -248,18 +248,15 @@ class TrainingEvaluator:
         Returns:
             Dictionary with 'trained' and 'baseline' metrics
         """
-        logger.info("Comparing models", 
-                   trained=self.model_path, 
-                   baseline=baseline_model_path)
+        logger.debug(
+            "Comparing models", trained=self.model_path, baseline=baseline_model_path
+        )
 
-        # Evaluate trained model
         trained_metrics = self.evaluate_dataset(dataset_path, max_samples)
 
-        # Evaluate baseline model
         baseline_evaluator = TrainingEvaluator(baseline_model_path)
-        baseline_metrics = baseline_evaluator.evaluate_dataset(dataset_path, max_samples)
+        baseline_metrics = baseline_evaluator.evaluate_dataset(
+            dataset_path, max_samples
+        )
 
-        return {
-            "trained": trained_metrics,
-            "baseline": baseline_metrics
-        }
+        return {"trained": trained_metrics, "baseline": baseline_metrics}
