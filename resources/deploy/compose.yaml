@@ -1,10 +1,7 @@
 services:
   vectorize:
-    build:
-      context: ../../
-      dockerfile: Dockerfile
+    build: ../..
     container_name: vectorize
-    hostname: vectorize
     volumes:
       - datasets_data:/app/data/datasets
       - models_data:/app/data/models
