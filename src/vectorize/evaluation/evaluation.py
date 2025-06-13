@@ -22,7 +22,6 @@ from ..training.exceptions import DatasetValidationError
 
 __all__ = ["EvaluationMetrics", "TrainingEvaluator"]
 
-# Training success threshold for similarity ratio
 TRAINING_SUCCESS_THRESHOLD = 1.2
 
 
@@ -145,7 +144,7 @@ class TrainingEvaluator:
 
         return df
 
-    def evaluate_dataset(  # noqa: PLR0914  # Complex evaluation requires many variables
+    def evaluate_dataset(  # noqa: PLR0914
         self, dataset_path: Path, max_samples: int | None = None
     ) -> EvaluationMetrics:
         """Evaluate training quality on a dataset.

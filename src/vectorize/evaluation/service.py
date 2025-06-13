@@ -142,7 +142,6 @@ async def evaluate_model_task(
             evaluation_summary=summary,
             training_successful=trained_metrics.is_training_successful(),
         )
-    # Evaluate only trained model
     metrics = evaluator.evaluate_dataset(dataset_path, evaluation_request.max_samples)
 
     success_status = (
