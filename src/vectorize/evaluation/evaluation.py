@@ -63,7 +63,7 @@ class EvaluationMetrics:
         }
 
     def to_baseline_dict(self) -> dict[str, Any]:
-        """Convert metrics to dictionary format for baseline models (without training success)."""
+        """Convert metrics to dictionary format for baseline models."""
         return {
             "avg_positive_similarity": self.avg_positive_similarity,
             "avg_negative_similarity": self.avg_negative_similarity,
@@ -96,7 +96,7 @@ class EvaluationMetrics:
             f")"
         )
 
-    def __str_baseline__(self) -> str:
+    def baseline_str(self) -> str:
         """String representation for baseline metrics (without training_successful)."""
         return (
             f"BaselineMetrics(\n"
@@ -279,8 +279,11 @@ class TrainingEvaluator:
         baseline_metrics = baseline_evaluator.evaluate_dataset(
             dataset_path, max_samples
         )
-        
+
         # Log baseline metrics without training_successful
-        logger.info("Baseline evaluation completed", metrics=baseline_metrics.__str_baseline__())
+        logger.info(
+            "Baseline evaluation completed",
+            metrics=baseline_metrics.baseline_str(),
+        )
 
         return {"trained": trained_metrics, "baseline": baseline_metrics}
