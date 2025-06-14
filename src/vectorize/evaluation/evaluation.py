@@ -12,13 +12,10 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import pandas as pd
 from loguru import logger
-from scipy.stats import spearmanr
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 
-from ..training.exceptions import DatasetValidationError
+from .utils import DatasetValidator, SimilarityCalculator
 
 __all__ = ["EvaluationMetrics", "TrainingEvaluator"]
 
@@ -112,8 +109,6 @@ class EvaluationMetrics:
 class TrainingEvaluator:
     """Evaluates SBERT training quality using cosine similarity metrics."""
 
-    REQUIRED_COLUMNS = {"Question", "Positive", "Negative"}
-
     def __init__(self, model_path: str) -> None:
         """Initialize evaluator with trained model.
 
@@ -130,43 +125,7 @@ class TrainingEvaluator:
             self.model = SentenceTransformer(self.model_path)
         return self.model
 
-    def _validate_dataset(self, dataset_path: Path) -> pd.DataFrame:
-        """Validate and load dataset for evaluation.
-
-        Args:
-            dataset_path: Path to JSONL dataset file
-
-        Returns:
-            Validated DataFrame
-
-        Raises:
-            DatasetValidationError: If dataset is invalid
-        """
-        try:
-            df = pd.read_json(dataset_path, lines=True)
-        except Exception as exc:
-            raise DatasetValidationError(
-                f"Invalid JSONL file {dataset_path}: {exc}"
-            ) from exc
-
-        missing_cols = self.REQUIRED_COLUMNS - set(df.columns)
-        if missing_cols:
-            raise DatasetValidationError(
-                f"Missing columns in {dataset_path}: {missing_cols}"
-            )
-
-        if df.empty:
-            raise DatasetValidationError(f"Dataset {dataset_path} is empty")
-
-        for col in self.REQUIRED_COLUMNS:
-            if df[col].isnull().any() is True:
-                raise DatasetValidationError(
-                    f"Column '{col}' contains null values in {dataset_path}"
-                )
-
-        return df
-
-    def evaluate_dataset(  # noqa: PLR0914
+    def evaluate_dataset(
         self, dataset_path: Path, max_samples: int | None = None
     ) -> EvaluationMetrics:
         """Evaluate training quality on a dataset.
@@ -183,7 +142,7 @@ class TrainingEvaluator:
         """
         logger.info("Starting evaluation", dataset_path=str(dataset_path))
 
-        df = self._validate_dataset(dataset_path)
+        df = DatasetValidator.validate_dataset(dataset_path)
 
         if max_samples and len(df) > max_samples:
             df = df.sample(n=max_samples, random_state=42)
@@ -197,50 +156,25 @@ class TrainingEvaluator:
 
         logger.debug(f"Computing embeddings for {len(questions)} triplets")
 
-        question_embeddings = model.encode(questions, show_progress_bar=False)
-        positive_embeddings = model.encode(positives, show_progress_bar=False)
-        negative_embeddings = model.encode(negatives, show_progress_bar=False)
-
-        positive_similarities = []
-        negative_similarities = []
-
-        for i in range(len(questions)):
-            pos_sim = cosine_similarity(
-                question_embeddings[i].reshape(1, -1),
-                positive_embeddings[i].reshape(1, -1),
-            )[0, 0]
-            positive_similarities.append(pos_sim)
-
-            neg_sim = cosine_similarity(
-                question_embeddings[i].reshape(1, -1),
-                negative_embeddings[i].reshape(1, -1),
-            )[0, 0]
-            negative_similarities.append(neg_sim)
+        positive_similarities, negative_similarities = (
+            SimilarityCalculator.compute_cosine_similarities(
+                model, questions, positives, negatives
+            )
+        )
 
         pos_sims = np.array(positive_similarities)
         neg_sims = np.array(negative_similarities)
 
         avg_positive_similarity = float(np.mean(pos_sims))
         avg_negative_similarity = float(np.mean(neg_sims))
-        similarity_ratio = (
-            avg_positive_similarity / avg_negative_similarity
-            if avg_negative_similarity > 0
-            else float("inf")
+
+        similarity_ratio = SimilarityCalculator.compute_similarity_ratio(
+            avg_positive_similarity, avg_negative_similarity
         )
 
-        expected_scores = [1] * len(positive_similarities) + [0] * len(
-            negative_similarities
+        spearman_corr = SimilarityCalculator.compute_spearman_correlation(
+            positive_similarities, negative_similarities
         )
-        actual_scores = positive_similarities + negative_similarities
-
-        if len(set(actual_scores)) > 1:
-            correlation_result = spearmanr(expected_scores, actual_scores)
-            correlation_value = correlation_result[0]  # type: ignore
-            spearman_corr = (
-                float(correlation_value) if not np.isnan(correlation_value) else 0.0  # type: ignore
-            )
-        else:
-            spearman_corr = 0.0
 
         metrics = EvaluationMetrics(
             avg_positive_similarity=avg_positive_similarity,

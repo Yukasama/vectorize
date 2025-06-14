@@ -8,7 +8,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from vectorize.evaluation.evaluation import EvaluationMetrics, TrainingEvaluator
+from vectorize.evaluation.evaluation import EvaluationMetrics
+from vectorize.evaluation.utils import DatasetValidator
 from vectorize.training.exceptions import DatasetValidationError
 
 
@@ -137,8 +138,7 @@ class TestTrainingEvaluator:
     @staticmethod
     def test_validate_dataset_valid(temp_dataset_file: Path) -> None:
         """Test dataset validation with valid data."""
-        evaluator = TrainingEvaluator("dummy/path")
-        df = evaluator._validate_dataset(temp_dataset_file)  # noqa: SLF001
+        df = DatasetValidator.validate_dataset(temp_dataset_file)
 
         expected_len = 3
         assert len(df) == expected_len
@@ -156,10 +156,8 @@ class TestTrainingEvaluator:
             df.to_json(f.name, orient='records', lines=True)
             temp_file = Path(f.name)
 
-        evaluator = TrainingEvaluator("dummy/path")
-
         with pytest.raises(DatasetValidationError, match="Missing columns"):
-            evaluator._validate_dataset(temp_file)  # noqa: SLF001
+            DatasetValidator.validate_dataset(temp_file)
 
     @staticmethod
     def test_validate_dataset_empty_file() -> None:
@@ -169,10 +167,8 @@ class TestTrainingEvaluator:
         ) as f:
             temp_file = Path(f.name)
 
-        evaluator = TrainingEvaluator("dummy/path")
-
         with pytest.raises(DatasetValidationError, match="Missing columns"):
-            evaluator._validate_dataset(temp_file)  # noqa: SLF001
+            DatasetValidator.validate_dataset(temp_file)
 
     @staticmethod
     def test_validate_dataset_null_values() -> None:
@@ -190,10 +186,8 @@ class TestTrainingEvaluator:
             df.to_json(f.name, orient='records', lines=True)
             temp_file = Path(f.name)
 
-        evaluator = TrainingEvaluator("dummy/path")
-
         with pytest.raises(DatasetValidationError, match="contains null values"):
-            evaluator._validate_dataset(temp_file)  # noqa: SLF001
+            DatasetValidator.validate_dataset(temp_file)
 
 
 @pytest.mark.integration
