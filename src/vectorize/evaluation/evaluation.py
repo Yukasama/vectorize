@@ -159,7 +159,7 @@ class TrainingEvaluator:
             raise DatasetValidationError(f"Dataset {dataset_path} is empty")
 
         for col in self.REQUIRED_COLUMNS:
-            if df[col].isnull().any():
+            if df[col].isnull().any() is True:
                 raise DatasetValidationError(
                     f"Column '{col}' contains null values in {dataset_path}"
                 )
