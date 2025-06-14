@@ -44,7 +44,7 @@ class DatasetValidator:
             raise DatasetValidationError(f"Dataset {dataset_path} is empty")
 
         for col in cls.REQUIRED_COLUMNS:
-            if df[col].isnull().any() is True:
+            if bool(df[col].isnull().any()):
                 raise DatasetValidationError(
                     f"Column '{col}' contains null values in {dataset_path}"
                 )

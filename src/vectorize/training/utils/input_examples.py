@@ -5,18 +5,18 @@ from sentence_transformers import InputExample
 from torch.utils.data import Dataset
 
 
-class InputExampleDataset(Dataset):
+class InputExampleDataset(Dataset[InputExample]):
     """Wraps a list of InputExamples for use with DataLoader.
 
     Args:
-        examples (list): List of InputExample objects.
+        examples: List of InputExample objects.
     """
 
-    def __init__(self, examples: list) -> None:
+    def __init__(self, examples: list[InputExample]) -> None:
         """Initializes the dataset.
 
         Args:
-            examples (list): List of InputExample objects.
+            examples: List of InputExample objects.
         """
         self.examples = examples
 
@@ -24,10 +24,10 @@ class InputExampleDataset(Dataset):
         """Returns the InputExample at the given index.
 
         Args:
-            idx (int): Index of the example.
+            idx: Index of the example.
 
         Returns:
-            InputExample: The example at the given index.
+            The example at the given index.
         """
         return self.examples[idx]
 
@@ -35,7 +35,7 @@ class InputExampleDataset(Dataset):
         """Returns the number of examples in the dataset.
 
         Returns:
-            int: Number of examples.
+            Number of examples.
         """
         return len(self.examples)
 
@@ -44,18 +44,23 @@ def prepare_input_examples(df: pd.DataFrame) -> list[InputExample]:
     """Convert a DataFrame with 'Question', 'Positive', 'Negative' columns.
 
     Args:
-        df (pd.DataFrame): DataFrame with required columns.
+        df: DataFrame with required columns.
 
     Returns:
-        list[InputExample]: List of InputExample objects for SBERT training.
+        List of InputExample objects for SBERT training.
     """
-    examples = []
+    examples: list[InputExample] = []
     for _, row in df.iterrows():
-        q = str(row["Question"])
-        pos = str(row["Positive"])
-        neg = str(row["Negative"])
+        question = str(row["Question"]).strip()
+        positive = str(row["Positive"]).strip()
+        negative = str(row["Negative"]).strip()
+
+        if not question or not positive or not negative:
+            continue
+
         examples.extend([
-            InputExample(texts=[q, pos], label=1.0),
-            InputExample(texts=[q, neg], label=-1.0),
+            InputExample(texts=[question, positive], label=1.0),
+            InputExample(texts=[question, negative], label=-1.0),
         ])
+    return examples
     return examples

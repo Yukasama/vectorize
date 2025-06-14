@@ -38,10 +38,14 @@ def _prepare_tokenizer(tokenizer: PreTrainedTokenizer) -> None:
     """Ensures the tokenizer has a pad token set.
 
     Args:
-        tokenizer (PreTrainedTokenizer): The tokenizer object to prepare.
+        tokenizer: The tokenizer object to prepare.
     """
     if tokenizer.pad_token is None:
         if tokenizer.eos_token is not None:
             tokenizer.pad_token = tokenizer.eos_token
+            logger.debug("Set pad_token to eos_token", eos_token=tokenizer.eos_token)
         else:
             tokenizer.add_special_tokens({"pad_token": "[PAD]"})
+            logger.debug("Added [PAD] token as pad_token")
+    else:
+        logger.debug("Tokenizer already has pad_token", pad_token=tokenizer.pad_token)
