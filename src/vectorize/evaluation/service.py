@@ -138,7 +138,7 @@ async def evaluate_model_task(
             model_tag=evaluation_request.model_tag,
             dataset_used=str(dataset_path),
             metrics=trained_metrics.to_dict(),
-            baseline_metrics=baseline_metrics.to_dict(),
+            baseline_metrics=baseline_metrics.to_baseline_dict(),
             evaluation_summary=summary,
             training_successful=trained_metrics.is_training_successful(),
         )

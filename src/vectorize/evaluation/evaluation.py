@@ -62,6 +62,16 @@ class EvaluationMetrics:
             "is_training_successful": self.is_training_successful(),
         }
 
+    def to_baseline_dict(self) -> dict[str, Any]:
+        """Convert metrics to dictionary format for baseline models (without training success)."""
+        return {
+            "avg_positive_similarity": self.avg_positive_similarity,
+            "avg_negative_similarity": self.avg_negative_similarity,
+            "similarity_ratio": self.similarity_ratio,
+            "spearman_correlation": self.spearman_correlation,
+            "num_samples": self.num_samples,
+        }
+
     def is_training_successful(self) -> bool:
         """Simple heuristic to determine if training was successful.
 
@@ -83,6 +93,18 @@ class EvaluationMetrics:
             f"  spearman_correlation={self.spearman_correlation:.4f}\n"
             f"  num_samples={self.num_samples}\n"
             f"  training_successful={self.is_training_successful()}\n"
+            f")"
+        )
+
+    def __str_baseline__(self) -> str:
+        """String representation for baseline metrics (without training_successful)."""
+        return (
+            f"BaselineMetrics(\n"
+            f"  avg_positive_similarity={self.avg_positive_similarity:.4f}\n"
+            f"  avg_negative_similarity={self.avg_negative_similarity:.4f}\n"
+            f"  similarity_ratio={self.similarity_ratio:.4f}\n"
+            f"  spearman_correlation={self.spearman_correlation:.4f}\n"
+            f"  num_samples={self.num_samples}\n"
             f")"
         )
 
@@ -257,5 +279,8 @@ class TrainingEvaluator:
         baseline_metrics = baseline_evaluator.evaluate_dataset(
             dataset_path, max_samples
         )
+        
+        # Log baseline metrics without training_successful
+        logger.info("Baseline evaluation completed", metrics=baseline_metrics.__str_baseline__())
 
         return {"trained": trained_metrics, "baseline": baseline_metrics}
