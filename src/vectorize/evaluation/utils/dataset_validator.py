@@ -22,11 +22,17 @@ class DatasetValidator:
             dataset_path: Path to JSONL dataset file
 
         Returns:
-            Validated DataFrame
+            Validated DataFrame with required columns
 
         Raises:
-            DatasetValidationError: If dataset is invalid
+            DatasetValidationError: If dataset is invalid or cannot be loaded
         """
+        if not dataset_path.exists():
+            raise DatasetValidationError(f"Dataset file does not exist: {dataset_path}")
+
+        if not dataset_path.is_file():
+            raise DatasetValidationError(f"Path is not a file: {dataset_path}")
+
         try:
             df = pd.read_json(dataset_path, lines=True)
         except Exception as exc:
@@ -34,19 +40,33 @@ class DatasetValidator:
                 f"Invalid JSONL file {dataset_path}: {exc}"
             ) from exc
 
+        # Check for required columns
         missing_cols = cls.REQUIRED_COLUMNS - set(df.columns)
         if missing_cols:
             raise DatasetValidationError(
                 f"Missing columns in {dataset_path}: {missing_cols}"
             )
 
+        # Check if dataset is empty
         if df.empty:
             raise DatasetValidationError(f"Dataset {dataset_path} is empty")
 
+        # Check for null values in required columns
         for col in cls.REQUIRED_COLUMNS:
             if bool(df[col].isnull().any()):
+                null_count = df[col].isnull().sum()
                 raise DatasetValidationError(
-                    f"Column '{col}' contains null values in {dataset_path}"
+                    f"Column '{col}' contains {null_count} null values "
+                    f"in {dataset_path}"
+                )
+
+        # Check for empty strings
+        for col in cls.REQUIRED_COLUMNS:
+            empty_count = (~df[col].astype(str).str.strip().astype(bool)).sum()
+            if empty_count > 0:
+                raise DatasetValidationError(
+                    f"Column '{col}' contains {empty_count} empty values "
+                    f"in {dataset_path}"
                 )
 
         return df

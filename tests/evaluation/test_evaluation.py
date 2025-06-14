@@ -93,6 +93,7 @@ class TestEvaluationMetrics:
             "spearman_correlation",
             "num_samples",
             "is_training_successful",
+            "quality_grade",
         }
         assert set(result.keys()) == expected_keys
         assert result["is_training_successful"] is True
@@ -186,7 +187,7 @@ class TestTrainingEvaluator:
             df.to_json(f.name, orient='records', lines=True)
             temp_file = Path(f.name)
 
-        with pytest.raises(DatasetValidationError, match="contains null values"):
+        with pytest.raises(DatasetValidationError, match=r"contains \d+ null values"):
             DatasetValidator.validate_dataset(temp_file)
 
 

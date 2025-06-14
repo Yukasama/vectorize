@@ -21,6 +21,9 @@ class SimilarityCalculator:
     ) -> tuple[list[float], list[float]]:
         """Compute cosine similarities for question-positive-negative triplets.
 
+        Efficiently computes pairwise cosine similarities using vectorized operations
+        for better performance on large datasets.
+
         Args:
             model: SentenceTransformer model
             questions: List of question texts
@@ -29,26 +32,30 @@ class SimilarityCalculator:
 
         Returns:
             Tuple of (positive_similarities, negative_similarities)
+
+        Raises:
+            ValueError: If input lists have different lengths
         """
+        if not (len(questions) == len(positives) == len(negatives)):
+            raise ValueError(
+                f"Input lists must have same length: "
+                f"questions={len(questions)}, positives={len(positives)}, "
+                f"negatives={len(negatives)}"
+            )
+
+        # Batch encode all texts for efficiency
         question_embeddings = model.encode(questions, show_progress_bar=False)
         positive_embeddings = model.encode(positives, show_progress_bar=False)
         negative_embeddings = model.encode(negatives, show_progress_bar=False)
 
-        positive_similarities = []
-        negative_similarities = []
+        # Compute similarities using vectorized operations
+        positive_similarities = np.diag(
+            cosine_similarity(question_embeddings, positive_embeddings)
+        ).tolist()
 
-        for i in range(len(questions)):
-            pos_sim = cosine_similarity(
-                question_embeddings[i].reshape(1, -1),
-                positive_embeddings[i].reshape(1, -1),
-            )[0, 0]
-            positive_similarities.append(pos_sim)
-
-            neg_sim = cosine_similarity(
-                question_embeddings[i].reshape(1, -1),
-                negative_embeddings[i].reshape(1, -1),
-            )[0, 0]
-            negative_similarities.append(neg_sim)
+        negative_similarities = np.diag(
+            cosine_similarity(question_embeddings, negative_embeddings)
+        ).tolist()
 
         return positive_similarities, negative_similarities
 
@@ -59,25 +66,48 @@ class SimilarityCalculator:
     ) -> float:
         """Compute Spearman correlation for similarity ranking.
 
+        Evaluates how well the model ranks positive examples higher than
+        negative ones. Higher correlation indicates better discrimination
+        between positive and negative examples.
+
         Args:
             positive_similarities: List of positive similarities
             negative_similarities: List of negative similarities
 
         Returns:
-            Spearman correlation coefficient
+            Spearman correlation coefficient (0.0 if correlation cannot be computed)
+
+        Raises:
+            ValueError: If input lists are empty
         """
+        if not positive_similarities or not negative_similarities:
+            raise ValueError("Similarity lists cannot be empty")
+
+        # Expected scores: 1 for positive, 0 for negative
         expected_scores = [1] * len(positive_similarities) + [
             0
         ] * len(negative_similarities)
         actual_scores = positive_similarities + negative_similarities
 
-        if len(set(actual_scores)) > 1:
+        # Check if there's any variance in actual scores
+        if len(set(actual_scores)) <= 1:
+            return 0.0
+
+        try:
             correlation_result = spearmanr(expected_scores, actual_scores)
+            # Extract correlation value - spearmanr returns (correlation, pvalue)
             correlation_value = correlation_result[0]  # type: ignore[index]
-            return (
-                float(correlation_value) if not np.isnan(correlation_value) else 0.0  # type: ignore[arg-type]
-            )
-        return 0.0
+
+            # Convert to float and handle NaN/None cases
+            if correlation_value is None:
+                return 0.0
+
+            # Use type ignore for the float conversion since we know it's a number
+            correlation_float = float(correlation_value)  # type: ignore[arg-type]
+            return correlation_float if not np.isnan(correlation_float) else 0.0
+        except Exception:
+            # Fallback for any numerical issues
+            return 0.0
 
     @staticmethod
     def compute_similarity_ratio(
