@@ -93,7 +93,6 @@ class TestEvaluationMetrics:
             "spearman_correlation",
             "num_samples",
             "is_training_successful",
-            "quality_grade",
         }
         assert set(result.keys()) == expected_keys
         assert result["is_training_successful"] is True
@@ -108,17 +107,17 @@ class TestTrainingEvaluator:
     def sample_dataset() -> pd.DataFrame:
         """Create a sample dataset for testing."""
         data = {
-            "Question": [
+            "question": [
                 "What is machine learning?",
                 "How does AI work?",
                 "What is deep learning?",
             ],
-            "Positive": [
+            "positive": [
                 "Machine learning is a subset of artificial intelligence",
                 "AI works by processing data through algorithms",
                 "Deep learning uses neural networks with multiple layers",
             ],
-            "Negative": [
+            "negative": [
                 "The weather is sunny today",
                 "Pizza is delicious food",
                 "Cars need fuel to run",
@@ -143,7 +142,7 @@ class TestTrainingEvaluator:
 
         expected_len = 3
         assert len(df) == expected_len
-        assert set(df.columns) >= {"Question", "Positive", "Negative"}
+        assert set(df.columns) >= {"question", "positive", "negative"}
 
     @staticmethod
     def test_validate_dataset_missing_columns() -> None:
@@ -175,9 +174,9 @@ class TestTrainingEvaluator:
     def test_validate_dataset_null_values() -> None:
         """Test dataset validation with null values."""
         data = {
-            "Question": ["test", None],
-            "Positive": ["test", "test"],
-            "Negative": ["test", "test"],
+            "question": ["test", None],
+            "positive": ["test", "test"],
+            "negative": ["test", "test"],
         }
         df = pd.DataFrame(data)
 
