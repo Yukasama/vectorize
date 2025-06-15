@@ -1,4 +1,4 @@
-"""Schemas for model evaluation endpoints."""
+"""Schemas for evaluation endpoints."""
 
 import json
 from datetime import datetime
@@ -17,7 +17,9 @@ class EvaluationRequest(BaseModel):
     """Request for evaluating a trained model."""
 
     model_tag: str = Field(description="Tag of the trained model from the database")
-    dataset_id: str = Field(description="ID of the dataset to use for evaluation")
+    dataset_id: str | None = Field(
+        default=None, description="ID of the dataset to use for evaluation"
+    )
     max_samples: int | None = Field(
         default=1000,
         description="Maximum number of samples to evaluate (default: 1000)",
@@ -25,6 +27,10 @@ class EvaluationRequest(BaseModel):
     )
     baseline_model_tag: str | None = Field(
         default=None, description="Optional tag of baseline model for comparison"
+    )
+    training_task_id: str | None = Field(
+        default=None,
+        description="Optional training task ID to use its validation dataset"
     )
 
 
