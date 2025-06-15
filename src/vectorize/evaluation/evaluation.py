@@ -231,9 +231,8 @@ class TrainingEvaluator:
                 logger.error(
                     "Failed to load model", model_path=self.model_path, error=str(exc)
                 )
-                raise Exception(
-                    f"Failed to load model from {self.model_path}: {exc}"
-                ) from exc
+                raise
+
         return self.model
 
     def evaluate_dataset(
