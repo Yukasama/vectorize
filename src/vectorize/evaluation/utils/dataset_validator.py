@@ -12,7 +12,7 @@ __all__ = ["DatasetValidator"]
 class DatasetValidator:
     """Handles dataset validation for evaluation."""
 
-    REQUIRED_COLUMNS = {"Question", "Positive", "Negative"}
+    REQUIRED_COLUMNS = {"question", "positive", "negative"}
 
     @classmethod
     def validate_dataset(cls, dataset_path: Path) -> pd.DataFrame:

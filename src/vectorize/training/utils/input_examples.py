@@ -51,9 +51,9 @@ def prepare_input_examples(df: pd.DataFrame) -> list[InputExample]:
     """
     examples: list[InputExample] = []
     for _, row in df.iterrows():
-        question = str(row["Question"]).strip()
-        positive = str(row["Positive"]).strip()
-        negative = str(row["Negative"]).strip()
+        question = str(row["question"]).strip()
+        positive = str(row["positive"]).strip()
+        negative = str(row["negative"]).strip()
 
         if not question or not positive or not negative:
             continue

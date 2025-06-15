@@ -16,7 +16,7 @@ class TrainingDataValidator:
     to maintain backwards compatibility in the training module.
     """
 
-    REQUIRED_COLUMNS = {"Question", "Positive", "Negative"}
+    REQUIRED_COLUMNS = {"question", "positive", "negative"}
 
     @classmethod
     def validate_dataset(cls, dataset_path: Path) -> pd.DataFrame:

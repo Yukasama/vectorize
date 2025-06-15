@@ -71,7 +71,7 @@ async def train_model(  # noqa: PLR0914, PLR0915
             f"Model weights not found in {model_path} (searched recursively)"
         )
     dataset_paths = []
-    required_columns = {"Question", "Positive", "Negative"}
+    required_columns = {"question", "positive", "negative"}
     for _idx, train_ds_id in enumerate(train_request.train_dataset_ids):
         if not is_valid_uuid(train_ds_id):
             raise InvalidDatasetIdError(train_ds_id)

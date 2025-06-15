@@ -23,13 +23,6 @@ TRAINING_SUCCESS_THRESHOLD = 1.2
 DEFAULT_MAX_SAMPLES = 1000
 DEFAULT_RANDOM_SEED = 42
 
-EXCELLENT_RATIO_THRESHOLD = 2.0
-EXCELLENT_CORRELATION_THRESHOLD = 0.7
-GOOD_RATIO_THRESHOLD = 1.5
-GOOD_CORRELATION_THRESHOLD = 0.5
-FAIR_RATIO_THRESHOLD = 1.2
-FAIR_CORRELATION_THRESHOLD = 0.3
-
 
 class EvaluationMetrics:
     """Container for training evaluation metrics."""
@@ -98,7 +91,6 @@ class EvaluationMetrics:
             "spearman_correlation": self.spearman_correlation,
             "num_samples": self.num_samples,
             "is_training_successful": self.is_training_successful(),
-            "quality_grade": self.get_quality_grade(),
         }
 
     def to_baseline_dict(self) -> dict[str, Any]:
@@ -113,7 +105,6 @@ class EvaluationMetrics:
             "similarity_ratio": self.similarity_ratio,
             "spearman_correlation": self.spearman_correlation,
             "num_samples": self.num_samples,
-            "quality_grade": self.get_quality_grade(),
         }
 
     def is_training_successful(self) -> bool:
@@ -150,29 +141,6 @@ class EvaluationMetrics:
                 self.spearman_correlation - baseline.spearman_correlation
             ),
         }
-
-    def get_quality_grade(self) -> str:
-        """Get a qualitative grade for the training quality.
-
-        Returns:
-            Quality grade: "Excellent", "Good", "Fair", "Poor"
-        """
-        if (
-            self.similarity_ratio >= EXCELLENT_RATIO_THRESHOLD
-            and self.spearman_correlation >= EXCELLENT_CORRELATION_THRESHOLD
-        ):
-            return "Excellent"
-        if (
-            self.similarity_ratio >= GOOD_RATIO_THRESHOLD
-            and self.spearman_correlation >= GOOD_CORRELATION_THRESHOLD
-        ):
-            return "Good"
-        if (
-            self.similarity_ratio >= FAIR_RATIO_THRESHOLD
-            and self.spearman_correlation >= FAIR_CORRELATION_THRESHOLD
-        ):
-            return "Fair"
-        return "Poor"
 
     def __str__(self) -> str:
         """String representation of metrics."""
@@ -264,9 +232,9 @@ class TrainingEvaluator:
 
         model = self._load_model()
 
-        questions = df["Question"].tolist()
-        positives = df["Positive"].tolist()
-        negatives = df["Negative"].tolist()
+        questions = df["question"].tolist()
+        positives = df["positive"].tolist()
+        negatives = df["negative"].tolist()
 
         logger.debug("Computing embeddings for triplets", num_triplets=len(questions))
 
@@ -349,7 +317,6 @@ class TrainingEvaluator:
             model_type="trained",
             model_path=self.model_path,
             training_status=success_status.lower(),
-            quality_grade=trained_metrics.get_quality_grade(),
             metrics=str(trained_metrics),
         )
 
@@ -376,7 +343,6 @@ class TrainingEvaluator:
                 "dataset_path": str(dataset_path),
                 "samples_evaluated": metrics.num_samples,
                 "training_successful": metrics.is_training_successful(),
-                "quality_grade": metrics.get_quality_grade(),
                 "positive_avg": f"{metrics.avg_positive_similarity:.4f}",
                 "negative_avg": f"{metrics.avg_negative_similarity:.4f}",
                 "ratio": f"{metrics.similarity_ratio:.4f}",
