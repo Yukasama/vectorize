@@ -63,4 +63,3 @@ def prepare_input_examples(df: pd.DataFrame) -> list[InputExample]:
             InputExample(texts=[question, negative], label=-1.0),
         ])
     return examples
-    return examples
