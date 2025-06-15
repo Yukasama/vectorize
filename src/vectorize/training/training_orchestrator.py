@@ -104,7 +104,7 @@ class TrainingOrchestrator:
             train_examples = train_examples[val_split:]
 
         train_dataset = InputExampleDataset(train_examples)
-        return DataLoader(train_dataset, batch_size=batch_size)
+        return DataLoader(train_dataset, batch_size=batch_size, num_workers=0)
 
     def _train_model(
         self,
