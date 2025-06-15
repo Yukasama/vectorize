@@ -123,7 +123,7 @@ async def session(cleanup_test_db: Generator[None]) -> AsyncGenerator[AsyncSessi
 
 
 @pytest.fixture(name="client")
-def client_fixture(session: AsyncSession) -> Generator[TestClient]:
+def client_fixture(session: AsyncSession) -> Generator:
     """Create a test client for the FastAPI app.
 
     Args:

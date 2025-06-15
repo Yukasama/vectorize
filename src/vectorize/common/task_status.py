@@ -10,6 +10,7 @@ class TaskStatus(StrEnum):
 
     QUEUED = "Q"
     PENDING = "P"
+    RUNNING = "R"
     DONE = "D"
     FAILED = "F"
     CANCELED = "C"
