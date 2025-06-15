@@ -15,6 +15,7 @@ __all__ = [
     "save_training_task",
     "update_training_task_progress",
     "update_training_task_status",
+    "update_training_task_validation_dataset",
 ]
 
 
@@ -67,6 +68,25 @@ async def update_training_task_progress(
     task = result.first()
     if task:
         task.progress = progress
+        await db.commit()
+        await db.refresh(task)
+
+
+async def update_training_task_validation_dataset(
+    db: AsyncSession, task_id: UUID, validation_dataset_path: str
+) -> None:
+    """Update the validation dataset path of a TrainingTask.
+
+    Args:
+        db (AsyncSession): The database session.
+        task_id (UUID): The ID of the training task.
+        validation_dataset_path (str): Path to the validation dataset.
+    """
+    result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
+    task = result.first()
+    if task:
+        task.validation_dataset_path = validation_dataset_path
+        task.updated_at = datetime.now(UTC)
         await db.commit()
         await db.refresh(task)
 

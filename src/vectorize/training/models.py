@@ -64,3 +64,8 @@ class TrainingTask(SQLModel, table=True):
         default=0.0,
         description="Progress of the training task as a float between 0.0 and 1.0.",
     )
+
+    validation_dataset_path: str | None = Field(
+        default=None,
+        description="Path to the validation dataset used during training.",
+    )
