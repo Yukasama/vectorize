@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from httpx import Response
 
 MINILM_MODEL_TAG = "models--sentence-transformers--all-MiniLM-L6-v2"
 DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
@@ -32,7 +33,7 @@ def ensure_minilm_model_available() -> None:
         shutil.copytree(src, dst)
 
 
-def extract_task_id_from_response(response) -> str:
+def extract_task_id_from_response(response: Response) -> str:
     """Extract task_id from training response (from Location header or JSON body).
 
     Args:
@@ -56,7 +57,10 @@ def extract_task_id_from_response(response) -> str:
             task_id = match.group(1)
 
     # Fallback to JSON body if available
-    elif response.content and response.headers.get("content-type", "").startswith("application/json"):
+    elif (
+        response.content
+        and response.headers.get("content-type", "").startswith("application/json")
+    ):
         data = response.json()
         task_id = data.get("task_id")
 
@@ -114,3 +118,7 @@ class TestTrainingValid:
         response = client.post("/training/train", json=payload)
         assert response.status_code == HTTP_202_ACCEPTED
         task_id = extract_task_id_from_response(response)
+
+        # Verify that we can get the task status
+        status_response = client.get(f"/training/{task_id}/status")
+        assert status_response.status_code == HTTP_200_OK
