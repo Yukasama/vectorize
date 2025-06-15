@@ -1,0 +1,25 @@
+{"question": "How can I reset my password?", "positive": "How do I set my password back to default?", "negative": "How can I cancel my order?"}
+{"question": "The product works perfectly.", "positive": "The item is in very good condition.", "negative": "The device arrived defective."}
+{"question": "When will the goods be delivered?", "positive": "What day will my order arrive?", "negative": "How can I change the payment method?"}
+{"question": "I am very satisfied with the service.", "positive": "Customer service exceeded my expectations.", "negative": "I have been waiting weeks for a response from support."}
+{"question": "Are there discounts for regular customers?", "positive": "Do you have special offers for frequent buyers?", "negative": "How can I exchange a defective item?"}
+{"question": "How can I change my password?", "positive": "How can I reset my password?", "negative": "How can I change my address?"}
+{"question": "The product is in good condition.", "positive": "The goods arrived without defects.", "negative": "The product was delivered damaged."}
+{"question": "When will my order arrive?", "positive": "When will my package be delivered?", "negative": "How can I modify my order?"}
+{"question": "I am very satisfied with the support.", "positive": "Customer service was excellent.", "negative": "I have not received any feedback from support yet."}
+{"question": "Do regular customers get a discount?", "positive": "Are there offers for loyal customers?", "negative": "How do I report a wrong item?"}
+{"question": "How can I recover my forgotten password?", "positive": "I forgot my password, how can I reset it?", "negative": "How can I change my delivery address?"}
+{"question": "The product meets my expectations.", "positive": "The item is as described.", "negative": "The product is not as expected."}
+{"question": "When will my delivery arrive?", "positive": "When can I expect the delivery?", "negative": "How can I cancel my order?"}
+{"question": "Customer service was very helpful.", "positive": "I was well advised by support.", "negative": "I received no help from customer service."}
+{"question": "Is there a loyalty discount?", "positive": "Do long-term customers receive benefits?", "negative": "How can I return an item?"}
+{"question": "How can I unlock my account?", "positive": "My account is locked, what should I do?", "negative": "How can I place a new order?"}
+{"question": "The device works as expected.", "positive": "The product functions perfectly.", "negative": "The device was delivered broken."}
+{"question": "When can I expect delivery?", "positive": "When will my package likely be delivered?", "negative": "How can I modify my order?"}
+{"question": "I am very satisfied with the product.", "positive": "The item met my expectations.", "negative": "The product is defective."}
+{"question": "Do you offer discounts for new customers?", "positive": "Are there special promotions for first-time buyers?", "negative": "How can I file a complaint?"}
+{"question": "How can I update my password?", "positive": "How do I change my current password?", "negative": "How can I delete my account?"}
+{"question": "The product is high-quality crafted.", "positive": "The quality of the item is very good.", "negative": "The product has defects."}
+{"question": "When will my order be processed?", "positive": "How long does order processing take?", "negative": "How can I cancel my order?"}
+{"question": "Support was very friendly.", "positive": "I received competent advice.", "negative": "I got no response from support."}
+{"question": "Are there special offers for business customers?", "positive": "Do you offer discounts for corporate clients?", "negative": "How can I report an incorrect item?"}
