@@ -120,6 +120,192 @@ Das System bietet detaillierte Fehlerklassen für verschiedene Szenarien:
 
 Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 
+## Vollständige JSON-API-Referenz
+
+### Training Request Beispiele
+
+**Minimal Training Request:**
+```json
+{
+  "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
+  "train_dataset_ids": ["0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"]
+}
+```
+
+**Standard Training Request:**
+```json
+{
+  "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
+  "train_dataset_ids": [
+    "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
+    "0a9d5e87-e497-4737-9829-2070780d10df"
+  ],
+  "val_dataset_id": "0a9d5e87-e497-4737-9829-2070780d10df",
+  "epochs": 3,
+  "learning_rate": 0.00005,
+  "per_device_train_batch_size": 8
+}
+```
+
+**Vollständige Training Request mit allen Parametern:**
+```json
+{
+  "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
+  "train_dataset_ids": [
+    "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb",
+    "0a9d5e87-e497-4737-9829-2070780d10df"
+  ],
+  "val_dataset_id": "0a9d5e87-e497-4737-9829-2070780d10df",
+  "epochs": 3,
+  "per_device_train_batch_size": 16,
+  "learning_rate": 5e-5,
+  "warmup_steps": 200,
+  "optimizer_name": "AdamW",
+  "scheduler": "constantlr",
+  "weight_decay": 0.01,
+  "max_grad_norm": 1.0,
+  "use_amp": true,
+  "show_progress_bar": true,
+  "evaluation_steps": 1000,
+  "save_best_model": true,
+  "save_each_epoch": false,
+  "save_optimizer_state": false,
+  "dataloader_num_workers": 0,
+  "device": "cuda",
+  "timeout_seconds": 7200
+}
+```
+
+### Training Response Beispiele
+
+**Training Start Response (202 Accepted):**
+```json
+{
+  "status_code": 202,
+  "headers": {
+    "Location": "/training/7ef54ba0-2d87-4864-8360-81de8035369a/status"
+  }
+}
+```
+
+**Training Status Response:**
+```json
+{
+  "task_id": "7ef54ba0-2d87-4864-8360-81de8035369a",
+  "status": "DONE",
+  "created_at": "2025-06-15T21:34:47.000Z",
+  "end_date": "2025-06-15T22:15:23.000Z",
+  "error_msg": null,
+  "trained_model_id": "trained_models/models--sentence-transformers--all-MiniLM-L6-v2-finetuned-20250615-213447-7ef54ba0"
+}
+```
+
+**Training Cancellation Response (200 OK):**
+```json
+{
+  "status_code": 200
+}
+```
+
+### Datenaufteilung und Validierungslogik
+
+**Szenario 1: Mehrere Datasets mit expliziter Validierung**
+```json
+{
+  "train_dataset_ids": ["dataset1-uuid", "dataset2-uuid"],
+  "val_dataset_id": "validation-dataset-uuid"
+}
+```
+→ **Ergebnis**: `validation-dataset-uuid` wird als Validierungsdatensatz verwendet
+
+**Szenario 2: Mehrere Datasets ohne explizite Validierung**
+```json
+{
+  "train_dataset_ids": ["dataset1-uuid", "dataset2-uuid"]
+}
+```
+→ **Ergebnis**: System verknüpft alle Datensätze und teilt 90% Training / 10% Validierung
+
+**Szenario 3: Einzelner Datensatz ohne Validierung**
+```json
+{
+  "train_dataset_ids": ["single-dataset-uuid"]
+}
+```
+→ **Ergebnis**: Auto-Split von `single-dataset-uuid` → 90% Training / 10% Validierung
+
+### Datenpfad-Beispiele
+
+**Training erstellt diese Pfade:**
+- Explizite Validierung: `data/datasets/my_validation_dataset.jsonl`
+- Auto-Split Validierung: `data/datasets/my_training_dataset.jsonl#auto-split`
+
+### Parameter-Regeln
+
+**Erforderlich:**
+- `model_tag`: Immer erforderlich
+- `train_dataset_ids`: Mindestens ein Dataset (Array mit min. 1 Element)
+
+**Optional:**
+- `val_dataset_id`: Für explizite Validierungsdaten
+- Alle anderen Parameter haben Standardwerte
+
+### Ungültige Kombinationen
+
+**Fehlerhafte max_samples:**
+```json
+{
+  "model_tag": "...",
+  "train_dataset_ids": ["..."],
+  "per_device_train_batch_size": 0  // Fehler: muss > 0 sein
+}
+```
+
+**Fehlerhafte learning_rate:**
+```json
+{
+  "model_tag": "...",
+  "train_dataset_ids": ["..."],
+  "learning_rate": 0  // Fehler: muss > 0 sein
+}
+```
+
+## Integration mit Evaluation
+
+Nach erfolgreichem Training kann das trainierte Modell direkt evaluiert werden:
+
+**1. Training starten:**
+```bash
+POST /v1/training/train
+{
+  "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
+  "train_dataset_ids": ["dataset-uuid"],
+  "val_dataset_id": "validation-uuid",
+  "epochs": 3
+}
+```
+
+**2. Training-Task-ID aus Response extrahieren:**
+```json
+{
+  "headers": {
+    "Location": "/training/7ef54ba0-2d87-4864-8360-81de8035369a/status"
+  }
+}
+```
+
+**3. Trainiertes Modell evaluieren:**
+```bash
+POST /v1/evaluation/evaluate
+{
+  "model_tag": "trained_models/models--sentence-transformers--all-MiniLM-L6-v2-finetuned-20250615-213447-7ef54ba0",
+  "training_task_id": "7ef54ba0-2d87-4864-8360-81de8035369a",
+  "baseline_model_tag": "models--sentence-transformers--all-MiniLM-L6-v2"
+}
+```
+
+Diese Integration ermöglicht konsistente Evaluierung mit denselben Validierungsdaten, die beim Training verwendet wurden.
+
 ## Best Practices
 
 ### Datenqualität
