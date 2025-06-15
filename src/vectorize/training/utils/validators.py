@@ -4,13 +4,16 @@ from pathlib import Path
 
 import pandas as pd
 
-from ..exceptions import DatasetValidationError
+from vectorize.evaluation.utils.dataset_validator import DatasetValidator
+
+__all__ = ["TrainingDataValidator"]
 
 
 class TrainingDataValidator:
     """Validates training data for SBERT training pipeline.
 
-    Ensures required columns, non-empty data, and no null values.
+    This is a thin wrapper around the centralized DatasetValidator
+    to maintain backwards compatibility in the training module.
     """
 
     REQUIRED_COLUMNS = {"Question", "Positive", "Negative"}
@@ -28,26 +31,5 @@ class TrainingDataValidator:
         Raises:
             DatasetValidationError: For invalid or inconsistent data.
         """
-        try:
-            df = pd.read_json(dataset_path, lines=True)
-        except Exception as exc:
-            raise DatasetValidationError(
-                f"Invalid JSONL file {dataset_path}: {exc}"
-            ) from exc
-
-        missing_cols = cls.REQUIRED_COLUMNS - set(df.columns)
-        if missing_cols:
-            raise DatasetValidationError(
-                f"Missing columns in {dataset_path}: {missing_cols}"
-            )
-
-        if df.empty:
-            raise DatasetValidationError(f"Dataset {dataset_path} is empty")
-
-        for col in cls.REQUIRED_COLUMNS:
-            if bool(df[col].isnull().any()):
-                raise DatasetValidationError(
-                    f"Column '{col}' contains null values in {dataset_path}"
-                )
-
-        return df
+        # Delegate to the centralized DatasetValidator
+        return DatasetValidator.validate_dataset(dataset_path)

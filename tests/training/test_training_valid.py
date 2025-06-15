@@ -32,6 +32,38 @@ def ensure_minilm_model_available() -> None:
         shutil.copytree(src, dst)
 
 
+def extract_task_id_from_response(response) -> str:
+    """Extract task_id from training response (from Location header or JSON body).
+
+    Args:
+        response: FastAPI TestClient response
+
+    Returns:
+        task_id as string
+
+    Raises:
+        AssertionError: If no task_id can be found
+    """
+    task_id = None
+
+    # Try to extract from Location header first
+    if response.headers.get("Location"):
+        match = re.search(
+            r"/training/([a-f0-9\-]+)/status",
+            response.headers["Location"],
+        )
+        if match:
+            task_id = match.group(1)
+
+    # Fallback to JSON body if available
+    elif response.content and response.headers.get("content-type", "").startswith("application/json"):
+        data = response.json()
+        task_id = data.get("task_id")
+
+    assert task_id, "No task_id found in response or headers"
+    return task_id
+
+
 @pytest.mark.training
 class TestTrainingValid:
     """Tests for the training endpoint (/training/train) with valid data."""
@@ -50,20 +82,7 @@ class TestTrainingValid:
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == HTTP_202_ACCEPTED
-        task_id = None
-        if response.headers.get("Location"):
-            match = re.search(
-                r"/training/([a-f0-9\-]+)/status",
-                response.headers["Location"],
-            )
-            if match:
-                task_id = match.group(1)
-        elif response.content and response.headers.get(
-            "content-type", ""
-        ).startswith("application/json"):
-            data = response.json()
-            task_id = data.get("task_id")
-        assert task_id, "No task_id found in response or headers"
+        task_id = extract_task_id_from_response(response)
         status_response = client.get(f"/training/{task_id}/status")
         assert status_response.status_code == HTTP_200_OK
         status_data = status_response.json()
@@ -94,17 +113,4 @@ class TestTrainingValid:
         }
         response = client.post("/training/train", json=payload)
         assert response.status_code == HTTP_202_ACCEPTED
-        task_id = None
-        if response.headers.get("Location"):
-            match = re.search(
-                r"/training/([a-f0-9\-]+)/status",
-                response.headers["Location"],
-            )
-            if match:
-                task_id = match.group(1)
-        elif response.content and response.headers.get(
-            "content-type", ""
-        ).startswith("application/json"):
-            data = response.json()
-            task_id = data.get("task_id")
-        assert task_id, "No task_id found in response or headers"
+        task_id = extract_task_id_from_response(response)
