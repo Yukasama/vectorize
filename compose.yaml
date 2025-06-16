@@ -4,6 +4,7 @@ include:
   - path: ./resources/deploy/compose.yaml
   - path: ./resources/grafana/compose.yaml
   - path: ./resources/caddy/compose.yaml
+  - path: ./resources/dramatiq/compose.yaml
 
 networks:
   vectorize-network:

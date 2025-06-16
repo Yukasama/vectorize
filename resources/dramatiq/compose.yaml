@@ -1,0 +1,38 @@
+services:
+  redis:
+    image: redis:7
+    container_name: vectorize_redis
+    ports:
+      - "6379:6379"
+    # networks: [vectorize-network]
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  dramatiq_worker:
+    build: ../..
+    container_name: vectorize_dramatiq_worker
+    command: ["dramatiq", "vectorize.tasks", "-p", "4", "--verbose"]
+    # networks: [vectorize-network]
+    volumes:
+      - ./log:/app/log
+    cap_drop: [ALL]
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep '[d]ramatiq' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

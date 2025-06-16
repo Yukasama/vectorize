@@ -5,7 +5,6 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
     File,
     Request,
@@ -157,7 +156,6 @@ async def upload_dataset(
 async def upload_hf_dataset(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_session)],
-    background_tasks: BackgroundTasks,
     data: HuggingFaceDatasetRequest,
 ) -> Response:
     """Upload dataset files from Hugging Face.
@@ -168,14 +166,13 @@ async def upload_hf_dataset(
     Args:
         request: The HTTP request object
         db: Database session for persistence operations
-        background_tasks: FastAPI background task manager
         data: The request body containing the Hugging Face dataset tag
 
     Returns:
         Response with status code 201 Created and the task ID in the Location header.
     """
     logger.debug("Hugging Face dataset upload initiated", dataset_tag=data.dataset_tag)
-    task_id = await upload_hf_dataset_svc(db, background_tasks, data.dataset_tag)
+    task_id = await upload_hf_dataset_svc(db, data.dataset_tag)
 
     return Response(
         status_code=status.HTTP_201_CREATED,
