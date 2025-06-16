@@ -72,7 +72,6 @@ jobs:
         with:
           python-path: ".venv/bin/python"
           python-platform: "Linux"
-          python-version: "3.13"
 
   outdated:
     needs: build
