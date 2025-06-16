@@ -109,9 +109,9 @@ async def upload_dataset_svc(
     column_mapping: ColumnMapping | None = None
     if options:
         column_mapping = ColumnMapping(
-            prompt=options.prompt_name,
-            chosen=options.chosen_name,
-            rejected=options.rejected_name,
+            question=options.question_name,
+            positive=options.positive_name,
+            negative=options.negative_name,
         )
 
     raw_df = await _convert_file_to_df(file, ext, options.sheet_index if options else 0)

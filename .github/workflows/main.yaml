@@ -14,7 +14,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  build:
+  install:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
         run: uv sync --all-extras --dev --link-mode=copy
 
   lint:
-    needs: build
+    needs: install
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,10 +55,14 @@ jobs:
         uses: astral-sh/ruff-action@v3
 
   pyright:
-    needs: build
+    needs: install
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
 
       - name: Restore Python venv from cache
         uses: actions/cache@v4
@@ -72,10 +76,10 @@ jobs:
         with:
           python-path: ".venv/bin/python"
           python-platform: "Linux"
-          python-version: "3.13"
+          python-version: "3.13.5"
 
   outdated:
-    needs: build
+    needs: install
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -91,13 +95,16 @@ jobs:
         run: .venv/bin/uv run ./scripts/check_outdated.py
 
   tests:
-    needs: build
+    needs: install
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: sqlite+aiosqlite:///./app.db
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
       - name: Restore Python venv from cache
         uses: actions/cache@v4
         with:
