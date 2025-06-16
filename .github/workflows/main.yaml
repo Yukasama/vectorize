@@ -60,6 +60,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
       - name: Restore Python venv from cache
         uses: actions/cache@v4
         with:
@@ -72,6 +76,7 @@ jobs:
         with:
           python-path: ".venv/bin/python"
           python-platform: "Linux"
+          python-version: "3.13.5"
 
   outdated:
     needs: install
@@ -97,6 +102,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
       - name: Restore Python venv from cache
         uses: actions/cache@v4
         with:
