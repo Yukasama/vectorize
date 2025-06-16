@@ -15,12 +15,12 @@ __all__ = ["_classify_dataset"]
 
 
 _ALIASES: Mapping[str, tuple[str, ...]] = {
-    "prompt": ("anchor", "q", "query"),
-    "chosen": ("answer",),
-    "rejected": ("random",),
+    "question": ("anchor", "q", "query", "prompt"),
+    "positive": ("answer", "chosen"),
+    "negative": ("random", "rejected", "no_context"),
 }
 
-_ROLES = ("prompt", "chosen", "rejected")
+_ROLES = ("question", "positive", "negative")
 
 
 def _classify_dataset(
@@ -47,15 +47,15 @@ def _classify_dataset(
     df_cols_lc = {c.lower(): c for c in df.columns}
     header_map = _resolve_headers(df_cols_lc, mapping)
 
-    ordered_roles = ["prompt", "chosen"] + (
-        ["rejected"] if "rejected" in header_map else []
+    ordered_roles = ["question", "positive"] + (
+        ["negative"] if "negative" in header_map else []
     )
     cleaned = df[[header_map[r] for r in ordered_roles]].copy()
     cleaned.columns = ordered_roles
 
     cls = (
         Classification.SENTENCE_TRIPLES
-        if "rejected" in header_map
+        if "negative" in header_map
         else Classification.SENTENCE_DUPLES
     )
     return cast(pd.DataFrame, cleaned), cls
@@ -73,14 +73,14 @@ def _resolve_headers(
             be ignored.
 
     Returns:
-        Dictionary mapping role names (``prompt``, ``chosen``, …) to the
+        Dictionary mapping role names (``question``, ``positive``, …) to the
         original header names in the DataFrame.
 
     Raises:
         InvalidCSVColumnError: If an explicit column is missing or of wrong
             type.
-        MissingColumnError: If mandatory columns (``prompt``, ``chosen``, or
-            an explicitly requested ``rejected``) could not be resolved.
+        MissingColumnError: If mandatory columns (``question``, ``positive``, or
+            an explicitly requested ``negative``) could not be resolved.
     """
     resolved: dict[str, str] = {}
 
@@ -101,9 +101,9 @@ def _resolve_headers(
         if col_name:
             resolved[role] = col_name
 
-    mandatory = ["prompt", "chosen"]
-    if mapping and mapping.get("rejected") is not None:
-        mandatory.append("rejected")
+    mandatory = ["question", "positive"]
+    if mapping and mapping.get("negative") is not None:
+        mandatory.append("negative")
 
     missing = [r for r in mandatory if r not in resolved]
     if missing:
@@ -120,12 +120,12 @@ def _apply_explicit_mapping(
     """Translate an explicit role-to-column mapping into DataFrame column names.
 
     Args:
-        mapping: Mapping such as ``{"prompt": "my_q", "chosen": "answer"}``.
+        mapping: Mapping such as ``{"question": "my_q", "positive": "answer"}``.
             ``None`` values mean the role should be skipped.
         df_cols_lc: Mapping of lowercase header → original header.
 
     Returns:
-        Dictionary where keys are role names (``prompt``, ``chosen``, …) and
+        Dictionary where keys are role names (``question``, ``positive``, …) and
         values are the exact column names in the DataFrame.
 
     Raises:

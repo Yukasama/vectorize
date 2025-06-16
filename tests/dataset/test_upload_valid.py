@@ -104,9 +104,9 @@ class TestValidDatasets:
         file_path = self.valid_dir / _CUSTOM_FORMAT
 
         column_mapping = {
-            "prompt": "anchor",
-            "chosen": "answer",
-            "rejected": "no_context",
+            "question": "anchor",
+            "positive": "answer",
+            "negative": "no_context",
         }
 
         await self._upload_and_verify(
