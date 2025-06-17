@@ -73,6 +73,11 @@ max_upload_size = 53687091200    # 50 GB
 
 [app.inference]
 device = "cpu"
+[app.cache]
+
+strategy = "fixed_size"
+max_models = 5
+vram_safety_margin_gb = 1.0
 
 [app.logging]
 rotation = "10 MB"

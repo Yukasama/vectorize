@@ -11,7 +11,7 @@ from .embedding_model import EmbeddingUsage, Embeddings
 from .repository import create_inference_counter, get_model_count
 from .schemas import EmbeddingRequest
 from .utils.generator import _generate_embeddings
-from .utils.model_loader import load_model
+from .utils.model_cache_wrapper import load_model_cached as load_model
 
 __all__ = ["get_embeddings_srv", "get_model_stats_srv"]
 

@@ -111,6 +111,26 @@ class Settings(BaseSettings):
         default=_inference_config.get("device"),
         description="Device to use for model inference (CPU/GPU).",
     )
+    # Cache Strategie
+    cache_strategy: Literal["fixed_size", "vram_aware"] = Field(
+        default="fixed_size",
+        description="Cache strategy: fixed_size or vram_aware",
+        validation_alias="CACHE_STRATEGY",
+    )
+
+    # Fixed-Size Strategie Parameter
+    cache_max_models: int = Field(
+        default=5,
+        description="Maximum number of models in cache (fixed_size strategy)",
+        validation_alias="CACHE_MAX_MODELS",
+    )
+
+    # VRAM-Aware Strategie Parameter
+    cache_vram_safety_margin_gb: float = Field(
+        default=1.0,
+        description="VRAM safety margin in GB (vram_aware strategy)",
+        validation_alias="CACHE_VRAM_SAFETY_MARGIN_GB",
+    )
 
     # Database configuration
     db_url: str = Field(

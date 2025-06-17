@@ -66,6 +66,18 @@ def create_banner(settings: Settings, silent: bool = False) -> str:
     ])
 
     lines.extend([
+        "\n\033[1;33m🗄️  Cache Configuration\033[0m",
+        f"  • Strategy: {settings.cache_strategy.upper()}",
+    ])
+
+    if settings.cache_strategy == "fixed_size":
+        lines.append(f"  • Max Models: {settings.cache_max_models}")
+    elif settings.cache_strategy == "vram_aware":
+        lines.append(
+            f"  • VRAM Safety Margin: {settings.cache_vram_safety_margin_gb}GB"
+        )
+
+    lines.extend([
         "\n\033[1;33m📝 Logging Configuration\033[0m",
         f"  • Log Level: {log_level_color}{settings.log_level}\033[0m",
         f"  • Log Path: {settings.log_path if settings.app_env != 'production' else 'stderr'}",  # noqa: E501
