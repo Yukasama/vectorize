@@ -86,6 +86,14 @@ class TrainingStatusResponse(BaseModel):
     end_date: str | None = None
     error_msg: str | None = None
     trained_model_id: str | None = None
+    validation_dataset_path: str | None = None
+
+    # Training Metrics
+    train_runtime: float | None = None
+    train_samples_per_second: float | None = None
+    train_steps_per_second: float | None = None
+    train_loss: float | None = None
+    epoch: float | None = None
 
     @classmethod
     def from_task(cls, task: TrainingTask) -> "TrainingStatusResponse":
@@ -114,4 +122,10 @@ class TrainingStatusResponse(BaseModel):
             end_date=str(getattr(task, "end_date", None)),
             error_msg=getattr(task, "error_msg", None),
             trained_model_id=str(getattr(task, "trained_model_id", "")) or None,
+            validation_dataset_path=getattr(task, "validation_dataset_path", None),
+            train_runtime=getattr(task, "train_runtime", None),
+            train_samples_per_second=getattr(task, "train_samples_per_second", None),
+            train_steps_per_second=getattr(task, "train_steps_per_second", None),
+            train_loss=getattr(task, "train_loss", None),
+            epoch=getattr(task, "epoch", None),
         )
