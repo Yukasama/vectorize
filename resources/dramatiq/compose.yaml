@@ -2,16 +2,10 @@ services:
   redis:
     image: redis:7
     container_name: vectorize_redis
-    ports:
-      - "6379:6379"
-    # networks: [vectorize-network]
+    networks: [vectorize-network]
     restart: unless-stopped
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - SETGID
-      - SETUID
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -23,9 +17,22 @@ services:
     build: ../..
     container_name: vectorize_dramatiq_worker
     command: ["dramatiq", "vectorize.tasks", "-p", "4", "--verbose"]
-    # networks: [vectorize-network]
+    networks: [vectorize-network]
+    environment:
+      ENV: production
+      DATABASE_URL: sqlite+aiosqlite:///./db/app.db
+      REDIS_URL: redis://redis:6379
+      UPLOAD_DIR: /app/data/datasets
+      MODELS_DIR: /app/data/models
+      DB_DIR: /app/db
+      LOG_LEVEL: INFO
+      HF_HOME: /app/data/hf_home
     volumes:
       - ./log:/app/log
+      - datasets_data:/app/data/datasets
+      - models_data:/app/data/models
+      - db_data:/app/db
+      - hf_home_data:/app/data/hf_home
     cap_drop: [ALL]
     depends_on:
       redis:

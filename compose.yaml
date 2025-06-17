@@ -9,3 +9,9 @@ include:
 networks:
   vectorize-network:
     driver: bridge
+
+volumes:
+  datasets_data:
+  models_data:
+  db_data:
+  hf_home_data:

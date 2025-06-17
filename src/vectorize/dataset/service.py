@@ -9,6 +9,7 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config import settings
+from vectorize.tasks import upload_hf_dataset_bg
 from vectorize.utils.etag_parser import parse_etag
 from vectorize.utils.file_sanitizer import sanitize_filename
 
@@ -32,7 +33,6 @@ from .repository import (
 )
 from .schemas import DatasetUploadOptions
 from .task_model import UploadDatasetTask
-from .tasks import upload_hf_dataset_bg
 from .utils.cache_dataset_infos import _get_cached_dataset_infos
 from .utils.check_hf_schema import _match_schema
 from .utils.csv_escaper import _escape_csv_formulas
