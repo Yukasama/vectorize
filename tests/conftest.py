@@ -28,6 +28,15 @@ from vectorize.config import settings
 from vectorize.config.db import get_session
 from vectorize.config.seed import seed_db
 
+# Import all models to ensure they're registered with SQLModel
+from vectorize.ai_model.models import AIModel  # noqa: F401
+from vectorize.dataset.models import Dataset  # noqa: F401
+from vectorize.evaluation.models import EvaluationTask  # noqa: F401
+from vectorize.inference.models import InferenceCounter  # noqa: F401
+from vectorize.synthesis.models import SynthesisTask  # noqa: F401
+from vectorize.training.models import TrainingTask  # noqa: F401
+from vectorize.upload.models import UploadTask  # noqa: F401
+
 REDIS_TEST_PORT = 56379
 
 
