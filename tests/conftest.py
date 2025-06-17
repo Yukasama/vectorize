@@ -141,3 +141,39 @@ def client_fixture(session: AsyncSession) -> Generator:
     yield client
 
     app.dependency_overrides.clear()
+
+
+def cleanup_temporary_test_files() -> None:
+    """Clean up temporary dataset and model files created during tests."""
+    if not settings.app_env == "testing":
+        return
+    
+    # Clean up temporary dataset files (those with UUID patterns in the name)
+    dataset_pattern = os.path.join(settings.dataset_upload_dir, "*-*-*-*-*.jsonl")
+    for file_path in glob.glob(dataset_pattern):
+        try:
+            os.remove(file_path)
+        except OSError:
+            pass  # File might already be deleted
+    
+    # Clean up temporary model directories
+    model_pattern = os.path.join(settings.model_upload_dir, "trained_models", "*")
+    for dir_path in glob.glob(model_pattern):
+        try:
+            if os.path.isdir(dir_path):
+                shutil.rmtree(dir_path)
+        except OSError:
+            pass  # Directory might already be deleted
+
+
+@pytest.fixture(autouse=True)
+def cleanup_after_test():
+    """Automatically clean up temporary files after each test."""
+    yield  # Run the test
+    cleanup_temporary_test_files()  # Clean up after the test
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Clean up temporary files after all tests are done."""
+    del session, exitstatus  # unused
+    cleanup_temporary_test_files()

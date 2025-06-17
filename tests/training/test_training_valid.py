@@ -19,7 +19,6 @@ DATASET_ID_2 = "0a9d5e87-e497-4737-9829-2070780d10df"
 DEFAULT_EPOCHS = 3
 DEFAULT_LR = 0.00005
 DEFAULT_BATCH_SIZE = 8
-TRAINED_MODELS_DIR = Path("data/models/trained_models")
 TEST_DATA_DIR = Path("test_data/training/datasets")
 
 HTTP_200_OK = status.HTTP_200_OK
@@ -28,10 +27,13 @@ HTTP_404_NOT_FOUND = status.HTTP_404_NOT_FOUND
 
 
 def ensure_minilm_model_available() -> None:
-    """Ensure the required model files are present in data/models for training tests."""
+    """Ensure the required model files are present for training tests."""
+    from vectorize.config import settings
+    
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
-    dst = Path("data/models/models--sentence-transformers--all-MiniLM-L6-v2")
+    dst = settings.model_upload_dir / "models--sentence-transformers--all-MiniLM-L6-v2"
     if not dst.exists() and src.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src, dst)
 
 
@@ -111,7 +113,10 @@ class TestTrainingValid:
         assert status_response.status_code == HTTP_200_OK
         status_data = status_response.json()
         assert status_data["status"] in {"Q", "R", "D", "F"}
-        model_dirs = TRAINED_MODELS_DIR.glob("*-finetuned-*")
+        
+        from vectorize.config import settings
+        trained_models_dir = settings.model_upload_dir / "trained_models"
+        model_dirs = trained_models_dir.glob("*-finetuned-*")
         for d in model_dirs:
             shutil.rmtree(d, ignore_errors=True)
 

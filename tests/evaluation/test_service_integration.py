@@ -33,7 +33,9 @@ class TestEvaluationIntegration:
         await save_training_task(session, task)
 
         # Create validation dataset file
-        validation_path = Path("data/datasets/validation_test.jsonl")
+        from vectorize.config import settings
+        
+        validation_path = settings.dataset_upload_dir / "validation_test.jsonl"
         validation_path.parent.mkdir(parents=True, exist_ok=True)
         validation_path.write_text(
             '{"question": "test", "positive": "pos", "negative": "neg"}\n'

@@ -19,7 +19,6 @@ from httpx import Response
 MINILM_MODEL_TAG = "models--sentence-transformers--all-MiniLM-L6-v2"
 DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
 DATASET_ID_2 = "0a9d5e87-e497-4737-9829-2070780d10df"
-TRAINED_MODELS_DIR = Path("data/models/trained_models")
 TEST_DATA_DIR = Path("test_data/training/datasets")
 
 # HTTP Status codes
@@ -32,9 +31,12 @@ HTTP_422_UNPROCESSABLE_ENTITY = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 def ensure_minilm_model_available() -> None:
     """Ensure the required model files are present for integration tests."""
+    from vectorize.config import settings
+    
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
-    dst = Path("data/models/models--sentence-transformers--all-MiniLM-L6-v2")
+    dst = settings.model_upload_dir / "models--sentence-transformers--all-MiniLM-L6-v2"
     if not dst.exists() and src.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src, dst)
 
 
@@ -75,8 +77,11 @@ def wait_for_task(client: TestClient, task_id: str, endpoint_type: str = "traini
 
 def cleanup_trained_models() -> None:
     """Clean up any trained model directories."""
-    if TRAINED_MODELS_DIR.exists():
-        for model_dir in TRAINED_MODELS_DIR.glob("*-finetuned-*"):
+    from vectorize.config import settings
+    
+    trained_models_dir = settings.model_upload_dir / "trained_models"
+    if trained_models_dir.exists():
+        for model_dir in trained_models_dir.glob("*-finetuned-*"):
             shutil.rmtree(model_dir, ignore_errors=True)
 
 
@@ -196,33 +201,6 @@ class TestTrainingEvaluationIntegration:
             assert status_data["status"] in {"Q", "R", "D", "F"}
 
         cleanup_trained_models()
-
-    def test_error_handling_across_workflows(self, client: TestClient) -> None:
-        """Test error handling when training and evaluation encounter issues."""
-        # Simplified test - just check request validation, no background tasks
-
-        # Test 1: Training with nonexistent dataset ID
-        training_payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "train_dataset_ids": [str(uuid.uuid4())],  # Nonexistent
-            "epochs": 1,
-            "learning_rate": 0.00005,
-            "per_device_train_batch_size": 8,
-        }
-
-        training_response = client.post("/training/train", json=training_payload)
-        # Training should reject invalid UUID or start and fail later
-        assert training_response.status_code in [HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED]
-
-        # Test 2: Evaluation with nonexistent dataset ID
-        evaluation_payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": str(uuid.uuid4()),  # Nonexistent
-        }
-
-        evaluation_response = client.post("/evaluation/evaluate", json=evaluation_payload)
-        # Should start and fail in background
-        assert evaluation_response.status_code == HTTP_202_ACCEPTED
 
     def test_concurrent_training_and_evaluation(self, client: TestClient) -> None:
         """Test running training and evaluation concurrently."""

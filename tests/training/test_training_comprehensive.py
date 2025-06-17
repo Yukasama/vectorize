@@ -19,7 +19,6 @@ from httpx import Response
 MINILM_MODEL_TAG = "models--sentence-transformers--all-MiniLM-L6-v2"
 DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
 DATASET_ID_2 = "0a9d5e87-e497-4737-9829-2070780d10df"
-TRAINED_MODELS_DIR = Path("data/models/trained_models")
 TEST_DATA_DIR = Path("test_data/training/datasets")
 
 # HTTP Status codes
@@ -32,9 +31,12 @@ HTTP_422_UNPROCESSABLE_ENTITY = status.HTTP_422_UNPROCESSABLE_ENTITY
 
 def ensure_minilm_model_available() -> None:
     """Ensure the required model files are present for training tests."""
+    from vectorize.config import settings
+    
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
-    dst = Path("data/models/models--sentence-transformers--all-MiniLM-L6-v2")
+    dst = settings.model_upload_dir / "models--sentence-transformers--all-MiniLM-L6-v2"
     if not dst.exists() and src.exists():
+        dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(src, dst)
 
 
@@ -74,8 +76,11 @@ def wait_for_task_completion(client: TestClient, task_id: str, max_wait: int = 3
 
 def cleanup_trained_models() -> None:
     """Clean up any trained model directories."""
-    if TRAINED_MODELS_DIR.exists():
-        for model_dir in TRAINED_MODELS_DIR.glob("*-finetuned-*"):
+    from vectorize.config import settings
+    
+    trained_models_dir = settings.model_upload_dir / "trained_models"
+    if trained_models_dir.exists():
+        for model_dir in trained_models_dir.glob("*-finetuned-*"):
             shutil.rmtree(model_dir, ignore_errors=True)
 
 

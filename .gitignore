@@ -78,5 +78,9 @@ hf_cache/
 .hf_cache/
 gh_cache/
 
+# === Temporary test files ===
+test_data/datasets/*.jsonl
+test_data/models/
+
 # === Additional files ===
 startup.prof
