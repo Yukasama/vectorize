@@ -60,12 +60,33 @@ class TrainingTask(SQLModel, table=True):
         description="Timestamp when the training task was last updated.",
     )
 
-    progress: float = Field(
-        default=0.0,
-        description="Progress of the training task as a float between 0.0 and 1.0.",
-    )
-
     validation_dataset_path: str | None = Field(
         default=None,
         description="Path to the validation dataset used during training.",
+    )
+
+    # Training Metrics
+    train_runtime: float | None = Field(
+        default=None,
+        description="Total training runtime in seconds.",
+    )
+
+    train_samples_per_second: float | None = Field(
+        default=None,
+        description="Number of training samples processed per second.",
+    )
+
+    train_steps_per_second: float | None = Field(
+        default=None,
+        description="Number of training steps processed per second.",
+    )
+
+    train_loss: float | None = Field(
+        default=None,
+        description="Final training loss value.",
+    )
+
+    epoch: float | None = Field(
+        default=None,
+        description="Number of epochs completed during training.",
     )

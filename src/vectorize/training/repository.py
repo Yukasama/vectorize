@@ -13,7 +13,7 @@ from .models import TrainingTask
 __all__ = [
     "get_train_task_by_id",
     "save_training_task",
-    "update_training_task_progress",
+    "update_training_task_metrics",
     "update_training_task_status",
     "update_training_task_validation_dataset",
 ]
@@ -54,20 +54,39 @@ async def update_training_task_status(
         await db.refresh(task)
 
 
-async def update_training_task_progress(
-    db: AsyncSession, task_id: UUID, progress: float
+async def update_training_task_metrics(
+    db: AsyncSession,
+    task_id: UUID,
+    train_runtime: float | None = None,
+    train_samples_per_second: float | None = None,
+    train_steps_per_second: float | None = None,
+    train_loss: float | None = None,
+    epoch: float | None = None,
 ) -> None:
-    """Update the progress of a TrainingTask.
+    """Update the training metrics of a TrainingTask.
 
     Args:
-        db (AsyncSession): The database session.
-        task_id (UUID): The ID of the training task.
-        progress (float): The new progress value (0.0 to 1.0).
+        db: The database session.
+        task_id: The ID of the training task.
+        train_runtime: Training runtime in seconds.
+        train_samples_per_second: Training samples per second.
+        train_steps_per_second: Training steps per second.
+        train_loss: Final training loss.
+        epoch: Number of epochs completed.
     """
     result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
     task = result.first()
     if task:
-        task.progress = progress
+        if train_runtime is not None:
+            task.train_runtime = train_runtime
+        if train_samples_per_second is not None:
+            task.train_samples_per_second = train_samples_per_second
+        if train_steps_per_second is not None:
+            task.train_steps_per_second = train_steps_per_second
+        if train_loss is not None:
+            task.train_loss = train_loss
+        if epoch is not None:
+            task.epoch = epoch
         await db.commit()
         await db.refresh(task)
 

@@ -73,7 +73,11 @@ class TrainingOrchestrator:
             # Store validation dataset path in the training task
             await self._update_validation_dataset(validation_dataset_path)
 
-            self._train_model(train_dataloader, train_request, output_dir)
+            # Train the model and capture metrics
+            training_metrics = self._train_model(train_dataloader, train_request, output_dir)
+
+            # Save training metrics to database
+            await self._save_training_metrics(training_metrics)
 
             await self._save_trained_model(train_request, output_dir)
 
@@ -137,7 +141,7 @@ class TrainingOrchestrator:
             all_train_examples.extend(examples)
 
             dataset_stats.append({
-                "dataset": Path(path).name,
+                "dataset_name": Path(path).name,
                 "type": "training",
                 "samples": len(df),
                 "examples": len(examples),
@@ -155,7 +159,7 @@ class TrainingOrchestrator:
         val_df = TrainingDataValidator.validate_dataset(Path(validation_path))
         val_examples_count = len(prepare_input_examples(val_df))
         dataset_stats.append({
-            "dataset": Path(validation_path).name,
+            "dataset_name": Path(validation_path).name,
             "type": "validation",
             "samples": len(val_df),
             "examples": val_examples_count,
@@ -187,7 +191,7 @@ class TrainingOrchestrator:
         val_examples = all_examples[:val_split]
 
         dataset_stats = [{
-            "dataset": Path(dataset_path).name,
+            "dataset_name": Path(dataset_path).name,
             "type": "single_with_split",
             "total_samples": len(df),
             "total_examples": len(all_examples),
@@ -224,12 +228,18 @@ class TrainingOrchestrator:
         validation_dataset_path: str | None
     ) -> None:
         """Log final training data preparation summary."""
+        # Convert dataset_stats to string to avoid Loguru formatting issues
+        dataset_summary = []
+        for stat in dataset_stats:
+            summary = f"{stat.get('dataset_name', 'unknown')} ({stat.get('type', 'unknown')}): {stat.get('examples', 0)} examples"
+            dataset_summary.append(summary)
+
         logger.info(
             "Training data preparation complete",
             total_datasets_used=len(dataset_stats),
             total_training_examples=total_train_examples,
             batch_size=batch_size,
-            dataset_statistics=dataset_stats,
+            datasets=dataset_summary,
             validation_dataset_path=validation_dataset_path,
         )
 
@@ -238,29 +248,107 @@ class TrainingOrchestrator:
         train_dataloader: DataLoader,
         train_request: TrainRequest,
         output_dir: str,
-    ) -> None:
+    ) -> dict:
         """Train the SBERT model.
 
         Args:
             train_dataloader: Training data loader
             train_request: Training configuration
             output_dir: Output directory for the trained model
+            
+        Returns:
+            Dictionary containing training metrics
         """
         if self.model is None:
             raise RuntimeError("Model not loaded")
 
         loss = losses.CosineSimilarityLoss(self.model)
 
-        self.model.fit(
-            train_objectives=[(train_dataloader, loss)],
-            epochs=train_request.epochs,
-            warmup_steps=train_request.warmup_steps or 0,
-            show_progress_bar=False,
-            output_path=str(Path(output_dir)),
-        )
+        # Capture training start time for runtime calculation
+        import builtins
+        import time
+        from typing import Any
+
+        start_time = time.time()
+        captured_metrics = {}
+
+        # Monkey patch print to capture the metrics output
+        original_print = builtins.print
+
+        def custom_print(*args: Any, **kwargs: Any) -> None:
+            """Custom print that captures training metrics."""
+            # Convert args to string to check for metrics
+            text = ' '.join(str(arg) for arg in args)
+
+            # Check if this looks like the metrics dict
+            if ('train_runtime' in text and 'train_loss' in text and
+                'train_samples_per_second' in text):
+                try:
+                    # Try to parse as a Python dict
+                    import ast
+                    # Clean up the text - sometimes there might be extra content
+                    if '{' in text and '}' in text:
+                        start_idx = text.find('{')
+                        end_idx = text.rfind('}') + 1
+                        dict_str = text[start_idx:end_idx]
+                        parsed_metrics = ast.literal_eval(dict_str)
+                        if isinstance(parsed_metrics, dict):
+                            captured_metrics.update(parsed_metrics)
+                            logger.info("Captured training metrics from print", **parsed_metrics)
+                except (ValueError, SyntaxError) as e:
+                    logger.debug("Failed to parse metrics from print", text=text, error=str(e))
+
+            # Call original print
+            original_print(*args, **kwargs)
+
+        # Replace print temporarily
+        builtins.print = custom_print
+
+        try:
+            # Train the model
+            self.model.fit(
+                train_objectives=[(train_dataloader, loss)],
+                epochs=train_request.epochs,
+                warmup_steps=train_request.warmup_steps or 0,
+                show_progress_bar=False,
+                output_path=str(Path(output_dir)),
+            )
+        finally:
+            # Restore original print
+            builtins.print = original_print
+
+        # Calculate training runtime
+        end_time = time.time()
+        train_runtime = end_time - start_time
+
+        # Use captured metrics if available, otherwise fall back to calculated
+        try:
+            total_samples = len(train_dataloader.dataset)  # type: ignore
+        except (TypeError, AttributeError):
+            total_samples = len(train_dataloader) * train_request.per_device_train_batch_size
+
+        total_steps = len(train_dataloader) * train_request.epochs
+
+        training_metrics = {
+            'train_runtime': captured_metrics.get('train_runtime', train_runtime),
+            'train_samples_per_second': captured_metrics.get('train_samples_per_second',
+                                                           total_samples / train_runtime if train_runtime > 0 else 0.0),
+            'train_steps_per_second': captured_metrics.get('train_steps_per_second',
+                                                         total_steps / train_runtime if train_runtime > 0 else 0.0),
+            'train_loss': captured_metrics.get('train_loss', 0.0),
+            'epoch': captured_metrics.get('epoch', float(train_request.epochs))
+        }
+
+        # Log what we captured
+        if captured_metrics:
+            logger.info("Using captured training metrics", **captured_metrics)
+        else:
+            logger.debug("No metrics captured, using calculated values", calculated_runtime=train_runtime)
 
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         self.model.save(str(output_dir))
+
+        return training_metrics
 
     async def _save_trained_model(
         self, train_request: TrainRequest, output_dir: str
@@ -290,6 +378,30 @@ class TrainingOrchestrator:
             task.trained_model_id = new_model_id
             await self.db.commit()
             await self.db.refresh(task)
+
+    async def _save_training_metrics(self, training_metrics: dict) -> None:
+        """Save training metrics to the database.
+        
+        Args:
+            training_metrics: Dictionary containing training metrics
+        """
+        from .repository import update_training_task_metrics
+
+        await update_training_task_metrics(
+            self.db,
+            self.task_id,
+            train_runtime=training_metrics.get('train_runtime'),
+            train_samples_per_second=training_metrics.get('train_samples_per_second'),
+            train_steps_per_second=training_metrics.get('train_steps_per_second'),
+            train_loss=training_metrics.get('train_loss'),
+            epoch=training_metrics.get('epoch'),
+        )
+
+        logger.debug(
+            "Training metrics saved to database",
+            task_id=str(self.task_id),
+            **training_metrics
+        )
 
     async def _handle_training_error(self, exc: Exception) -> None:
         """Handle training errors.
