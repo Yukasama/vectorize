@@ -188,22 +188,3 @@ class TestTrainingEvaluator:
 
         with pytest.raises(DatasetValidationError, match=r"contains \d+ null values"):
             DatasetValidator.validate_dataset(temp_file)
-
-
-@pytest.mark.integration
-@pytest.mark.evaluation
-class TestEvaluationIntegration:
-    """Integration tests that require actual models (marked for optional execution)."""
-
-    @staticmethod
-    @pytest.mark.skip(reason="Requires actual model - run manually if needed")
-    def test_full_evaluation_pipeline(temp_dataset_file: Path) -> None:
-        """Test full evaluation pipeline with real model."""
-        # This test would require a real model path
-        # model_path = "sentence-transformers/all-MiniLM-L6-v2"
-        # evaluator = TrainingEvaluator(model_path)
-
-        # This would perform actual evaluation
-        # metrics = evaluator.evaluate_dataset(temp_dataset_file, max_samples=2)
-        # assert isinstance(metrics, EvaluationMetrics)
-        # assert metrics.num_samples == 2
