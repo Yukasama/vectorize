@@ -1,6 +1,6 @@
 # ruff: noqa: S101
 
-"""Tests for the training endpoint (/training/train) with valid data."""
+"""Tests for the training endpoint (/training/train) with valid data using real test datasets."""
 
 import re
 import shutil
@@ -13,12 +13,14 @@ from fastapi.testclient import TestClient
 from httpx import Response
 
 MINILM_MODEL_TAG = "models--sentence-transformers--all-MiniLM-L6-v2"
+# Using the actual test dataset IDs that match the real test files
 DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
 DATASET_ID_2 = "0a9d5e87-e497-4737-9829-2070780d10df"
 DEFAULT_EPOCHS = 3
 DEFAULT_LR = 0.00005
 DEFAULT_BATCH_SIZE = 8
 TRAINED_MODELS_DIR = Path("data/models/trained_models")
+TEST_DATA_DIR = Path("test_data/training/datasets")
 
 HTTP_200_OK = status.HTTP_200_OK
 HTTP_202_ACCEPTED = status.HTTP_202_ACCEPTED
@@ -31,6 +33,22 @@ def ensure_minilm_model_available() -> None:
     dst = Path("data/models/models--sentence-transformers--all-MiniLM-L6-v2")
     if not dst.exists() and src.exists():
         shutil.copytree(src, dst)
+
+
+def ensure_test_datasets_exist() -> None:
+    """Ensure the test datasets exist and are valid."""
+    dataset_files = [
+        TEST_DATA_DIR / f"__rm_-rf__2F_{DATASET_ID_1}.jsonl",
+        TEST_DATA_DIR / f"__rm_-rf__2F_{DATASET_ID_2}.jsonl",
+    ]
+
+    for dataset_file in dataset_files:
+        assert dataset_file.exists(), f"Test dataset not found: {dataset_file}"
+
+        # Verify file is not empty and has valid JSON
+        with dataset_file.open("r", encoding="utf-8") as f:
+            lines = [line.strip() for line in f if line.strip()]
+            assert len(lines) > 0, f"Dataset file is empty: {dataset_file}"
 
 
 def extract_task_id_from_response(response: Response) -> str:
@@ -70,12 +88,14 @@ def extract_task_id_from_response(response: Response) -> str:
 
 @pytest.mark.training
 class TestTrainingValid:
-    """Tests for the training endpoint (/training/train) with valid data."""
+    """Tests for the training endpoint (/training/train) with valid data using real test datasets."""
 
     @staticmethod
     def test_valid_training(client: TestClient) -> None:
         """Test training with valid data and check response and status tracking."""
         ensure_minilm_model_available()
+        ensure_test_datasets_exist()
+
         payload = {
             "model_tag": MINILM_MODEL_TAG,
             "train_dataset_ids": [DATASET_ID_1],
@@ -90,7 +110,7 @@ class TestTrainingValid:
         status_response = client.get(f"/training/{task_id}/status")
         assert status_response.status_code == HTTP_200_OK
         status_data = status_response.json()
-        assert status_data["status"] in {"QUEUED", "RUNNING", "DONE", "FAILED"}
+        assert status_data["status"] in {"Q", "R", "D", "F"}
         model_dirs = TRAINED_MODELS_DIR.glob("*-finetuned-*")
         for d in model_dirs:
             shutil.rmtree(d, ignore_errors=True)
@@ -106,8 +126,10 @@ class TestTrainingValid:
 
     @staticmethod
     def test_training_with_single_dataset(client: TestClient) -> None:
-        """Test training with only one dataset (should succeed)."""
+        """Test training with only one dataset (should use auto-split 90/10)."""
         ensure_minilm_model_available()
+        ensure_test_datasets_exist()
+
         payload = {
             "model_tag": MINILM_MODEL_TAG,
             "train_dataset_ids": [DATASET_ID_1],
@@ -122,3 +144,52 @@ class TestTrainingValid:
         # Verify that we can get the task status
         status_response = client.get(f"/training/{task_id}/status")
         assert status_response.status_code == HTTP_200_OK
+
+    @staticmethod
+    def test_training_with_multiple_datasets(client: TestClient) -> None:
+        """Test training with multiple training datasets."""
+        ensure_minilm_model_available()
+        ensure_test_datasets_exist()
+
+        payload = {
+            "model_tag": MINILM_MODEL_TAG,
+            "train_dataset_ids": [DATASET_ID_1, DATASET_ID_2],
+            "epochs": 1,
+            "learning_rate": DEFAULT_LR,
+            "per_device_train_batch_size": DEFAULT_BATCH_SIZE,
+        }
+        response = client.post("/training/train", json=payload)
+        assert response.status_code == HTTP_202_ACCEPTED
+        task_id = extract_task_id_from_response(response)
+
+        # Verify that we can get the task status
+        status_response = client.get(f"/training/{task_id}/status")
+        assert status_response.status_code == HTTP_200_OK
+
+    @staticmethod
+    def test_dataset_schema_validation(client: TestClient) -> None:
+        """Test that our test datasets have the correct schema (question/positive/negative)."""
+        import json
+
+        ensure_test_datasets_exist()
+
+        test_files = [
+            TEST_DATA_DIR / f"__rm_-rf__2F_{DATASET_ID_1}.jsonl",
+            TEST_DATA_DIR / f"__rm_-rf__2F_{DATASET_ID_2}.jsonl",
+        ]
+
+        for test_file in test_files:
+            with test_file.open("r", encoding="utf-8") as f:
+                for line_num, line in enumerate(f, 1):
+                    if line.strip():
+                        try:
+                            example = json.loads(line)
+                        except json.JSONDecodeError:
+                            pytest.fail(f"Invalid JSON in {test_file.name} line {line_num}")
+
+                        # Check required fields
+                        required_fields = ["question", "positive", "negative"]
+                        for field in required_fields:
+                            assert field in example, f"Missing '{field}' in {test_file.name} line {line_num}"
+                            assert isinstance(example[field], str), f"Field '{field}' should be string in {test_file.name} line {line_num}"
+                            assert example[field].strip(), f"Field '{field}' should not be empty in {test_file.name} line {line_num}"

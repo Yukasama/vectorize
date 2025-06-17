@@ -99,14 +99,14 @@ class TrainingStatusResponse(BaseModel):
         """
         status = getattr(task, "task_status", None)
         if isinstance(status, TaskStatus):
-            status_value = status.name
+            status_value = status.value
         elif isinstance(status, str):
             try:
-                status_value = TaskStatus[status.upper()].name
+                status_value = TaskStatus[status.upper()].value
             except Exception:
-                status_value = "FAILED"
+                status_value = "F"
         else:
-            status_value = "FAILED"
+            status_value = "F"
         return cls(
             task_id=str(task.id),
             status=status_value,

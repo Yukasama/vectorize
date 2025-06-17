@@ -133,6 +133,7 @@ markers = [
     "integration: marks test as integration test",
     "api: marks test as API test",
     "training: marks test as training related",
+    "edge_cases: marks test as edge cases and stress tests",
     "actions: marks test as actions related",
 ]
 minversion = "8.3.5"
