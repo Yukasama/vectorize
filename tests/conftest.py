@@ -2,6 +2,8 @@
 
 import os
 
+import redis
+
 os.environ.setdefault("ENV", "testing")
 
 import signal
@@ -28,12 +30,25 @@ from vectorize.config.seed import seed_db
 REDIS_TEST_PORT = 56379
 
 
+@pytest.fixture(autouse=True)
+def flush_redis() -> None:
+    """Flush Redis before each test to ensure a clean state."""
+    redis_url = f"redis://localhost:{REDIS_TEST_PORT}/0"
+    os.environ["REDIS_URL"] = redis_url
+    r = redis.from_url(redis_url)
+    r.flushall()
+    r.script_flush()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def redis_container() -> Generator[RedisContainer]:
     """Fixture to start a Redis container for testing."""
     container: RedisContainer = (
         RedisContainer("redis:7.2-alpine")
         .with_bind_ports(6379, REDIS_TEST_PORT)
+        .with_env("REDIS_REPLICATION_MODE", "master")
+        .with_env("save", "")
+        .with_env("appendonly", "no")
         .start()
     )
 
@@ -46,7 +61,7 @@ def redis_container() -> Generator[RedisContainer]:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def dramatiq_worker() -> Generator[None]:
+def dramatiq_worker(redis_container: RedisContainer) -> Generator[None]:  # noqa: ARG001
     """Fixture to start a Dramatiq worker for testing."""
     cmd = [sys.executable, "-m", "dramatiq", "vectorize.tasks", "-p", "1", "-t", "4"]
     worker = subprocess.Popen(cmd, env=os.environ.copy())  # noqa: S603
