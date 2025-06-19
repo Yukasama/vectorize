@@ -66,6 +66,7 @@ SONAR_TOKEN=your-sonar-token
 CLEAR_DB_ON_RESTART=1
 LOG_LEVEL=DEBUG
 TZ=Europe/Berlin
+REDIS_URL=redis://localhost:56379
 ```
 
 Note: Do **not** remove the `.env.example`-File.
