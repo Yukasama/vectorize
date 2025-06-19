@@ -61,7 +61,7 @@ uv remove <package>
 
 ```sh
 # .env
-DATABASE_URL=sqlite+aiosqlite:///./app.db
+DATABASE_URL=sqlite+aiosqlite:///app.db
 SONAR_TOKEN=your-sonar-token
 CLEAR_DB_ON_RESTART=1
 LOG_LEVEL=DEBUG
@@ -84,6 +84,12 @@ Note: Do **not** edit the `uv.lock`-File yourself.
 
 ```sh
 uv run app
+
+# If external tasks (dynamic) are needed, you have to start the service in Docker
+docker compose up vectorize dramatiq_worker redis caddy
+
+# Use if the Docker image is not up to date
+docker compose up vectorize dramatiq_worker redis caddy --build
 ```
 
 ### Run linter

@@ -2,9 +2,7 @@ services:
   sonarqube:
     image: sonarqube:community
     container_name: sonarqube
-    ports:
-      - "9000:9000"
-      - "9092:9092"
+    ports: [9000:9000, 9092:9092]
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_logs:/opt/sonarqube/logs:ro

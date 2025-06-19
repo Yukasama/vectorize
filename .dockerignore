@@ -25,6 +25,8 @@ __pycache__/
 .ruff_cache/
 *.py[cod]
 *.egg-info/
+.hf_cache/
+gh_cache/
 
 # Dependencies
 .venv/
@@ -38,7 +40,8 @@ tests/
 test_data/
 .pytest_cache/
 report.html
-.coverage
+.coverage.*
+htmlcov
 
 # Code Analysis
 .scannerwork

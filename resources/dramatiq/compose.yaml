@@ -1,6 +1,6 @@
 services:
   redis:
-    image: redis:7
+    image: redis:7.2-alpine
     container_name: vectorize_redis
     networks: [vectorize-network]
     restart: unless-stopped
@@ -20,7 +20,7 @@ services:
     networks: [vectorize-network]
     environment:
       ENV: production
-      DATABASE_URL: sqlite+aiosqlite:///./db/app.db
+      DATABASE_URL: sqlite+aiosqlite:///db/app.db
       REDIS_URL: redis://redis:6379
       UPLOAD_DIR: /app/data/datasets
       MODELS_DIR: /app/data/models
@@ -28,7 +28,6 @@ services:
       LOG_LEVEL: INFO
       HF_HOME: /app/data/hf_home
     volumes:
-      - ./log:/app/log
       - datasets_data:/app/data/datasets
       - models_data:/app/data/models
       - db_data:/app/db
