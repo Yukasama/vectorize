@@ -199,7 +199,9 @@ async def load_model_local(
     headers = {}
     if result["models"]:
         first_model = result["models"][0]
-        headers["Location"] = f"{request.url}/{first_model['model_id']}"
+        model_id = first_model.get("id") or first_model.get("model_id") or first_model.get("model_tag")
+        if model_id:
+            headers["Location"] = f"{request.url}/{model_id}"
 
     return Response(
         status_code=status.HTTP_201_CREATED,

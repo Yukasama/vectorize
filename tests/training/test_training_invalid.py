@@ -49,7 +49,7 @@ class TestTrainingInvalid:
     def test_empty_dataset_list(client: TestClient) -> None:
         """Tests training with an empty dataset_ids list."""
         payload = {
-            "model_id": LOCALTRAINMODEL_ID,
+            "model_tag": LOCALTRAINMODEL_ID,
             "dataset_ids": [],
             "epochs": 3,
             "learning_rate": 0.00005,
@@ -64,7 +64,7 @@ class TestTrainingInvalid:
     def test_negative_epochs(client: TestClient) -> None:
         """Tests training with a negative number of epochs (should fail validation)."""
         payload = {
-            "model_id": LOCALTRAINMODEL_ID,
+            "model_tag": LOCALTRAINMODEL_ID,
             "dataset_ids": ["0a9d5e87-e497-4737-9829-2070780d10df"],
             "epochs": -1,
             "learning_rate": 0.00005,
@@ -79,7 +79,7 @@ class TestTrainingInvalid:
     def test_zero_batch_size(client: TestClient) -> None:
         """Tests training with a zero batch size (should fail validation)."""
         payload = {
-            "model_id": LOCALTRAINMODEL_ID,
+            "model_tag": LOCALTRAINMODEL_ID,
             "dataset_ids": ["0a9d5e87-e497-4737-9829-2070780d10df"],
             "epochs": 3,
             "learning_rate": 0.00005,
@@ -94,7 +94,7 @@ class TestTrainingInvalid:
     def test_negative_learning_rate(client: TestClient) -> None:
         """Tests training with a negative learning rate (should fail validation)."""
         payload = {
-            "model_id": LOCALTRAINMODEL_ID,
+            "model_tag": LOCALTRAINMODEL_ID,
             "dataset_ids": ["0a9d5e87-e497-4737-9829-2070780d10df"],
             "epochs": 3,
             "learning_rate": -0.01,
@@ -109,7 +109,7 @@ class TestTrainingInvalid:
     def test_invalid_learning_rate_zero(client: TestClient) -> None:
         """Tests training with a learning rate of zero (should fail validation)."""
         payload = {
-            "model_id": LOCALTRAINMODEL_ID,
+            "model_tag": LOCALTRAINMODEL_ID,
             "dataset_ids": ["0a9d5e87-e497-4737-9829-2070780d10df"],
             "epochs": 3,
             "learning_rate": 0.0,
