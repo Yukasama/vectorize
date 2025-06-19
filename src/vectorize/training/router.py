@@ -32,7 +32,15 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
-from .service import train_model_task
+
+# Lazy import of service to avoid heavy dependencies during module loading
+try:
+    from .service import train_model_task
+    TRAINING_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Training service unavailable: {e}")
+    TRAINING_AVAILABLE = False
+    train_model_task = None
 from .utils.uuid_validator import is_valid_uuid
 
 __all__ = ["router"]
@@ -129,6 +137,15 @@ async def train_model(  # noqa: PLR0914, PLR0915
         model_path,
     )
     await save_training_task(db, task)
+    
+    if not TRAINING_AVAILABLE or train_model_task is None:
+        # Update task to failed if training dependencies are not available
+        task.task_status = TaskStatus.FAILED
+        task.message = "Training dependencies not available"
+        await update_training_task_status(db, task.id, TaskStatus.FAILED, 
+                                         "Training dependencies not available")
+        return Response(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+    
     background_tasks.add_task(
         train_model_task,
         db,
