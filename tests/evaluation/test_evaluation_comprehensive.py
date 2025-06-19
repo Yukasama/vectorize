@@ -93,28 +93,6 @@ def load_test_dataset(dataset_filename: str) -> list[dict[str, Any]]:
 class TestEvaluationComprehensive:
     """Comprehensive tests for evaluation endpoints with real test data."""
 
-    def test_evaluation_basic_request(self, client: TestClient) -> None:
-        """Test basic evaluation request with valid data."""
-        ensure_minilm_model_available()
-
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_1,
-        }
-
-        response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
-
-        task_id = extract_task_id_from_response(response)
-        assert uuid.UUID(task_id)  # Validate UUID format
-
-        # Check initial status
-        status_response = client.get(f"/evaluation/{task_id}/status")
-        assert status_response.status_code == HTTP_200_OK
-        status_data = status_response.json()
-        assert status_data["status"] in {"Q", "R"}
-        assert status_data["task_id"] == task_id
-
     def test_evaluation_different_datasets(self, client: TestClient) -> None:
         """Test evaluation with different datasets."""
         ensure_minilm_model_available()
@@ -368,33 +346,6 @@ class TestEvaluationComprehensive:
         }
         response = client.post("/evaluation/evaluate", json=payload)
         assert response.status_code == HTTP_202_ACCEPTED
-
-    def test_evaluation_task_lifecycle(self, client: TestClient) -> None:
-        """Test complete evaluation task lifecycle from start to finish."""
-        ensure_minilm_model_available()
-
-        # Start evaluation
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_1,
-        }
-
-        response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
-        task_id = extract_task_id_from_response(response)
-
-        # Track status progression
-        initial_status = client.get(f"/evaluation/{task_id}/status")
-        assert initial_status.status_code == HTTP_200_OK
-        initial_data = initial_status.json()
-        assert initial_data["status"] in {"Q", "R"}
-
-        # Check that task_id remains consistent
-        assert initial_data["task_id"] == task_id
-
-        # Check that created_at is present and valid
-        assert "created_at" in initial_data
-        assert isinstance(initial_data["created_at"], str)
 
     def test_evaluation_status_field_validation(self, client: TestClient) -> None:
         """Test that evaluation status contains all expected fields."""

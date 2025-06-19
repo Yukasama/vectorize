@@ -25,7 +25,7 @@ from testcontainers.redis import RedisContainer
 
 from vectorize.app import app
 from vectorize.config import settings
-from vectorize.config.db import get_session
+from vectorize.config.db import get_session, engine
 from vectorize.config.seed import seed_db
 
 # Import all SQLModel tables, to ensure they are available for create_all
@@ -122,6 +122,11 @@ async def session(cleanup_test_db: Generator[None]) -> AsyncGenerator[AsyncSessi
         echo=False,
     )
 
+    # Override the global engine with the test engine
+    import vectorize.config.db
+    original_engine = vectorize.config.db.engine
+    vectorize.config.db.engine = test_engine
+
     # Force immediate table creation with all models
     print(f"DEBUG: Starting session fixture - registered tables: {list(SQLModel.metadata.tables.keys())}")
 
@@ -172,6 +177,9 @@ async def session(cleanup_test_db: Generator[None]) -> AsyncGenerator[AsyncSessi
         except Exception:
             await session.rollback()
             raise
+        finally:
+            # Restore the original engine
+            vectorize.config.db.engine = original_engine
 
 
 @pytest.fixture(name="client")
@@ -189,10 +197,26 @@ def client_fixture(session: AsyncSession) -> Generator:
         return session
 
     app.dependency_overrides[get_session] = get_session_override
-    client = TestClient(app, base_url=f"http://testserver{settings.prefix}")  # NOSONAR
-    yield client
 
-    app.dependency_overrides.clear()
+    # IMPORTANT: Also override the global engine so background tasks use the test database
+    import vectorize.config.db as db_module
+    
+    # Store original engine
+    original_engine = db_module.engine
+    
+    # Replace the global engine with our test engine 
+    # Get the test engine from the session
+    test_engine = session.bind
+    db_module.engine = test_engine
+    
+    client = TestClient(app, base_url=f"http://testserver{settings.prefix}")  # NOSONAR
+    
+    try:
+        yield client
+    finally:
+        # Restore everything
+        app.dependency_overrides.clear()
+        db_module.engine = original_engine
 
 
 def cleanup_temporary_test_files() -> None:
