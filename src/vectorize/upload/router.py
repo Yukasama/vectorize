@@ -48,7 +48,6 @@ router = APIRouter(tags=["AIModel Upload"])
 async def load_model_huggingface(
     data: HuggingFaceModelRequest,
     request: Request,
-    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
     """Upload a Hugging Face model by model_tag and revision.
@@ -60,7 +59,6 @@ async def load_model_huggingface(
     Args:
         data: Model tag and revision for Hugging Face.
         request: FastAPI request object.
-        background_tasks: FastAPI background task manager.
         db: Async database session.
 
     Returns:
@@ -94,13 +92,8 @@ async def load_model_huggingface(
         source=RemoteModelSource.HUGGINGFACE,
     )
     await save_upload_task_db(db, upload_task)
-
-    background_tasks.add_task(
-        process_huggingface_model_bg,
-        db,
-        data.model_tag,
-        data.revision,
-        upload_task.id,
+    process_huggingface_model_bg.send(
+        data.model_tag, data.revision, str(upload_task.id)
     )
 
     return Response(
@@ -157,9 +150,7 @@ async def load_model_github(
         model_tag=key, task_status=TaskStatus.PENDING, source=RemoteModelSource.GITHUB
     )
     await save_upload_task_db(db, task)
-    background_tasks.add_task(
-        process_github_model_bg, db, owner, repo, branch, task.id
-    )
+    background_tasks.add_task(process_github_model_bg, db, owner, repo, branch, task.id)
 
     return Response(
         status_code=status.HTTP_201_CREATED,

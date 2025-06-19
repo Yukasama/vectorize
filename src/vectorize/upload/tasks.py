@@ -6,6 +6,7 @@ model uploads and processing, such as handling Hugging Face models.
 
 from uuid import UUID
 
+import dramatiq
 from loguru import logger
 from sqlalchemy.exc import IntegrityError
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -14,20 +15,19 @@ from vectorize.ai_model import AIModel
 from vectorize.ai_model.models import ModelSource
 from vectorize.ai_model.repository import save_ai_model_db
 from vectorize.common.task_status import TaskStatus
+from vectorize.config.db import engine
 
 from .exceptions import ModelAlreadyExistsError
 from .github_service import load_github_model_and_cache_only_svc
 from .huggingface_service import load_huggingface_model_and_cache_only_svc
 from .repository import update_upload_task_status_db
 
-__all__ = [
-    "process_github_model_bg",
-    "process_huggingface_model_bg",
-]
+__all__ = ["process_github_model_bg", "process_huggingface_model_bg"]
 
 
+@dramatiq.actor(max_retries=3)
 async def process_huggingface_model_bg(
-    db: AsyncSession, model_tag: str, revision: str, task_id: UUID
+    model_tag: str, revision: str, task_id: str
 ) -> None:
     """Processes a Hugging Face model upload in the background.
 
@@ -36,7 +36,6 @@ async def process_huggingface_model_bg(
     the task status.
 
     Args:
-        db (AsyncSession): The database session for database operations.
         model_tag (str): The tag of the Hugging Face model repository.
         revision (str): The specific revision or version of the model to download.
         task_id (UUID): The unique identifier of the upload task.
@@ -46,40 +45,42 @@ async def process_huggingface_model_bg(
         IntegrityError: If a database integrity error occurs.
         Exception: If an error occurs during model processing or database operations.
     """
-    key = f"{model_tag}@{revision}"
+    async with AsyncSession(engine, expire_on_commit=False) as db:
+        key = f"{model_tag}@{revision}"
+        task_uid = UUID(task_id)
 
-    try:
-        logger.info("[BG] Starting model upload for task", taskId=task_id)
-        await load_huggingface_model_and_cache_only_svc(model_tag, revision)
+        try:
+            logger.info("[BG] Starting model upload for task", taskId=task_uid)
+            await load_huggingface_model_and_cache_only_svc(model_tag, revision)
 
-        ai_model = AIModel(
-            model_tag=key,
-            name=model_tag,
-            source=ModelSource.HUGGINGFACE,
-        )
-        await save_ai_model_db(db, ai_model)
-        await update_upload_task_status_db(db, task_id, TaskStatus.DONE)
+            ai_model = AIModel(
+                model_tag=key,
+                name=model_tag,
+                source=ModelSource.HUGGINGFACE,
+            )
+            await save_ai_model_db(db, ai_model)
+            await update_upload_task_status_db(db, task_uid, TaskStatus.DONE)
 
-        logger.info("[BG] Task completed successfully", taskId=task_id)
+            logger.info("[BG] Task completed successfully", taskId=task_uid)
 
-    except ModelAlreadyExistsError as e:
-        logger.error(f"[BG] Model already exists for task {task_id}: {e}")
-        await db.rollback()
-        await update_upload_task_status_db(
-            db, task_id, TaskStatus.FAILED, error_msg=str(e)
-        )
-    except IntegrityError as e:
-        logger.error(f"[BG] IntegrityError in task {task_id}: {e}")
-        await db.rollback()
-        await update_upload_task_status_db(
-            db, task_id, TaskStatus.FAILED, error_msg=str(e)
-        )
-    except Exception as e:
-        logger.error(f"[BG] Error in task {task_id}: {e}")
-        await db.rollback()
-        await update_upload_task_status_db(
-            db, task_id, TaskStatus.FAILED, error_msg=str(e)
-        )
+        except ModelAlreadyExistsError as e:
+            logger.error(f"[BG] Model already exists for task {task_uid}: {e}")
+            await db.rollback()
+            await update_upload_task_status_db(
+                db, task_uid, TaskStatus.FAILED, error_msg=str(e)
+            )
+        except IntegrityError as e:
+            logger.error(f"[BG] IntegrityError in task {task_uid}: {e}")
+            await db.rollback()
+            await update_upload_task_status_db(
+                db, task_uid, TaskStatus.FAILED, error_msg=str(e)
+            )
+        except Exception as e:
+            logger.error(f"[BG] Error in task {task_uid}: {e}")
+            await db.rollback()
+            await update_upload_task_status_db(
+                db, task_uid, TaskStatus.FAILED, error_msg=str(e)
+            )
 
 
 async def process_github_model_bg(  # noqa: D417
