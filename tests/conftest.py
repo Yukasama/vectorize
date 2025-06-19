@@ -11,6 +11,7 @@ os.environ.setdefault("ENV", "testing")
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text
 from sqlmodel import SQLModel, StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -28,6 +29,9 @@ from vectorize.ai_model.models import AIModel
 from vectorize.inference.models import InferenceCounter
 from vectorize.dataset.task_model import UploadDatasetTask
 from vectorize.dataset.models import Dataset
+
+# Explicitly ensure all models are loaded by referencing them
+_MODELS = [EvaluationTask, TrainingTask, UploadTask, SynthesisTask, AIModel, InferenceCounter, UploadDatasetTask, Dataset]
 
 
 def pytest_configure(config: object) -> None:
@@ -54,8 +58,28 @@ async def session() -> AsyncGenerator[AsyncSession]:
         echo=False,
     )
 
+    # Debug: Print registered tables
+    print(f"Registered tables: {list(SQLModel.metadata.tables.keys())}")
+    
+    # Explicit check for evaluation_task table
+    if "evaluation_task" not in SQLModel.metadata.tables:
+        print("WARNING: evaluation_task table not registered in metadata!")
+        # Force re-import to register the table
+        from vectorize.evaluation.models import EvaluationTask as _EvaluationTask
+        print(f"Re-imported EvaluationTask: {_EvaluationTask.__tablename__}")
+        print(f"Tables after re-import: {list(SQLModel.metadata.tables.keys())}")
+    
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+        
+        # Additional safety check: verify table exists in database
+        result = await conn.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table' AND name='evaluation_task';")
+        )
+        tables_in_db = result.fetchall()
+        print(f"evaluation_task in database: {len(tables_in_db) > 0}")
+        if len(tables_in_db) == 0:
+            raise RuntimeError("evaluation_task table was not created in database!")
 
     async with AsyncSession(test_engine) as session:
         await seed_db(session)
