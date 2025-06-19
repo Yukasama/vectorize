@@ -29,6 +29,11 @@ DATASET_BACKUP2_ID = UUID("9d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_READ_ID = UUID("7d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_FAIL_ID = UUID("8d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 AI_MODEL_DELETE_ID = UUID("2d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+AI_MODEL_LOCALTRAINMODEL_ID = UUID("3d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
+AI_MODEL_MINILM_ID = UUID("45e16930-a99d-4b15-9f49-2b4b2c67f86d")
+
+DATASET_TRAINING_1_ID = UUID("0a9d5e87-e497-4737-9829-2070780d10df")
+DATASET_TRAINING_2_ID = UUID("0b30b284-f7fe-4e6c-a270-17cafc5b5bcb")
 
 UPLOAD_TASK_GH_ID = UUID("d2f3e4b8-8c7f-4d2a-9f1e-0a6f3e4d2a5b")
 UPLOAD_TASK_HF_ID = UUID("d2f3e4b8-8c7f-4d2a-9f1e-0a6f3e4d2a5c")
@@ -111,6 +116,26 @@ async def seed_db(session: AsyncSession) -> None:
         ),
     )
     session.add(
+        Dataset(
+            id=DATASET_TRAINING_1_ID,
+            name="rm_dataset_1",
+            file_name="__rm_-rf__2F_0a9d5e87-e497-4737-9829-2070780d10df.jsonl",
+            classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
+            rows=5,
+        ),
+    )
+    session.add(
+        Dataset(
+            id=DATASET_TRAINING_2_ID,
+            name="rm_dataset_2",
+            file_name="__rm_-rf__2F_0b30b284-f7fe-4e6c-a270-17cafc5b5bcb.jsonl",
+            classification=Classification.SENTENCE_DUPLES,
+            source=DatasetSource.LOCAL,
+            rows=5,
+        ),
+    )
+    session.add(
         AIModel(
             id=AI_MODEL_READ_ID,
             name="Pytorch Model",
@@ -132,6 +157,14 @@ async def seed_db(session: AsyncSession) -> None:
             name="Huge Model",
             source=ModelSource.LOCAL,
             model_tag="huge_model",
+        ),
+    )
+    session.add(
+        AIModel(
+            id=AI_MODEL_LOCALTRAINMODEL_ID,
+            name="LocalTrainModel",
+            source=ModelSource.LOCAL,
+            model_tag="localtrainmodel",
         ),
     )
     session.add(
@@ -170,10 +203,18 @@ async def seed_db(session: AsyncSession) -> None:
         ),
     )
     session.add(
+        AIModel(
+            id=AI_MODEL_MINILM_ID,
+            name="all-MiniLM-L6-v2",
+            source=ModelSource.HUGGINGFACE,
+            model_tag="models--sentence-transformers--all-MiniLM-L6-v2",
+        ),
+    )
+    session.add(
         UploadTask(
             id=UPLOAD_TASK_GH_ID,
             model_tag="example-github-model",
-            task_status=TaskStatus.PENDING,
+            task_status=TaskStatus.QUEUED,
             source=RemoteModelSource.GITHUB,
             created_at=datetime(2025, 6, 10, 9, 0, tzinfo=UTC),
             updated_at=datetime(2025, 6, 10, 9, 5, tzinfo=UTC),
@@ -185,7 +226,7 @@ async def seed_db(session: AsyncSession) -> None:
         UploadTask(
             id=UPLOAD_TASK_HF_ID,
             model_tag="example-hf-model",
-            task_status=TaskStatus.PENDING,
+            task_status=TaskStatus.QUEUED,
             source=RemoteModelSource.HUGGINGFACE,
             created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
             updated_at=datetime(2025, 6, 11, 14, 31, tzinfo=UTC),

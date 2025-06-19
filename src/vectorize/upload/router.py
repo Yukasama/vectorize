@@ -90,7 +90,7 @@ async def load_model_huggingface(
 
     upload_task = UploadTask(
         model_tag=key,
-        task_status=TaskStatus.PENDING,
+        task_status=TaskStatus.QUEUED,
         source=RemoteModelSource.HUGGINGFACE,
     )
     await save_upload_task_db(db, upload_task)
@@ -154,7 +154,7 @@ async def load_model_github(
         raise InternalServerError("Error checking GitHub repository") from e
 
     task = UploadTask(
-        model_tag=key, task_status=TaskStatus.PENDING, source=RemoteModelSource.GITHUB
+        model_tag=key, task_status=TaskStatus.QUEUED, source=RemoteModelSource.GITHUB
     )
     await save_upload_task_db(db, task)
     background_tasks.add_task(
@@ -211,7 +211,9 @@ async def load_model_local(
     headers = {}
     if result["models"]:
         first_model = result["models"][0]
-        headers["Location"] = f"{request.url}/{first_model['model_id']}"
+        model_id = first_model.get("id") or first_model.get("model_id") or first_model.get("model_tag")
+        if model_id:
+            headers["Location"] = f"{request.url}/{model_id}"
 
     return Response(
         status_code=status.HTTP_201_CREATED,
