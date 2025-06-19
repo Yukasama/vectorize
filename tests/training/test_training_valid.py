@@ -29,7 +29,7 @@ HTTP_404_NOT_FOUND = status.HTTP_404_NOT_FOUND
 def ensure_minilm_model_available() -> None:
     """Ensure the required model files are present for training tests."""
     from vectorize.config import settings
-    
+
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
     dst = settings.model_upload_dir / "models--sentence-transformers--all-MiniLM-L6-v2"
     if not dst.exists() and src.exists():
@@ -113,7 +113,7 @@ class TestTrainingValid:
         assert status_response.status_code == HTTP_200_OK
         status_data = status_response.json()
         assert status_data["status"] in {"Q", "R", "D", "F"}
-        
+
         from vectorize.config import settings
         trained_models_dir = settings.model_upload_dir / "trained_models"
         model_dirs = trained_models_dir.glob("*-finetuned-*")

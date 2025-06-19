@@ -32,7 +32,7 @@ HTTP_422_UNPROCESSABLE_ENTITY = status.HTTP_422_UNPROCESSABLE_ENTITY
 def ensure_minilm_model_available() -> None:
     """Ensure the required model files are present for evaluation tests."""
     from vectorize.config import settings
-    
+
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
     dst = settings.model_upload_dir / "models--sentence-transformers--all-MiniLM-L6-v2"
     if not dst.exists() and src.exists():
