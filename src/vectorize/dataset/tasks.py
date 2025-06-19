@@ -13,7 +13,7 @@ from vectorize.dataset.utils.process_hf_model import _process_dataset
 __all__ = ["upload_hf_dataset_bg"]
 
 
-@dramatiq.actor(max_retries=1)
+@dramatiq.actor(max_retries=3)
 async def upload_hf_dataset_bg(
     dataset_tag: str, task_id: str, subsets: list[str]
 ) -> None:
