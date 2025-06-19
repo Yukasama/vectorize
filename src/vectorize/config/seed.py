@@ -214,7 +214,7 @@ async def seed_db(session: AsyncSession) -> None:
         UploadTask(
             id=UPLOAD_TASK_GH_ID,
             model_tag="example-github-model",
-            task_status=TaskStatus.PENDING,
+            task_status=TaskStatus.QUEUED,
             source=RemoteModelSource.GITHUB,
             created_at=datetime(2025, 6, 10, 9, 0, tzinfo=UTC),
             updated_at=datetime(2025, 6, 10, 9, 5, tzinfo=UTC),
@@ -226,7 +226,7 @@ async def seed_db(session: AsyncSession) -> None:
         UploadTask(
             id=UPLOAD_TASK_HF_ID,
             model_tag="example-hf-model",
-            task_status=TaskStatus.PENDING,
+            task_status=TaskStatus.QUEUED,
             source=RemoteModelSource.HUGGINGFACE,
             created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
             updated_at=datetime(2025, 6, 11, 14, 31, tzinfo=UTC),

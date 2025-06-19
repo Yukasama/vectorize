@@ -23,6 +23,7 @@ from vectorize.ai_model.exceptions import ModelNotFoundError
 from vectorize.ai_model.model_source import RemoteModelSource
 from vectorize.ai_model.service import get_ai_model_svc
 from vectorize.common.exceptions import InternalServerError, InvalidFileError
+from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
 
 from .exceptions import InvalidUrlError, ModelAlreadyExistsError
@@ -88,7 +89,9 @@ async def load_model_huggingface(
         ) from e
 
     upload_task = UploadTask(
-        model_tag=key, source=RemoteModelSource.HUGGINGFACE,
+        model_tag=key,
+        task_status=TaskStatus.QUEUED,
+        source=RemoteModelSource.HUGGINGFACE,
     )
     await save_upload_task_db(db, upload_task)
 
@@ -151,7 +154,7 @@ async def load_model_github(
         raise InternalServerError("Error checking GitHub repository") from e
 
     task = UploadTask(
-        model_tag=key, task_status=TaskStatus.PENDING, source=RemoteModelSource.GITHUB
+        model_tag=key, task_status=TaskStatus.QUEUED, source=RemoteModelSource.GITHUB
     )
     await save_upload_task_db(db, task)
     background_tasks.add_task(
@@ -208,7 +211,7 @@ async def load_model_local(
     headers = {}
     if result["models"]:
         first_model = result["models"][0]
-        headers["Location"] = f"{request.url}/{first_model['model_tag']}"
+        headers["Location"] = f"{request.url}/{first_model['model_id']}"
 
     return Response(
         status_code=status.HTTP_201_CREATED,
