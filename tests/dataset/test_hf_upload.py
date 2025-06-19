@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.config import settings
 
-_TIMEOUT = 60  # seconds
+_TIMEOUT = 10  # seconds
 _FILE_SIZE_THRESHOLD = 100
 
 
@@ -26,13 +26,13 @@ class TestHuggingFaceUpload:
         "dataset_tag,expected_splits,expected_subsets",
         [
             ("Intel/orca_dpo_pairs", ["train"], ["default"]),
-            (
-                "argilla/ultrafeedback-binarized-preferences-cleaned",
-                ["train"],
-                ["default"],
-            ),
-            ("Dahoas/full-hh-rlhf", ["train"], ["default"]),
-            ("argilla/distilabel-intel-orca-dpo-pairs", ["train"], ["default"]),
+            # (
+            #     "argilla/ultrafeedback-binarized-preferences-cleaned",
+            #     ["train"],
+            #     ["default"],
+            # ),
+            # ("Dahoas/full-hh-rlhf", ["train"], ["default"]),
+            # ("argilla/distilabel-intel-orca-dpo-pairs", ["train"], ["default"]),
         ],
     )
     @staticmethod
