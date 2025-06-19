@@ -31,15 +31,9 @@ from .exceptions import ModelNotFoundError as RepoModelNotFound
 from .github_service import repo_info
 from .local_service import upload_zip_model
 from .models import UploadTask
-from .repository import (
-    get_upload_task_by_id_db,
-    save_upload_task_db,
-)
+from .repository import get_upload_task_by_id_db, save_upload_task_db
 from .schemas import GitHubModelRequest, HuggingFaceModelRequest
-from .tasks import (
-    process_github_model_bg,
-    process_huggingface_model_bg,
-)
+from .tasks import process_github_model_bg, process_huggingface_model_bg
 
 router = APIRouter(tags=["AIModel Upload"])
 
