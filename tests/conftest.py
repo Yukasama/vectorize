@@ -27,8 +27,16 @@ from vectorize.app import app
 from vectorize.config import settings
 from vectorize.config.db import get_session
 from vectorize.config.seed import seed_db
+
+# Import aller SQLModel-Tabellen, damit sie beim create_all verfügbar sind
 from vectorize.evaluation.models import EvaluationTask
 from vectorize.training.models import TrainingTask
+from vectorize.upload.models import UploadTask
+from vectorize.synthesis.models import SynthesisTask
+from vectorize.ai_model.models import AIModel
+from vectorize.inference.models import InferenceCounter
+from vectorize.dataset.task_model import UploadDatasetTask
+from vectorize.dataset.models import Dataset
 
 REDIS_TEST_PORT = 56379
 
