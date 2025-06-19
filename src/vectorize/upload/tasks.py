@@ -4,7 +4,6 @@ This module contains functions for managing background tasks related to
 model uploads and processing, such as handling Hugging Face models.
 """
 
-from pathlib import Path
 from uuid import UUID
 
 import dramatiq
