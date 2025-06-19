@@ -11,14 +11,7 @@ __all__ = ["broker"]
 
 
 load_dotenv()
-
-
-def _make_broker() -> dramatiq.Broker:
-    url = os.environ["REDIS_URL"]
-    broker = RedisBroker(url=url)
-    broker.add_middleware(AsyncIO())
-    return broker
-
-
-broker = _make_broker()
+url = os.environ["REDIS_URL"]
+broker = RedisBroker(url=url)
+broker.add_middleware(AsyncIO())
 dramatiq.set_broker(broker)

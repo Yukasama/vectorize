@@ -74,6 +74,7 @@ dependencies = [
     "datasets>=3.6.0",
     "dramatiq>=1.18.0",
     "redis>=6.2.0",
+    "testcontainers[redis]>=4.10.0",
 ]
 
 [project.scripts]

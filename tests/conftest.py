@@ -4,18 +4,67 @@ import os
 
 os.environ.setdefault("ENV", "testing")
 
+import signal
+import subprocess  # noqa: S404
+import sys
+import time
 from collections.abc import AsyncGenerator, Generator
 
 import pytest
 from fastapi.testclient import TestClient
+from loguru import logger
+from redis import Redis
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlmodel import SQLModel, StaticPool
+from sqlalchemy.pool import NullPool
+from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
+from testcontainers.redis import RedisContainer
 
 from vectorize.app import app
 from vectorize.config import settings
 from vectorize.config.db import get_session
 from vectorize.config.seed import seed_db
+
+REDIS_TEST_PORT = 56379
+
+
+@pytest.fixture(scope="session", autouse=True)
+def redis_container() -> Generator[RedisContainer]:
+    """Fixture to start a Redis container for testing."""
+    container: RedisContainer = (
+        RedisContainer("redis:7.2-alpine")
+        .with_bind_ports(6379, REDIS_TEST_PORT)
+        .start()
+    )
+
+    redis_url = f"redis://localhost:{REDIS_TEST_PORT}/0"
+    os.environ["REDIS_URL"] = redis_url
+    Redis.from_url(redis_url).ping()
+
+    yield container
+    container.stop()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def dramatiq_worker() -> Generator[None]:
+    """Fixture to start a Dramatiq worker for testing."""
+    cmd = [sys.executable, "-m", "dramatiq", "vectorize.tasks", "-p", "1", "-t", "4"]
+    worker = subprocess.Popen(cmd, env=os.environ.copy())  # noqa: S603
+    time.sleep(2)
+
+    if worker.poll() is not None:
+        raise RuntimeError("Dramatiq worker crashed")
+
+    yield
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            worker.send_signal(sig)
+            worker.wait(timeout=5)
+            break
+        except Exception:
+            logger.error("Failed to stop Dramatiq worker gracefully", exc_info=True)
+    else:
+        worker.kill()
 
 
 @pytest.fixture(scope="session")
@@ -26,10 +75,9 @@ async def session() -> AsyncGenerator[AsyncSession]:
         AsyncSession: SQLModel async session for database operations.
     """
     test_engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        connect_args={"check_same_thread": False, "timeout": 30},
-        poolclass=StaticPool,
-        echo=False,
+        "sqlite+aiosqlite:///app.db",
+        poolclass=NullPool,
+        connect_args={"check_same_thread": False},
     )
 
     async with test_engine.begin() as conn:
@@ -62,7 +110,6 @@ def client_fixture(session: AsyncSession) -> Generator[TestClient]:
         return session
 
     app.dependency_overrides[get_session] = get_session_override
-
     client = TestClient(app, base_url=f"http://testserver{settings.prefix}")  # NOSONAR
     yield client
 
