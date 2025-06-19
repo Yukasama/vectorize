@@ -38,6 +38,9 @@ from vectorize.inference.models import InferenceCounter
 from vectorize.dataset.task_model import UploadDatasetTask
 from vectorize.dataset.models import Dataset
 
+# Explicitly ensure all models are loaded by referencing them
+_MODELS = [EvaluationTask, TrainingTask, UploadTask, SynthesisTask, AIModel, InferenceCounter, UploadDatasetTask, Dataset]
+
 REDIS_TEST_PORT = 56379
 
 
@@ -112,13 +115,23 @@ async def session(cleanup_test_db: Generator[None]) -> AsyncGenerator[AsyncSessi
         AsyncSession: SQLModel async session for database operations.
     """
     test_engine = create_async_engine(
-        "sqlite+aiosqlite:///app.db",
-        poolclass=NullPool,
-        connect_args={"check_same_thread": False},
+        "sqlite+aiosqlite:///:memory:",
+        connect_args={"check_same_thread": False, "timeout": 30},
+        poolclass=StaticPool,
+        echo=False,
     )
 
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+        
+        # Additional safety check: verify table exists in database
+        result = await conn.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table' AND name='evaluation_task';")
+        )
+        tables_in_db = result.fetchall()
+        print(f"evaluation_task in database: {len(tables_in_db) > 0}")
+        if len(tables_in_db) == 0:
+            raise RuntimeError("evaluation_task table was not created in database!")
 
     async with AsyncSession(test_engine) as session:
         await seed_db(session)
