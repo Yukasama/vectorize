@@ -2,7 +2,6 @@
 
 """Tests for evaluation service integration with training tasks."""
 
-from pathlib import Path
 from uuid import uuid4
 
 import pytest
@@ -34,7 +33,7 @@ class TestEvaluationIntegration:
 
         # Create validation dataset file
         from vectorize.config import settings
-        
+
         validation_path = settings.dataset_upload_dir / "validation_test.jsonl"
         validation_path.parent.mkdir(parents=True, exist_ok=True)
         validation_path.write_text(

@@ -6,7 +6,6 @@ import json
 import re
 import shutil
 import time
-import uuid
 from pathlib import Path
 from typing import Any
 
@@ -32,7 +31,7 @@ HTTP_422_UNPROCESSABLE_ENTITY = status.HTTP_422_UNPROCESSABLE_ENTITY
 def ensure_minilm_model_available() -> None:
     """Ensure the required model files are present for integration tests."""
     from vectorize.config import settings
-    
+
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
     dst = settings.model_upload_dir / "models--sentence-transformers--all-MiniLM-L6-v2"
     if not dst.exists() and src.exists():
@@ -78,7 +77,7 @@ def wait_for_task(client: TestClient, task_id: str, endpoint_type: str = "traini
 def cleanup_trained_models() -> None:
     """Clean up any trained model directories."""
     from vectorize.config import settings
-    
+
     trained_models_dir = settings.model_upload_dir / "trained_models"
     if trained_models_dir.exists():
         for model_dir in trained_models_dir.glob("*-finetuned-*"):
@@ -103,10 +102,6 @@ def load_test_dataset(dataset_filename: str) -> list[dict[str, Any]]:
 @pytest.mark.integration
 class TestTrainingEvaluationIntegration:
     """Integration tests for training and evaluation workflows."""
-
-
-
-
 
     def test_concurrent_training_and_evaluation(self, client: TestClient) -> None:
         """Test running training and evaluation concurrently."""

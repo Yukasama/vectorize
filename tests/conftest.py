@@ -23,21 +23,21 @@ from sqlmodel import SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from testcontainers.redis import RedisContainer
 
+from vectorize.ai_model.models import AIModel
 from vectorize.app import app
 from vectorize.config import settings
-from vectorize.config.db import get_session, engine
+from vectorize.config.db import get_session
 from vectorize.config.seed import seed_db
+from vectorize.dataset.models import Dataset
+from vectorize.dataset.task_model import UploadDatasetTask
 
 # Import all SQLModel tables, to ensure they are available for create_all
 # This must be done before any database operations
 from vectorize.evaluation.models import EvaluationTask
+from vectorize.inference.models import InferenceCounter
+from vectorize.synthesis.models import SynthesisTask
 from vectorize.training.models import TrainingTask
 from vectorize.upload.models import UploadTask
-from vectorize.synthesis.models import SynthesisTask
-from vectorize.ai_model.models import AIModel
-from vectorize.inference.models import InferenceCounter
-from vectorize.dataset.task_model import UploadDatasetTask
-from vectorize.dataset.models import Dataset
 
 # Explicitly ensure all models are loaded by referencing them
 _MODELS = [EvaluationTask, TrainingTask, UploadTask, SynthesisTask, AIModel, InferenceCounter, UploadDatasetTask, Dataset]
@@ -134,7 +134,7 @@ async def session(cleanup_test_db: Generator[None]) -> AsyncGenerator[AsyncSessi
     for model in _MODELS:
         table_name = getattr(model, '__tablename__', 'no table')
         print(f"DEBUG: Model loaded: {model.__name__} -> {table_name}")
-        
+
     # Double-check that EvaluationTask is properly registered
     if 'evaluation_task' not in SQLModel.metadata.tables:
         print("WARNING: evaluation_task not in metadata! Re-importing...")
@@ -146,7 +146,7 @@ async def session(cleanup_test_db: Generator[None]) -> AsyncGenerator[AsyncSessi
     async with test_engine.begin() as conn:
         print("DEBUG: Creating all tables...")
         await conn.run_sync(SQLModel.metadata.create_all)
-        
+
         # Force create tables again if needed
         await conn.run_sync(SQLModel.metadata.create_all)
 
@@ -200,17 +200,17 @@ def client_fixture(session: AsyncSession) -> Generator:
 
     # IMPORTANT: Also override the global engine so background tasks use the test database
     import vectorize.config.db as db_module
-    
+
     # Store original engine
     original_engine = db_module.engine
-    
-    # Replace the global engine with our test engine 
+
+    # Replace the global engine with our test engine
     # Get the test engine from the session
     test_engine = session.bind
     db_module.engine = test_engine
-    
+
     client = TestClient(app, base_url=f"http://testserver{settings.prefix}")  # NOSONAR
-    
+
     try:
         yield client
     finally:
@@ -223,7 +223,7 @@ def cleanup_temporary_test_files() -> None:
     """Clean up temporary dataset and model files created during tests."""
     if not settings.app_env == "testing":
         return
-    
+
     # Clean up temporary dataset files (those with UUID patterns in the name)
     dataset_pattern = os.path.join(settings.dataset_upload_dir, "*-*-*-*-*.jsonl")
     for file_path in glob.glob(dataset_pattern):
@@ -231,7 +231,7 @@ def cleanup_temporary_test_files() -> None:
             os.remove(file_path)
         except OSError:
             pass  # File might already be deleted
-    
+
     # Clean up temporary model directories
     model_pattern = os.path.join(settings.model_upload_dir, "trained_models", "*")
     for dir_path in glob.glob(model_pattern):
@@ -258,7 +258,7 @@ async def ensure_tables_exist(session: AsyncSession) -> None:
 
 
 @pytest.fixture(autouse=True)
-def cleanup_after_test() -> Generator[None, None, None]:
+def cleanup_after_test() -> Generator[None]:
     """Automatically clean up temporary files after each test."""
     yield  # Run the test
     cleanup_temporary_test_files()  # Clean up after the test
