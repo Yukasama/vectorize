@@ -10,6 +10,7 @@ from .config import settings
 
 __all__ = ["engine", "get_session"]
 
+
 engine: Final = create_async_engine(
     settings.db_url,
     connect_args={"check_same_thread": False, "timeout": settings.db_timeout},

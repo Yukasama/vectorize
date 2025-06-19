@@ -1,11 +1,24 @@
 """Broker configuration for Dramatiq with Redis."""
 
-from dramatiq import set_broker
+import os
+
+import dramatiq
+from dotenv import load_dotenv
 from dramatiq.brokers.redis import RedisBroker
+from dramatiq.middleware.asyncio import AsyncIO
 
-__all__ = ["redis_broker"]
+__all__ = ["broker"]
 
 
-redis_broker = RedisBroker(url="redis://localhost:6379")
-# redis_broker.add_middleware(AsyncIO())
-set_broker(redis_broker)
+load_dotenv()
+
+
+def _make_broker() -> dramatiq.Broker:
+    url = os.environ["REDIS_URL"]
+    broker = RedisBroker(url=url)
+    broker.add_middleware(AsyncIO())
+    return broker
+
+
+broker = _make_broker()
+dramatiq.set_broker(broker)
