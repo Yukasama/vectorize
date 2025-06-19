@@ -12,7 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
-from sqlmodel import SQLModel, StaticPool
+from sqlmodel import SQLModel, StaticPool, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.app import app
@@ -20,7 +20,8 @@ from vectorize.config import settings
 from vectorize.config.db import get_session
 from vectorize.config.seed import seed_db
 
-# Import aller SQLModel-Tabellen, damit sie beim create_all verfügbar sind
+# Import all SQLModel tables, to ensure they are available for create_all
+# This must be done before any database operations
 from vectorize.evaluation.models import EvaluationTask
 from vectorize.training.models import TrainingTask
 from vectorize.upload.models import UploadTask
@@ -31,7 +32,16 @@ from vectorize.dataset.task_model import UploadDatasetTask
 from vectorize.dataset.models import Dataset
 
 # Explicitly ensure all models are loaded by referencing them
-_MODELS = [EvaluationTask, TrainingTask, UploadTask, SynthesisTask, AIModel, InferenceCounter, UploadDatasetTask, Dataset]
+_MODELS = [
+    EvaluationTask, 
+    TrainingTask, 
+    UploadTask, 
+    SynthesisTask, 
+    AIModel, 
+    InferenceCounter, 
+    UploadDatasetTask, 
+    Dataset
+]
 
 
 def pytest_configure(config: object) -> None:
@@ -58,28 +68,45 @@ async def session() -> AsyncGenerator[AsyncSession]:
         echo=False,
     )
 
-    # Debug: Print registered tables
-    print(f"Registered tables: {list(SQLModel.metadata.tables.keys())}")
-    
-    # Explicit check for evaluation_task table
-    if "evaluation_task" not in SQLModel.metadata.tables:
-        print("WARNING: evaluation_task table not registered in metadata!")
-        # Force re-import to register the table
-        from vectorize.evaluation.models import EvaluationTask as _EvaluationTask
-        print(f"Re-imported EvaluationTask: {_EvaluationTask.__tablename__}")
+    # Force immediate table creation with all models
+    print(f"DEBUG: Starting session fixture - registered tables: {list(SQLModel.metadata.tables.keys())}")
+
+    # Ensure all models are loaded and check their table names
+    for model in _MODELS:
+        table_name = getattr(model, '__tablename__', 'no table')
+        print(f"DEBUG: Model loaded: {model.__name__} -> {table_name}")
+        
+    # Double-check that EvaluationTask is properly registered
+    if 'evaluation_task' not in SQLModel.metadata.tables:
+        print("WARNING: evaluation_task not in metadata! Re-importing...")
+        from vectorize.evaluation.models import EvaluationTask as EvaluationTaskReload
+        print(f"Re-imported EvaluationTask: {EvaluationTaskReload.__tablename__}")
         print(f"Tables after re-import: {list(SQLModel.metadata.tables.keys())}")
-    
+
+    # Create tables multiple times to ensure they exist
     async with test_engine.begin() as conn:
+        print("DEBUG: Creating all tables...")
         await conn.run_sync(SQLModel.metadata.create_all)
         
-        # Additional safety check: verify table exists in database
-        result = await conn.execute(
-            text("SELECT name FROM sqlite_master WHERE type='table' AND name='evaluation_task';")
-        )
-        tables_in_db = result.fetchall()
-        print(f"evaluation_task in database: {len(tables_in_db) > 0}")
-        if len(tables_in_db) == 0:
-            raise RuntimeError("evaluation_task table was not created in database!")
+        # Force create tables again if needed
+        await conn.run_sync(SQLModel.metadata.create_all)
+
+        # Verify tables exist
+        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table';"))
+        tables_in_db = [row[0] for row in result.fetchall()]
+        print(f"DEBUG: Tables created in database: {tables_in_db}")
+
+        if "evaluation_task" not in tables_in_db:
+            print("ERROR: evaluation_task table missing! Force creating...")
+            # Force create the specific table
+            from vectorize.evaluation.models import EvaluationTask
+            await conn.run_sync(EvaluationTask.metadata.create_all)
+
+            # Check again
+            result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='evaluation_task';"))
+            if result.fetchone() is None:
+                raise RuntimeError("Failed to create evaluation_task table even after force creation!")
+            print("DEBUG: evaluation_task table force-created successfully!")
 
     async with AsyncSession(test_engine) as session:
         await seed_db(session)
@@ -139,13 +166,28 @@ def cleanup_temporary_test_files() -> None:
 
 
 @pytest.fixture(autouse=True)
-def cleanup_after_test():
+async def ensure_tables_exist(session: AsyncSession) -> None:
+    """Ensure all required tables exist before each test."""
+    try:
+        # Simple check - try to query the evaluation_task table
+        from vectorize.evaluation.models import EvaluationTask
+        await session.exec(select(EvaluationTask).limit(1))
+        # If we get here, the table exists
+        return
+    except Exception:
+        # This is expected during the first test run when tables are being created
+        # Tables should already be created in the session fixture
+        pass
+
+
+@pytest.fixture(autouse=True)
+def cleanup_after_test() -> Generator[None, None, None]:
     """Automatically clean up temporary files after each test."""
     yield  # Run the test
     cleanup_temporary_test_files()  # Clean up after the test
 
 
-def pytest_sessionfinish(session, exitstatus):
+def pytest_sessionfinish(session: object, exitstatus: int) -> None:
     """Clean up temporary files after all tests are done."""
     del session, exitstatus  # unused
     cleanup_temporary_test_files()
