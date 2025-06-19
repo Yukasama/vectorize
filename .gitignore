@@ -45,6 +45,7 @@ htmlcov/
 .cache/
 nosetests.xml
 coverage.xml
+.coverage.*
 *.cover
 *.py,cover
 
@@ -73,6 +74,7 @@ data/
 models/
 checkpoints/
 hf_cache/
+.hf_cache/
 gh_cache/
 
 # === Additional files ===

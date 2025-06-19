@@ -4,7 +4,14 @@ include:
   - path: ./resources/deploy/compose.yaml
   - path: ./resources/grafana/compose.yaml
   - path: ./resources/caddy/compose.yaml
+  - path: ./resources/dramatiq/compose.yaml
 
 networks:
   vectorize-network:
     driver: bridge
+
+volumes:
+  datasets_data:
+  models_data:
+  db_data:
+  hf_home_data:

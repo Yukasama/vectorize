@@ -4,11 +4,12 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from datasets.exceptions import DatasetNotFoundError as HFDatasetNotFoundError
-from fastapi import BackgroundTasks, Request, UploadFile
+from fastapi import Request, UploadFile
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config import settings
+from vectorize.tasks import upload_hf_dataset_bg
 from vectorize.utils.etag_parser import parse_etag
 from vectorize.utils.file_sanitizer import sanitize_filename
 
@@ -32,7 +33,6 @@ from .repository import (
 )
 from .schemas import DatasetUploadOptions
 from .task_model import UploadDatasetTask
-from .tasks import upload_hf_dataset_bg
 from .utils.cache_dataset_infos import _get_cached_dataset_infos
 from .utils.check_hf_schema import _match_schema
 from .utils.csv_escaper import _escape_csv_formulas
@@ -142,9 +142,7 @@ async def upload_dataset_svc(
         raise
 
 
-async def upload_hf_dataset_svc(
-    db: AsyncSession, background_tasks: BackgroundTasks, dataset_tag: str
-) -> UUID:
+async def upload_hf_dataset_svc(db: AsyncSession, dataset_tag: str) -> UUID:
     """Upload a Hugging Face dataset in the database.
 
     This function downloads a Hugging Face dataset, validates its schema,
@@ -173,13 +171,11 @@ async def upload_hf_dataset_svc(
         if not _match_schema(set(column_names)):
             raise UnsupportedHuggingFaceFormatError(column_names)
 
+    subset_list = list(dataset_infos.keys())
     upload_dataset_task = UploadDatasetTask(dataset_tag=dataset_tag)
     await save_upload_dataset_task_db(db, upload_dataset_task)
 
-    background_tasks.add_task(
-        upload_hf_dataset_bg, db, dataset_tag, upload_dataset_task.id, dataset_infos
-    )
-
+    upload_hf_dataset_bg.send(dataset_tag, str(upload_dataset_task.id), subset_list)
     return upload_dataset_task.id
 
 

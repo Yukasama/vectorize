@@ -2,10 +2,7 @@ services:
   caddy:
     image: caddy:latest
     container_name: vectorize_caddy
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+    ports: [80:80, 443:443, 443:443/udp]
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

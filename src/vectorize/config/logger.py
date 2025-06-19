@@ -100,12 +100,18 @@ class InterceptHandler(logging.Handler):
 
 def _production_format(record: Mapping[str, Any]) -> str:
     """Optimized format for production - structured and minimal."""
-    return (
+    line = (
         f"{record['time'].strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} | "
         f"{record['level']:<8} | "
         f"{record['name']}:{record['line']} - "
-        f"{record['message']}\n"
+        f"{record['message']}"
     )
+
+    if record["extra"]:
+        extras = " | ".join(f"{k}={v}" for k, v in record["extra"].items())
+        line += f" | {extras}"
+
+    return line + "\n"
 
 
 def _development_format(record: Mapping[str, Any]) -> str:

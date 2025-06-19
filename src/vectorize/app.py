@@ -11,12 +11,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.config import (
-    config_logger,
-    engine,
-    seed_db,
-    settings,
-)
+from vectorize.config import config_logger, engine, seed_db, settings
 from vectorize.utils.banner import create_banner
 from vectorize.utils.error_handler import register_exception_handlers
 from vectorize.utils.prometheus import add_prometheus_metrics

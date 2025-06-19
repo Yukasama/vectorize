@@ -1,21 +1,21 @@
 services:
   vectorize:
-    build:
-      context: ../../
-      dockerfile: Dockerfile
+    build: ../..
     container_name: vectorize
-    hostname: vectorize
     volumes:
       - datasets_data:/app/data/datasets
       - models_data:/app/data/models
       - db_data:/app/db
+      - hf_home_data:/app/data/hf_home
     environment:
       ENV: production
-      DATABASE_URL: sqlite+aiosqlite:///./db/app.db
+      DATABASE_URL: sqlite+aiosqlite:///db/app.db
+      REDIS_URL: redis://redis:6379
       UPLOAD_DIR: /app/data/datasets
       MODELS_DIR: /app/data/models
       DB_DIR: /app/db
       LOG_LEVEL: INFO
+      HF_HOME: /app/data/hf_home
     networks: [vectorize-network]
     restart: unless-stopped
     cap_drop: [ALL]
@@ -25,8 +25,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    depends_on:
+      redis:
+        condition: service_healthy
 
-volumes:
-  datasets_data:
-  models_data:
-  db_data:

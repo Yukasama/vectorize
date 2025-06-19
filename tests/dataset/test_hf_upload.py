@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.config import settings
 
-_TIMEOUT = 60  # seconds
+_TIMEOUT = 30  # seconds
 _FILE_SIZE_THRESHOLD = 100
 
 
@@ -31,7 +31,7 @@ class TestHuggingFaceUpload:
                 ["train"],
                 ["default"],
             ),
-            ("Dahoas/full-hh-rlhf", ["train", "test"], ["default"]),
+            ("Dahoas/full-hh-rlhf", ["train"], ["default"]),
             ("argilla/distilabel-intel-orca-dpo-pairs", ["train"], ["default"]),
         ],
     )

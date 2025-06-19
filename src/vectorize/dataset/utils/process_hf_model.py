@@ -34,17 +34,28 @@ async def _process_dataset(
     info: DatasetInfo,
 ) -> None:
     """Process splits for a single dataset subset."""
-    if subset == "default":
-        if not info.splits:
-            await _process_single_dataset(db, dataset_tag, task_id)
+    try:
+        if subset == "default":
+            if not info.splits:
+                await _process_single_dataset(db, dataset_tag, task_id)
+            else:
+                for split in info.splits:
+                    await _process_single_dataset(db, dataset_tag, task_id, split)
+        elif not info.splits:
+            await _process_single_dataset(db, dataset_tag, task_id, subset=subset)
         else:
             for split in info.splits:
-                await _process_single_dataset(db, dataset_tag, task_id, split)
-    elif not info.splits:
-        await _process_single_dataset(db, dataset_tag, task_id, subset=subset)
-    else:
-        for split in info.splits:
-            await _process_single_dataset(db, dataset_tag, task_id, split, subset)
+                await _process_single_dataset(db, dataset_tag, task_id, split, subset)
+
+        await update_upload_task_status(db, task_id, TaskStatus.DONE)
+    except Exception as e:
+        await update_upload_task_status(
+            db,
+            task_id,
+            TaskStatus.FAILED,
+            error_msg=f"Dataset processing failed: {e!s}",
+        )
+        raise
 
 
 async def _process_single_dataset(
@@ -105,23 +116,13 @@ async def _process_single_dataset(
         await update_upload_task_status(db, task_id, TaskStatus.DONE)
         logger.debug("HF Dataset saved", dataset_tag=dataset_tag, dataset_id=dataset_id)
 
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         if file_path and file_path.exists():
             file_path.unlink()
             logger.debug("Cleaned up file after database error", file_path=file_path)
-
-        await update_upload_task_status(
-            db, task_id, TaskStatus.FAILED, error_msg=f"DB insert failed: {e!s}"
-        )
         raise
 
     except Exception as e:
-        await update_upload_task_status(
-            db,
-            task_id,
-            TaskStatus.FAILED,
-            error_msg=f"Dataset processing failed: {e!s}",
-        )
         logger.error(
             "Error processing Hugging Face dataset",
             dataset_tag=dataset_tag,
