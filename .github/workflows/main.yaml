@@ -99,6 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: sqlite+aiosqlite:///./app.db
+      REDIS_URL: redis://localhost:56379
 
     steps:
       - uses: actions/checkout@v4
