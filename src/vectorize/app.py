@@ -17,6 +17,8 @@ from vectorize.config import (
     seed_db,
     settings,
 )
+# Explicit import to ensure training module is loaded
+import vectorize.training  # noqa: F401
 from vectorize.utils.banner import create_banner
 from vectorize.utils.error_handler import register_exception_handlers
 from vectorize.utils.prometheus import add_prometheus_metrics

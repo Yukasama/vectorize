@@ -9,8 +9,14 @@ from vectorize.dataset.router import router as dataset_router
 from vectorize.evaluation.router import router as evaluation_router
 from vectorize.inference.router import router as embeddings_router
 from vectorize.synthesis.router import router as synthesis_router
-from vectorize.training.router import router as training_router
 from vectorize.upload.router import router as upload_router
+
+# Import training router explicitly to ensure module loading
+try:
+    from vectorize.training.router import router as training_router
+except ImportError as e:
+    print(f"ERROR: Failed to import training router: {e}")
+    raise
 
 
 def register_routers(app: FastAPI) -> None:
