@@ -11,13 +11,13 @@ from vectorize.dataset.task_model import UploadDatasetTask
 from vectorize.synthesis.models import SynthesisTask
 from vectorize.upload.models import UploadTask
 
-__all__ = ["ActionModel", "ModelType"]
+__all__ = ["ActionsModel", "ModelType"]
 
 
 ModelType = type[UploadDatasetTask | UploadTask | SynthesisTask]
 
 
-class ActionModel(BaseModel):
+class ActionsModel(BaseModel):
     """Pydantic model for action responses."""
 
     id: UUID
