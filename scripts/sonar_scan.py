@@ -31,12 +31,10 @@ def run_sonar_scan() -> None:
             if executable_path.exists():
                 scanner_cmd = str(executable_path)
             else:
-                # Check for environment variable installation
                 sonar_home = os.getenv("SONAR_SCANNER_HOME")
                 if sonar_home and Path(sonar_home).exists():
                     scanner_cmd = str(Path(sonar_home) / "bin" / _SONAR_BAT)
                 else:
-                    # Try to use from PATH
                     scanner_cmd = _SONAR_BAT
         else:
             scanner_cmd = "sonar-scanner"

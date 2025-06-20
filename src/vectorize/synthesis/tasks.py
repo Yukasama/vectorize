@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 from uuid import UUID, uuid4
 
+import dramatiq
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -22,28 +23,32 @@ from .repository import update_synthesis_task_status
 from .text_extractor import extract_text_from_media
 
 __all__ = [
-    "process_existing_dataset_background",
-    "process_file_contents_background",
+    "process_existing_dataset_background_bg",
+    "process_file_contents_background_bg",
 ]
 
 
-async def process_file_contents_background(
-    task_id: UUID,
+@dramatiq.actor(max_retries=3)
+async def process_file_contents_background_bg(
+    task_id: str,
     file_contents: list[tuple[str, bytes]],
-    options: DatasetUploadOptions | None = None,
+    options_dict: dict | None = None,
 ) -> None:
     """Process file contents extracted from uploaded files.
 
     Args:
         task_id: ID of the synthesis task
         file_contents: List of tuples containing (filename, file_content)
-        options: Optional dataset upload options
+        options_dict: Optional dataset upload options
     """
     async with AsyncSession(engine, expire_on_commit=False) as db:
+        task_uuid = UUID(task_id)
+        options = DatasetUploadOptions(**options_dict) if options_dict else None
+
         try:
             logger.info(
-                "[BG Synthetic] Starting processing of file contents",
-                taskId=task_id,
+                "Starting processing of file contents",
+                taskId=task_uuid,
                 fileCount=len(file_contents),
             )
 
@@ -52,52 +57,53 @@ async def process_file_contents_background(
             for filename, content in file_contents:
                 try:
                     dataset_id = await _process_single_file(
-                        db, task_id, filename, content, options
+                        db, task_uuid, filename, content, options
                     )
                     if dataset_id:
                         dataset_ids.append(dataset_id)
 
                 except Exception as e:
-                    logger.error(
-                        f"[BG Synthetic] Error processing file {filename}: {e}"
-                    )
+                    logger.error(f"Error processing file {filename}: {e}")
                     continue
 
-            await _finalize_task_status(db, task_id, dataset_ids)
+            await _finalize_task_status(db, task_uuid, dataset_ids)
 
         except Exception as e:
-            logger.error(f"[BG Synthetic] Error in task {task_id}: {e}")
+            logger.error(f"Error in task {task_uuid}: {e}")
             await update_synthesis_task_status(
-                db, task_id, TaskStatus.FAILED, error_msg=str(e)
+                db, task_uuid, TaskStatus.FAILED, error_msg=str(e)
             )
         finally:
-            logger.debug("[BG Synthetic] Database session closed", taskId=task_id)
+            logger.debug("Database session closed", taskId=task_uuid)
 
 
-async def process_existing_dataset_background(
-    task_id: UUID,
-    dataset_id: UUID,
-    options: DatasetUploadOptions | None = None,
+@dramatiq.actor(max_retries=3)
+async def process_existing_dataset_background_bg(
+    task_id: str, dataset_id: str, options_dict: dict | None = None
 ) -> None:
     """Process an existing dataset through text extractor to create new synthetic data.
 
     Args:
         task_id: The synthesis task ID
         dataset_id: ID of existing dataset to use as input
-        options: Optional dataset upload options
+        options_dict: Optional dataset upload options
     """
     async with AsyncSession(engine, expire_on_commit=False) as db:
+        task_uuid = UUID(task_id)
+        dataset_uuid = UUID(dataset_id)
+        options = DatasetUploadOptions(**options_dict) if options_dict else None
+
         try:
             logger.info(
-                "[BG Synthetic] Processing existing dataset through text extractor",
-                taskId=task_id,
-                sourceDatasetId=dataset_id,
+                "Processing existing dataset through text extractor",
+                taskId=task_uuid,
+                sourceDatasetId=dataset_uuid,
             )
 
-            source_dataset = await get_dataset_db(db, dataset_id)
+            source_dataset = await get_dataset_db(db, dataset_uuid)
             if not source_dataset:
                 raise DatasetNotFoundError(
-                    dataset_id=dataset_id, message=f"Dataset {dataset_id} not found"
+                    dataset_id=dataset_uuid, message=f"Dataset {dataset_uuid} not found"
                 )
 
             dataset_file_path = settings.dataset_upload_dir / source_dataset.file_name
@@ -123,28 +129,28 @@ async def process_existing_dataset_background(
                 classification=classification,
                 rows=len(df),
                 source=DatasetSource.SYNTHETIC,
-                synthesis_id=task_id,
+                synthesis_id=task_uuid,
             )
 
             new_dataset_id = await upload_dataset_db(db, new_dataset)
 
-            await update_synthesis_task_status(db, task_id, TaskStatus.DONE)
+            await update_synthesis_task_status(db, task_uuid, TaskStatus.DONE)
 
             logger.info(
-                "[BG Synthetic] Synthetic dataset created successfully",
-                taskId=task_id,
-                sourceDatasetId=dataset_id,
+                "Synthetic dataset created successfully",
+                taskId=task_uuid,
+                sourceDatasetId=dataset_uuid,
                 newDatasetId=new_dataset_id,
                 syntheticRows=len(df),
             )
 
         except Exception as e:
-            logger.error(f"[BG Synthetic] Error processing dataset {dataset_id}: {e}")
+            logger.error(f"Error processing dataset {dataset_uuid}: {e}")
             await update_synthesis_task_status(
-                db, task_id, TaskStatus.FAILED, error_msg=str(e)
+                db, task_uuid, TaskStatus.FAILED, error_msg=str(e)
             )
         finally:
-            logger.debug("[BG Synthetic] Database session closed", taskId=task_id)
+            logger.debug("Database session closed", taskId=task_uuid)
 
 
 async def _process_single_file(
@@ -171,7 +177,7 @@ async def _process_single_file(
 
     if ext not in {"png", "jpg", "jpeg", "pdf"}:
         logger.warning(
-            f"[BG Synthetic] Unsupported file format: {ext}",
+            f"Unsupported file format: {ext}",
             filename=filename,
         )
         return None
@@ -179,7 +185,7 @@ async def _process_single_file(
     file_size = len(content)
     if file_size > settings.dataset_max_upload_size:
         logger.warning(
-            f"[BG Synthetic] File too large: {file_size} bytes",
+            f"File too large: {file_size} bytes",
             filename=filename,
             maxSize=settings.dataset_max_upload_size,
         )
@@ -214,7 +220,7 @@ async def _process_single_file(
         dataset_id = await upload_dataset_db(db, dataset)
 
         logger.debug(
-            "[BG Synthetic] Processed file successfully",
+            "Processed file successfully",
             filename=filename,
             datasetId=dataset_id,
         )
@@ -244,14 +250,14 @@ async def _finalize_task_status(
             error_msg="No valid files could be processed",
         )
         logger.error(
-            "[BG Synthetic] Task failed: No valid files could be processed",
+            "Task failed: No valid files could be processed",
             taskId=task_id,
         )
     else:
         await update_synthesis_task_status(db, task_id, TaskStatus.DONE)
 
         logger.info(
-            "[BG Synthetic] Task completed successfully",
+            "Task completed successfully",
             taskId=task_id,
             datasetCount=len(dataset_ids),
             datasetIds=dataset_ids,

@@ -5,7 +5,6 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
     File,
     Form,
@@ -19,6 +18,7 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config.db import get_session
+from vectorize.dataset.repository import get_dataset_db
 
 from .models import SynthesisTask
 from .repository import (
@@ -26,16 +26,13 @@ from .repository import (
     get_synthesis_tasks,
     save_synthesis_task,
 )
-from .service import (
-    validate_existing_dataset,
-    validate_upload_request,
-)
 from .tasks import (
-    process_existing_dataset_background,
-    process_file_contents_background,
+    process_existing_dataset_background_bg,
+    process_file_contents_background_bg,
 )
 
 __all__ = ["router"]
+
 
 router = APIRouter(tags=["Synthesis"])
 
@@ -43,15 +40,9 @@ router = APIRouter(tags=["Synthesis"])
 @router.post("/media", status_code=status.HTTP_202_ACCEPTED)
 async def upload_media_for_synthesis(
     request: Request,
-    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
-    files: Annotated[
-        list[UploadFile] | None,
-        File(description="Image or PDF files for text extraction"),
-    ] = None,
-    existing_dataset_id: Annotated[
-        str | None, Form(description="Optional existing dataset ID to use")
-    ] = None,
+    dataset_id: Annotated[UUID | None, Form()] = None,
+    files: Annotated[list[UploadFile] | None, File()] = None,
 ) -> dict[str, str | UUID | int]:
     """Upload media files to extract text and create synthetic datasets.
 
@@ -59,32 +50,29 @@ async def upload_media_for_synthesis(
 
     Args:
         request: HTTP request object
-        background_tasks: Background task manager
         db: Database session
-        files: List of image or PDF files to process
-        existing_dataset_id: Optional ID of existing dataset to use
+        dataset_id: Optional existing dataset ID to use for synthesis
+        files: List of media files (images or PDFs) to process
 
     Returns:
         Dictionary with task information and status URL
     """
-    validate_upload_request(files, existing_dataset_id)
-
-    task = SynthesisTask()
-    task = await save_synthesis_task(db, task)
-
-    if existing_dataset_id:
-        dataset_uuid = await validate_existing_dataset(db, existing_dataset_id)
-
-        background_tasks.add_task(
-            process_existing_dataset_background,
-            task_id=task.id,
-            dataset_id=dataset_uuid,
+    if not files and dataset_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Either files or existing dataset id must be provided.",
         )
+
+    task = await save_synthesis_task(db, SynthesisTask())
+
+    if dataset_id:
+        dataset_db = await get_dataset_db(db, dataset_id)
+        process_existing_dataset_background_bg.send(str(task.id), str(dataset_db.id))
 
         logger.info(
             "Synthesis task created using existing dataset.",
             taskId=task.id,
-            datasetId=dataset_uuid,
+            datasetId=dataset_db.id,
         )
 
         return {
@@ -96,7 +84,7 @@ async def upload_media_for_synthesis(
             "status_url": str(
                 request.url_for("get_synthesis_task_info", task_id=task.id)
             ),
-            "dataset_id": dataset_uuid,
+            "dataset_id": dataset_db.id,
         }
 
     file_contents = []
@@ -118,12 +106,7 @@ async def upload_media_for_synthesis(
             detail="No valid files provided or all files were empty.",
         )
 
-    background_tasks.add_task(
-        process_file_contents_background,
-        task_id=task.id,
-        file_contents=file_contents,
-        options=None,
-    )
+    process_file_contents_background_bg.send(str(task.id), file_contents, None)
 
     logger.info(
         "Synthesis task created, starting background processing.",

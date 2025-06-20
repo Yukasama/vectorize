@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, FastAPI
 
+from vectorize.actions.router import router as actions_router
 from vectorize.ai_model.router import router as models_router
 from vectorize.common.router import router as common_router
 from vectorize.config.config import settings
@@ -25,5 +26,6 @@ def register_routers(app: FastAPI) -> None:
     base_router.include_router(embeddings_router, prefix="/embeddings")
     base_router.include_router(models_router, prefix="/models")
     base_router.include_router(synthesis_router, prefix="/synthesis")
+    base_router.include_router(actions_router, prefix="/actions")
 
     app.include_router(base_router)
