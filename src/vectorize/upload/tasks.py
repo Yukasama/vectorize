@@ -83,8 +83,9 @@ async def process_huggingface_model_bg(
             )
 
 
+@dramatiq.actor(max_retries=3)
 async def process_github_model_bg(  # noqa: D417
-    db: AsyncSession, owner: str, repo: str, branch: str, task_id: UUID
+    owner: str, repo: str, branch: str, task_id: str
 ) -> None:
     """Processes a GitHub model upload in the background.
 
