@@ -14,29 +14,28 @@ from vectorize.ai_model.exceptions import ModelNotFoundError
 from vectorize.ai_model.models import AIModel
 from vectorize.ai_model.repository import get_ai_model_db
 from vectorize.config.db import get_session
+from vectorize.ai_model.model_source import ModelSource
 
 __all__ = ["router"]
 
 router = APIRouter(tags=["Evaluation"])
-CACHE_BASE_DIR = "/"
+CACHE_BASE_DIR = "data/models"
 SELECTED_MTEB_TASKS = ["STSBenchmark", "BIOSSES", "SICK-R"]
 
 
-# - Get CACHE_BASE_DIR configurable from env or setting and move to utils
-def resolve_cache_path(base_cache_dir: str, model: AIModel) -> str:
-    """Temporarily resolve the cache path for a given AIModel."""
+def resolve_cache_path(model: AIModel) -> Path:
+    """Resolve the local cache path for the given model based on its source."""
     source_map = {
-        "github": "gh_cache",
-        "huggingface": "hf_cache",
-        "local": "local_cache",
+        ModelSource.HUGGINGFACE: "hf_cache",
+        ModelSource.GITHUB: "gh_cache",
+        ModelSource.LOCAL: "local_cache",
     }
 
-    source_dir = source_map.get(str(model.source))
+    source_dir = source_map.get(model.source)
     if not source_dir:
         raise ValueError(f"Unsupported model source: {model.source}")
 
-    return str(Path(base_cache_dir) / source_dir / model.model_tag)
-
+    return Path(CACHE_BASE_DIR) / source_dir / f"{model.model_tag}"
 
 # - Add to BG Tasks and add service
 @router.get("/mteb/{model_tag}", summary="Run benchmark on a cached model by UUID")
@@ -71,18 +70,18 @@ async def get_evaluation_results(
     device_name = torch.cuda.get_device_name(0) if use_cuda else "No GPU"
     logger.debug("Device: {}", device_name)
 
-    model_cached_path = resolve_cache_path(CACHE_BASE_DIR, model)
+    model_cached_path = resolve_cache_path(model)
     logger.debug("Resolved cache path for model {}: {}",
         model_tag,
         model_cached_path)
     try:
-        model = SentenceTransformer(model_cached_path)
+        model = SentenceTransformer(str(model_cached_path))
         if use_cuda:
             model = model.to("cuda")  # Force GPU usage
             device = next(model.parameters()).device
             logger.debug("Model loaded to device: {}", device)
         else:
-            logger.warning("CUDA not available. Model will run on CPU.")
+            logger.warning("CUDA not available. Benchmark will run on CPU.")
         benchmark = MTEB(tasks=SELECTED_MTEB_TASKS)
         results = benchmark.run(model=model)
 
