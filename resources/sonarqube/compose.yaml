@@ -6,6 +6,7 @@ services:
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_logs:/opt/sonarqube/logs:ro
+      - sonarqube_extensions:/opt/sonarqube/lib/extensions
     environment:
       TZ: Europe/Berlin
     cap_drop: [ALL]
@@ -21,3 +22,4 @@ services:
 volumes:
   sonarqube_data:
   sonarqube_logs:
+  sonarqube_extensions:

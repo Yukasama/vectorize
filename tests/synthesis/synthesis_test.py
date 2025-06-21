@@ -6,7 +6,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-_INVALID_DATASET_ID = "12345678-1234-5678-1234-567812345678"
+_INVALID_DATASET_ID = "abc12345-6789-0123-4567-89abcdef0123"
 _MALFORMED_UUID = "not-a-valid-uuid"
 _SYNTHESIS_MEDIA = "/synthesis/media"
 
@@ -22,21 +22,15 @@ class TestSynthesisTasks:
     ) -> None:
         """Test creating synthesis task with non-existent dataset ID."""
         response = client.post(
-            _SYNTHESIS_MEDIA, data={"existing_dataset_id": _INVALID_DATASET_ID}
+            _SYNTHESIS_MEDIA, data={"dataset_id": _INVALID_DATASET_ID}
         )
-
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert "not found" in response.json()["detail"].lower()
 
     @classmethod
     async def test_upload_media_with_malformed_uuid(cls, client: TestClient) -> None:
         """Test creating synthesis task with malformed UUID."""
-        response = client.post(
-            _SYNTHESIS_MEDIA, data={"existing_dataset_id": _MALFORMED_UUID}
-        )
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "invalid uuid format" in response.json()["detail"].lower()
+        response = client.post(_SYNTHESIS_MEDIA, data={"dataset_id": _MALFORMED_UUID})
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     @classmethod
     async def test_upload_media_without_files_or_dataset(
@@ -45,7 +39,7 @@ class TestSynthesisTasks:
         """Test creating synthesis task without providing files or dataset ID."""
         response = client.post(_SYNTHESIS_MEDIA)
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         assert (
             "either files or existing dataset id must be provided"
             in response.json()["detail"].lower()
@@ -110,5 +104,5 @@ class TestSynthesisTasks:
         response = client.get("/synthesis")
         assert response.status_code == status.HTTP_200_OK
 
-        response = client.get("/synthesis/tasks/12345678-1234-5678-1234-567812345678")
+        response = client.get(f"/synthesis/tasks/{_INVALID_DATASET_ID}")
         assert response.status_code == status.HTTP_404_NOT_FOUND

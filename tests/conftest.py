@@ -1,6 +1,7 @@
 """Common test fixtures for the application."""
 
 import os
+from pathlib import Path
 
 import redis
 
@@ -28,6 +29,17 @@ from vectorize.config.db import get_session
 from vectorize.config.seed import seed_db
 
 REDIS_TEST_PORT = 56379
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cleanup_test_db() -> Generator[None]:
+    """Clean up test database before and after each test."""
+    db_path = Path("app.db")
+    if db_path.exists():
+        db_path.unlink()
+    yield
+    if db_path.exists():
+        db_path.unlink()
 
 
 @pytest.fixture(autouse=True)
@@ -74,16 +86,16 @@ def dramatiq_worker(redis_container: RedisContainer) -> Generator[None]:  # noqa
     for sig in (signal.SIGINT, signal.SIGTERM):
         try:
             worker.send_signal(sig)
-            worker.wait(timeout=5)
+            worker.wait(timeout=10)
             break
         except Exception:
-            logger.error("Failed to stop Dramatiq worker gracefully", exc_info=True)
+            logger.info("Dramatiq worker couldn't be stopped gracefully", exc_info=True)
     else:
         worker.kill()
 
 
 @pytest.fixture(scope="session")
-async def session() -> AsyncGenerator[AsyncSession]:
+async def session(cleanup_test_db: Generator[None]) -> AsyncGenerator[AsyncSession]:  # noqa: ARG001
     """Create a test database engine.
 
     Returns:

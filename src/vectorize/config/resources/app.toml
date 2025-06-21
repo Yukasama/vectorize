@@ -3,7 +3,7 @@
 # port = 8000
 version = "0.1.0"
 prefix = "/v1"
-# reload = true
+reload = true
 
 [app.db]
 logging = false
