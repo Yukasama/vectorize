@@ -6,16 +6,17 @@ from loguru import logger
 from sqlmodel import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.actions.query_builder import build_query
-from vectorize.actions.schemas import ActionsFilterParams
 from vectorize.dataset.task_model import UploadDatasetTask
 from vectorize.synthesis.models import SynthesisTask
 from vectorize.upload.models import UploadTask
 
+from .query_builder import build_query
+from .schemas import ActionsFilters
+
 __all__ = ["get_actions_db"]
 
 
-async def get_actions_db(db: AsyncSession, params: ActionsFilterParams) -> Sequence:
+async def get_actions_db(db: AsyncSession, params: ActionsFilters) -> Sequence:
     """Retrieve task actions from database with filtering and pagination.
 
     Aggregates tasks from multiple types (upload, synthesis, dataset) with

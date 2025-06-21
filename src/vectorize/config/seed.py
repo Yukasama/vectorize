@@ -1,6 +1,6 @@
 """Seed the database with initial data."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from loguru import logger
@@ -14,6 +14,7 @@ from vectorize.config.config import settings
 from vectorize.dataset.classification import Classification
 from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.dataset.models import Dataset
+from vectorize.dataset.task_model import UploadDatasetTask
 from vectorize.upload.models import UploadTask
 
 __all__ = ["seed_db"]
@@ -191,6 +192,30 @@ async def seed_db(session: AsyncSession) -> None:
             updated_at=datetime(2025, 6, 11, 14, 31, tzinfo=UTC),
             end_date=datetime(2025, 6, 11, 14, 35, tzinfo=UTC),
             error_msg=None,
+        ),
+    )
+    session.add(
+        UploadDatasetTask(
+            dataset_tag="example_hf_dataset",
+            task_status=TaskStatus.QUEUED,
+            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
+        ),
+    )
+    session.add(
+        UploadDatasetTask(
+            dataset_tag="example_hf_dataset_done",
+            task_status=TaskStatus.DONE,
+            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
+            end_date=datetime.now(tz=UTC),
+        ),
+    )
+    session.add(
+        UploadDatasetTask(
+            dataset_tag="example_hf_dataset_failed",
+            task_status=TaskStatus.FAILED,
+            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
+            end_date=datetime.now(tz=UTC) - timedelta(hours=2),
+            error_msg="Failed to upload dataset due to network error.",
         ),
     )
     await session.commit()

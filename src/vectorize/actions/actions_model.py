@@ -7,14 +7,8 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from vectorize.common.task_status import TaskStatus
-from vectorize.dataset.task_model import UploadDatasetTask
-from vectorize.synthesis.models import SynthesisTask
-from vectorize.upload.models import UploadTask
 
-__all__ = ["ActionsModel", "ModelType"]
-
-
-ModelType = type[UploadDatasetTask | UploadTask | SynthesisTask]
+__all__ = ["ActionsModel"]
 
 
 class ActionsModel(BaseModel):

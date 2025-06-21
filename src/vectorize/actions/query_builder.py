@@ -15,7 +15,12 @@ _UNFINISHED = {TaskStatus.QUEUED, TaskStatus.PENDING}
 
 
 def build_query(  # noqa: ANN201
-    model, tag: str, *, completed: bool | None, statuses: set[TaskStatus], hours: int  # noqa: ANN001
+    model,  # noqa: ANN001
+    tag: str,
+    *,
+    completed: bool | None,
+    statuses: set[TaskStatus],
+    hours: int,
 ):
     """Build base SQL query for a task model with filters applied.
 
@@ -43,7 +48,10 @@ def build_query(  # noqa: ANN201
 
 
 def _status_filter(
-    model, *, completed: bool | None, statuses: set[TaskStatus]  # noqa: ANN001
+    model,  # noqa: ANN001
+    *,
+    completed: bool | None,
+    statuses: set[TaskStatus],
 ) -> ColumnElement[bool]:
     """Build SQL filter for task completion and status criteria.
 
@@ -55,12 +63,14 @@ def _status_filter(
     Returns:
         SQLAlchemy filter condition for WHERE clauses.
     """
+    if statuses:
+        return model.task_status.in_(statuses)
+
     if completed is True:
         return model.task_status.in_(_COMPLETED)
     if completed is False:
         return model.task_status.in_(_UNFINISHED)
-    if statuses:
-        return model.task_status.in_(statuses)
+
     return true()
 
 

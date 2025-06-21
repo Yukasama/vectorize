@@ -2,16 +2,15 @@
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.actions.schemas import ActionsFilterParams
-
 from .actions_model import ActionsModel
 from .repository import get_actions_db
+from .schemas import ActionsFilters
 
 __all__ = ["get_actions_svc"]
 
 
 async def get_actions_svc(
-    db: AsyncSession, params: ActionsFilterParams
+    db: AsyncSession, params: ActionsFilters
 ) -> list[ActionsModel]:
     """Retrieve and validate task actions from the database.
 

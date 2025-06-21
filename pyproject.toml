@@ -124,6 +124,7 @@ markers = [
     "ai_model_read: mark test as ai model read related",
     "ai_model_write: mark test as ai model write related",
     "synthesis: marks test as synthesis related",
+    "actions: marks test as actions related",
 ]
 minversion = "8.3.5"
 testpaths = ["tests"]

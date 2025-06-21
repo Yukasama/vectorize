@@ -2,11 +2,12 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.actions.schemas import ActionQueryParams, ActionsFilterParams
+from vectorize.actions.schemas import ActionsFilters
+from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
 
 from .actions_model import ActionsModel
@@ -19,27 +20,33 @@ router = APIRouter(tags=["Actions"])
 
 
 @router.get("", summary="Get filterable task actions")
-async def get_actions(
+async def get_actions(  # noqa: PLR0913, PLR0917
     db: Annotated[AsyncSession, Depends(get_session)],
-    params: Annotated[ActionQueryParams, Depends()],
+    limit: Annotated[int | None, Query(ge=1, le=100)] = None,
+    offset: Annotated[int | None, Query(ge=0)] = None,
+    completed: Annotated[bool | None, Query()] = None,
+    status: Annotated[list[TaskStatus] | None, Query()] = None,
+    within_hours: Annotated[int, Query(ge=1)] = 1,
 ) -> list[ActionsModel]:
     """Get task actions with filtering and pagination.
 
     Args:
         db: Database session for queries.
-        params: ActionsParams object containing filter criteria such as limit,
-            offset, completed status, task statuses, and time range.
+        limit: Maximum number of records to return (default 100).
+        offset: Number of records to skip (default 0).
+        completed: Filter by completion status (True/False).
+        status: Filter by specific task statuses.
+        within_hours: Time window in hours to filter tasks (default 1).
 
     Returns:
         List of task action models with metadata.
     """
-    logger.debug("Received request to get actions", params=str(params))
-    actions_params = ActionsFilterParams(
-        limit=params.limit,
-        offset=params.offset,
-        completed=params.completed,
-        statuses=params.status,
-        within_hours=params.within_hours,
+    actions_params = ActionsFilters(
+        limit=limit,
+        offset=offset,
+        completed=completed,
+        statuses=status,
+        within_hours=within_hours,
     )
     logger.debug("Fetching actions with parameters", params=str(actions_params))
     return await get_actions_svc(db, actions_params)
