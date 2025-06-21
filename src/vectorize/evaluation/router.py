@@ -11,10 +11,10 @@ from sentence_transformers import SentenceTransformer
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.ai_model.exceptions import ModelNotFoundError
+from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
 from vectorize.ai_model.repository import get_ai_model_db
 from vectorize.config.db import get_session
-from vectorize.ai_model.model_source import ModelSource
 
 __all__ = ["router"]
 
@@ -24,7 +24,7 @@ SELECTED_MTEB_TASKS = ["STSBenchmark", "BIOSSES", "SICK-R"]
 
 
 def resolve_cache_path(model: AIModel) -> Path:
-    """Resolve the local cache path for the given model based on its source."""
+    """Resolve the full local snapshot path for a cached model."""
     source_map = {
         ModelSource.HUGGINGFACE: "hf_cache",
         ModelSource.GITHUB: "gh_cache",
@@ -34,8 +34,18 @@ def resolve_cache_path(model: AIModel) -> Path:
     source_dir = source_map.get(model.source)
     if not source_dir:
         raise ValueError(f"Unsupported model source: {model.source}")
+# ruff: noqa: E501
+    base_path = Path(CACHE_BASE_DIR) / source_dir / f"models--{model.name.replace('/', '--')}"
+    snapshot_dir = base_path / "snapshots"
+    if not snapshot_dir.exists():
+        raise FileNotFoundError(f"Snapshot folder not found at: {snapshot_dir}")
 
-    return Path(CACHE_BASE_DIR) / source_dir / f"{model.model_tag}"
+    snapshots = list(snapshot_dir.iterdir())
+    if not snapshots:
+        raise FileNotFoundError(f"No snapshot folders found in: {snapshot_dir}")
+
+    return snapshots[0]
+
 
 # - Add to BG Tasks and add service
 @router.get("/mteb/{model_tag}", summary="Run benchmark on a cached model by UUID")
@@ -53,7 +63,7 @@ async def get_evaluation_results(
         JSONResponse: The results of the MTEB evaluation tasks.
 
     Raises:
-        HTTPException: If the model is not found or if the benchmark execution fails.
+        ModelNotFoundError: If the model is not found.
     """
     logger.debug("Running MTEB evaluation tasks {} for model_tag: {}",
         SELECTED_MTEB_TASKS,
