@@ -1,4 +1,6 @@
 """Evaluation router."""
+import json
+import traceback
 from pathlib import Path
 from typing import Annotated
 
@@ -6,7 +8,7 @@ import torch
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from loguru import logger
-from mteb import MTEB
+from mteb import MTEB, get_tasks
 from sentence_transformers import SentenceTransformer
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -19,7 +21,7 @@ from vectorize.config.db import get_session
 __all__ = ["router"]
 
 router = APIRouter(tags=["Evaluation"])
-CACHE_BASE_DIR = "data/models"
+CACHE_BASE_DIR = "/app/data/models"
 SELECTED_MTEB_TASKS = ["STSBenchmark", "BIOSSES", "SICK-R"]
 
 
@@ -35,14 +37,18 @@ def resolve_cache_path(model: AIModel) -> Path:
     if not source_dir:
         raise ValueError(f"Unsupported model source: {model.source}")
 # ruff: noqa: E501
-    base_path = Path(CACHE_BASE_DIR) / source_dir / f"models--{model.name.replace('/', '--')}"
+    # Hugging Face-style cache structure
+    base_path = Path(CACHE_BASE_DIR) / f"models--{model.name.replace('/', '--')}"
     snapshot_dir = base_path / "snapshots"
+
     if not snapshot_dir.exists():
         raise FileNotFoundError(f"Snapshot folder not found at: {snapshot_dir}")
-
-    snapshots = list(snapshot_dir.iterdir())
+# ruff: noqa: E501
+    snapshots = [p for p in snapshot_dir.iterdir() if p.is_dir()]
     if not snapshots:
         raise FileNotFoundError(f"No snapshot folders found in: {snapshot_dir}")
+    if len(snapshots) > 1:
+        raise RuntimeError(f"Multiple snapshot folders found in: {snapshot_dir}. Ambiguous resolution.")
 
     return snapshots[0]
 
@@ -53,21 +59,7 @@ async def get_evaluation_results(
     model_tag: str,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> JSONResponse:
-    """Run MTEB evaluation tasks on a cached model by its UUID.
-
-    Args:
-        model_tag (str): The unique identifier for the AIModel.
-        db (AsyncSession): The database session dependency.
-
-    Returns:
-        JSONResponse: The results of the MTEB evaluation tasks.
-
-    Raises:
-        ModelNotFoundError: If the model is not found.
-    """
-    logger.debug("Running MTEB evaluation tasks {} for model_tag: {}",
-        SELECTED_MTEB_TASKS,
-        model_tag)
+    logger.debug("Running MTEB evaluation tasks {} for model_tag: {}", SELECTED_MTEB_TASKS, model_tag)
 
     model = await get_ai_model_db(db, model_tag)
     if not model:
@@ -81,26 +73,39 @@ async def get_evaluation_results(
     logger.debug("Device: {}", device_name)
 
     model_cached_path = resolve_cache_path(model)
-    logger.debug("Resolved cache path for model {}: {}",
-        model_tag,
-        model_cached_path)
+    logger.debug("Resolved cache path for model {}: {}", model_tag, model_cached_path)
+
     try:
+        tasks = get_tasks(tasks=SELECTED_MTEB_TASKS)
         model = SentenceTransformer(str(model_cached_path))
         if use_cuda:
-            model = model.to("cuda")  # Force GPU usage
+            model = model.to("cuda")
             device = next(model.parameters()).device
             logger.debug("Model loaded to device: {}", device)
         else:
             logger.warning("CUDA not available. Benchmark will run on CPU.")
-        benchmark = MTEB(tasks=SELECTED_MTEB_TASKS)
-        results = benchmark.run(model=model)
 
-        logger.debug("Benchmark completed with results: {}", results)
+        # Run benchmark
+        benchmark = MTEB(tasks=tasks)
+        results = benchmark.run(model=model, output_folder=None, eval_splits=["test"], eval_subsets=[])
+
+        # Serialization
+        def serialize_task_result(obj):
+            if obj.__class__.__name__ == "TaskResult":
+                return obj.__dict__
+            raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
+        results_json = json.loads(json.dumps(results, default=serialize_task_result))
+        return JSONResponse(content=results_json)
+
     except Exception as e:
-        logger.error("Benchmark execution failed: {}", e)
+        logger.error(traceback.format_exc())
+        logger.error("Benchmark execution failed: {}\n{}", e, traceback.format_exc())
         return JSONResponse(
             content={
                 "error": "Benchmark execution failed",
-                "details": str(e)}, status_code=500)
-
-    return JSONResponse(content=results)
+                "details": str(e),
+                "stack_trace": traceback.format_exc()
+            },
+            status_code=500
+        )
