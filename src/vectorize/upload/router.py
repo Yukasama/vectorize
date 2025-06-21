@@ -5,7 +5,6 @@ from uuid import UUID
 
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
     File,
     Query,
@@ -100,7 +99,6 @@ async def load_model_huggingface(
 async def load_model_github(
     data: GitHubModelRequest,
     request: Request,
-    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
     """Upload a Github model by url.
@@ -112,20 +110,19 @@ async def load_model_github(
     Args:
         data: The GitHub Model request Url object
         request: FastAPI request object.
-        background_tasks: FastAPI background task manager.
         db: Async database session.
 
     Returns:
         Response with 201 status and Location header.
     """
-    owner = data.owner
-    repo = data.repo_name
-    branch = data.revision or "main"
+    # owner = data.owner
+    # repo = data.repo_name
+    # branch = data.revision or "main"
 
-    key = f"{owner}/{repo}@{branch}"
-    base_url = f"https://github.com/{owner}/{repo}"
+    key = f"{data.owner}/{data.repo_name}@{data.revision}"
+    base_url = f"https://github.com/{data.owner}/{data.repo_name}"
 
-    logger.info("Importing GitHub model {} @ {}", repo, branch)
+    logger.info("Importing GitHub model {} @ {}", data.repo_name, data.revision)
 
     try:
         await get_ai_model_svc(db, key)
@@ -134,21 +131,20 @@ async def load_model_github(
         pass
 
     try:
-        repo_info(repo_url=base_url, revision=branch)
+        repo_info(repo_url=base_url, revision=data.revision)
     except (RepoModelNotFound, InvalidUrlError):
         raise
     except Exception as e:
         raise InternalServerError("Error checking GitHub repository") from e
 
-    task = UploadTask(
+    upload_task = UploadTask(
         model_tag=key, task_status=TaskStatus.PENDING, source=RemoteModelSource.GITHUB
     )
-    await save_upload_task_db(db, task)
-    background_tasks.add_task(process_github_model_bg, db, owner, repo, branch, task.id)
-
+    await save_upload_task_db(db, upload_task)
+    process_github_model_bg.send(data.owner, data.repo_name, data.revision, str(upload_task.id))
     return Response(
         status_code=status.HTTP_201_CREATED,
-        headers={"Location": f"{request.base_url}v1/upload/tasks/{task.id}"},
+        headers={"Location": f"{request.base_url}v1/upload/tasks/{upload_task.id}"},
     )
 
 
