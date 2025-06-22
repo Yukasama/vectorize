@@ -10,7 +10,9 @@ import pytest
 
 from vectorize.evaluation.evaluation import EvaluationMetrics
 from vectorize.evaluation.utils import DatasetValidator
-from vectorize.evaluation.utils.dataset_validator import EvaluationDatasetValidationError
+from vectorize.evaluation.utils.dataset_validator import (
+    EvaluationDatasetValidationError,
+)
 
 
 @pytest.mark.evaluation

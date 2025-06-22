@@ -7,7 +7,6 @@ model uploads and processing, such as handling Hugging Face models.
 from uuid import UUID
 
 import dramatiq
-from huggingface_hub import snapshot_download
 from loguru import logger
 from sqlalchemy.exc import IntegrityError
 from sqlmodel.ext.asyncio.session import AsyncSession

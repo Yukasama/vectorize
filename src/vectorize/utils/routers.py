@@ -1,7 +1,6 @@
 """Router Initializer."""
 
 from fastapi import APIRouter, FastAPI
-from loguru import logger
 
 from vectorize.ai_model.router import router as models_router
 from vectorize.common.router import router as common_router
@@ -11,8 +10,9 @@ from vectorize.evaluation.router import router as evaluation_router
 from vectorize.inference.router import router as embeddings_router
 from vectorize.synthesis.router import router as synthesis_router
 from vectorize.task.router import router as task_router
-from vectorize.upload.router import router as upload_router
 from vectorize.training.router import router as training_router
+from vectorize.upload.router import router as upload_router
+
 
 def register_routers(app: FastAPI) -> None:
     """Register all API routers with the FastAPI application.

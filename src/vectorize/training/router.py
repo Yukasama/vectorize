@@ -137,15 +137,15 @@ async def train_model(  # noqa: PLR0914, PLR0915
         model_path,
     )
     await save_training_task(db, task)
-    
+
     if not TRAINING_AVAILABLE or train_model_task is None:
         # Update task to failed if training dependencies are not available
         task.task_status = TaskStatus.FAILED
         task.message = "Training dependencies not available"
-        await update_training_task_status(db, task.id, TaskStatus.FAILED, 
+        await update_training_task_status(db, task.id, TaskStatus.FAILED,
                                          "Training dependencies not available")
         return Response(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
-    
+
     background_tasks.add_task(
         train_model_task,
         db,
