@@ -84,7 +84,7 @@ async def process_huggingface_model_bg(
 
 
 @dramatiq.actor(max_retries=3)
-async def process_github_model_bg(  # noqa: D417
+async def process_github_model_bg(
     owner: str, repo: str, branch: str, task_id: str
 ) -> None:
     """Processes a GitHub model upload in the background.
@@ -94,12 +94,13 @@ async def process_github_model_bg(  # noqa: D417
     the task status.
 
     Args:
-        owner (str):
-        repo (str):
-        branch (str):
+        owner (str): The repository owner.
+        repo (str): The repository name.
+        branch (str): The branch name.
         task_id (UUID): The unique identifier of the upload task.
 
     Raises:
+        ModelAlreadyExistsError: If the model already exists in the database.
         Exception: If an error occurs during model processing or database
         operations.
     """
@@ -126,15 +127,11 @@ async def process_github_model_bg(  # noqa: D417
             await update_upload_task_status_db(
                 db, task_uid, TaskStatus.FAILED, error_msg=str(e)
             )
-        except IntegrityError as e:
-            logger.error(f"[BG] IntegrityError in task {task_uid}: {e}")
-            await db.rollback()
-            await update_upload_task_status_db(
-                db, task_uid, TaskStatus.FAILED, error_msg=str(e)
-            )
-        # pylint: disable=broad-except
+
         except Exception as e:
-            logger.error(f"[BG] Error in task {task_uid}: {e}")
+            logger.error(
+                f"[BG] Unexpected error in task {task_uid}: {e}\n"
+            )
             await db.rollback()
             await update_upload_task_status_db(
                 db, task_uid, TaskStatus.FAILED, error_msg=str(e)
