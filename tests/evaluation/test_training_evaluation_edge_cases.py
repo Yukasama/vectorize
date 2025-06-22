@@ -490,7 +490,7 @@ class TestDatasetSchemaEdgeCases:
     """Edge case tests related to dataset schema handling."""
 
     @staticmethod
-    def test_dataset_content_validation(_client: TestClient) -> None:
+    def test_dataset_content_validation() -> None:
         """Test that datasets with our test schema are properly validated."""
         # Load and validate test dataset content
         test_files = [
