@@ -12,6 +12,7 @@ from vectorize.inference.router import router as embeddings_router
 from vectorize.synthesis.router import router as synthesis_router
 from vectorize.task.router import router as task_router
 from vectorize.upload.router import router as upload_router
+from vectorize.training.router import router as training_router
 
 def register_routers(app: FastAPI) -> None:
     """Register all API routers with the FastAPI application.
@@ -29,5 +30,6 @@ def register_routers(app: FastAPI) -> None:
     base_router.include_router(evaluation_router, prefix="/evaluation")
     base_router.include_router(synthesis_router, prefix="/synthesis")
     base_router.include_router(task_router, prefix="/tasks")
+    base_router.include_router(training_router, prefix="/training")
 
     app.include_router(base_router)

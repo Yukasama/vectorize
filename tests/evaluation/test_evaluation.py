@@ -10,7 +10,7 @@ import pytest
 
 from vectorize.evaluation.evaluation import EvaluationMetrics
 from vectorize.evaluation.utils import DatasetValidator
-from vectorize.training.exceptions import DatasetValidationError
+from vectorize.evaluation.utils.dataset_validator import EvaluationDatasetValidationError
 
 
 @pytest.mark.evaluation
@@ -156,7 +156,7 @@ class TestTrainingEvaluator:
             df.to_json(f.name, orient="records", lines=True)
             temp_file = Path(f.name)
 
-        with pytest.raises(DatasetValidationError, match="Missing columns"):
+        with pytest.raises(EvaluationDatasetValidationError, match="Missing columns"):
             DatasetValidator.validate_dataset(temp_file)
 
     @staticmethod
@@ -167,7 +167,7 @@ class TestTrainingEvaluator:
         ) as f:
             temp_file = Path(f.name)
 
-        with pytest.raises(DatasetValidationError, match="Missing columns"):
+        with pytest.raises(EvaluationDatasetValidationError, match="Missing columns"):
             DatasetValidator.validate_dataset(temp_file)
 
     @staticmethod
@@ -186,5 +186,5 @@ class TestTrainingEvaluator:
             df.to_json(f.name, orient="records", lines=True)
             temp_file = Path(f.name)
 
-        with pytest.raises(DatasetValidationError, match=r"contains \d+ null values"):
+        with pytest.raises(EvaluationDatasetValidationError, match=r"contains \d+ null values"):
             DatasetValidator.validate_dataset(temp_file)
