@@ -172,7 +172,7 @@ class TestTrainingValid:
         assert status_response.status_code == HTTP_200_OK
 
     @staticmethod
-    def test_dataset_schema_validation(_client: TestClient) -> None:
+    def test_dataset_schema_validation(client: TestClient) -> None:
         """Test that our test datasets have the correct schema."""
         ensure_test_datasets_exist()
 
