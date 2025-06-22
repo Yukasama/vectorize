@@ -1,6 +1,6 @@
 # ruff: noqa: S101
 
-"""Invalid tests for actions endpoint."""
+"""Invalid tests for tasks endpoint."""
 
 import pytest
 from fastapi import status
@@ -8,39 +8,39 @@ from fastapi.testclient import TestClient
 
 
 @pytest.mark.asyncio
-@pytest.mark.actions
+@pytest.mark.tasks
 class TestActionsInvalidParams:
-    """Tests for invalid query parameter values on the /actions endpoint."""
+    """Tests for invalid query parameter values on the /tasks endpoint."""
 
     @classmethod
     @pytest.mark.parametrize(
         "url",
         [
             # status
-            "/actions?status=PENDING",
-            "/actions?status=UNKNOWN",
-            "/actions?status=Q&status=FOO",
-            "/actions?status=1",
-            "/actions?status=",
+            "/tasks?status=PENDING",
+            "/tasks?status=UNKNOWN",
+            "/tasks?status=Q&status=FOO",
+            "/tasks?status=1",
+            "/tasks?status=",
             # completed
-            "/actions?completed=123",
-            "/actions?completed=yesplease",
-            "/actions?completed=",
+            "/tasks?completed=123",
+            "/tasks?completed=yesplease",
+            "/tasks?completed=",
             # limit
-            "/actions?limit=0",
-            "/actions?limit=999",
-            "/actions?limit=-5",
-            "/actions?limit=abc",
+            "/tasks?limit=0",
+            "/tasks?limit=999",
+            "/tasks?limit=-5",
+            "/tasks?limit=abc",
             # offset
-            "/actions?offset=-1",
-            "/actions?offset=abc",
+            "/tasks?offset=-1",
+            "/tasks?offset=abc",
             # within_hours
-            "/actions?within_hours=0",
-            "/actions?within_hours=-1",
-            "/actions?within_hours=abc",
-            "/actions?within_hours=",
+            "/tasks?within_hours=0",
+            "/tasks?within_hours=-1",
+            "/tasks?within_hours=abc",
+            "/tasks?within_hours=",
             # combined
-            "/actions?limit=-5&offset=abc&status=WRONG&completed=1.23&within_hours=-2",
+            "/tasks?limit=-5&offset=abc&status=WRONG&completed=1.23&within_hours=-2",
         ],
     )
     async def test_invalid_query_params(cls, client: TestClient, url: str) -> None:

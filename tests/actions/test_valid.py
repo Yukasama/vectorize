@@ -1,6 +1,6 @@
 # ruff: noqa: S101
 
-"""Valid tests for actions endpoint."""
+"""Valid tests for tasks endpoint."""
 
 import pytest
 from fastapi import status
@@ -16,40 +16,40 @@ _TASK_TYPE_OPTIONS = {
 
 
 @pytest.mark.asyncio
-@pytest.mark.actions
-class TestActionsValid:
-    """Tests for valid actions endpoint requests."""
+@pytest.mark.tasks
+class TestTasksValid:
+    """Tests for valid tasks endpoint requests."""
 
     @classmethod
     async def test_get_all_actions_default(cls, client: TestClient) -> None:
-        """Test getting all actions with default parameters."""
+        """Test getting all tasks with default parameters."""
         default_hours = 1
-        response = client.get("/actions")
+        response = client.get("/tasks")
 
         assert response.status_code == status.HTTP_200_OK
-        actions = response.json()
-        assert isinstance(actions, list)
-        assert len(actions) >= default_hours
+        tasks = response.json()
+        assert isinstance(tasks, list)
+        assert len(tasks) >= default_hours
 
     @classmethod
     async def test_get_actions_with_limit(cls, client: TestClient) -> None:
-        """Test actions endpoint with limit parameter."""
+        """Test tasks endpoint with limit parameter."""
         limit = 2
-        response = client.get(f"/actions?limit={limit}")
+        response = client.get(f"/tasks?limit={limit}")
 
         assert response.status_code == status.HTTP_200_OK
-        actions = response.json()
-        assert isinstance(actions, list)
-        assert len(actions) <= limit
+        tasks = response.json()
+        assert isinstance(tasks, list)
+        assert len(tasks) <= limit
 
     @classmethod
     async def test_get_actions_with_offset(cls, client: TestClient) -> None:
-        """Test actions endpoint with offset parameter."""
-        all_response = client.get("/actions?limit=100")
+        """Test tasks endpoint with offset parameter."""
+        all_response = client.get("/tasks?limit=100")
         all_actions = all_response.json()
 
         if len(all_actions) > 1:
-            response = client.get("/actions?offset=1")
+            response = client.get("/tasks?offset=1")
             assert response.status_code == status.HTTP_200_OK
             offset_actions = response.json()
             assert isinstance(offset_actions, list)
@@ -57,107 +57,107 @@ class TestActionsValid:
 
     @classmethod
     async def test_get_actions_completed_filter(cls, client: TestClient) -> None:
-        """Test actions endpoint filtering by completed status."""
-        completed_response = client.get("/actions?completed=true")
+        """Test tasks endpoint filtering by completed status."""
+        completed_response = client.get("/tasks?completed=true")
         assert completed_response.status_code == status.HTTP_200_OK
         completed_actions = completed_response.json()
         assert isinstance(completed_actions, list)
 
-        pending_response = client.get("/actions?completed=false")
+        pending_response = client.get("/tasks?completed=false")
         assert pending_response.status_code == status.HTTP_200_OK
         pending_actions = pending_response.json()
         assert isinstance(pending_actions, list)
 
     @classmethod
     async def test_get_actions_status_filter_pending(cls, client: TestClient) -> None:
-        """Test actions endpoint filtering by PENDING status."""
-        response = client.get("/actions?status=P")
+        """Test tasks endpoint filtering by PENDING status."""
+        response = client.get("/tasks?status=P")
 
         assert response.status_code == status.HTTP_200_OK
-        actions = response.json()
-        assert isinstance(actions, list)
+        tasks = response.json()
+        assert isinstance(tasks, list)
 
-        for action in actions:
+        for action in tasks:
             assert action["task_status"] == TaskStatus.PENDING.value
 
     @classmethod
     async def test_get_actions_status_filter_done(cls, client: TestClient) -> None:
-        """Test actions endpoint filtering by DONE status."""
-        response = client.get("/actions?status=D")
+        """Test tasks endpoint filtering by DONE status."""
+        response = client.get("/tasks?status=D")
 
         assert response.status_code == status.HTTP_200_OK
-        actions = response.json()
-        assert isinstance(actions, list)
+        tasks = response.json()
+        assert isinstance(tasks, list)
 
-        for action in actions:
+        for action in tasks:
             assert action["task_status"] == TaskStatus.DONE.value
 
     @classmethod
     async def test_get_actions_multiple_status_filter(cls, client: TestClient) -> None:
-        """Test actions endpoint filtering by multiple statuses."""
-        response = client.get("/actions?status=P&status=D")
+        """Test tasks endpoint filtering by multiple statuses."""
+        response = client.get("/tasks?status=P&status=D")
 
         assert response.status_code == status.HTTP_200_OK
-        actions = response.json()
-        assert isinstance(actions, list)
+        tasks = response.json()
+        assert isinstance(tasks, list)
 
         valid_statuses = {TaskStatus.PENDING.value, TaskStatus.DONE.value}
-        for action in actions:
+        for action in tasks:
             assert action["task_status"] in valid_statuses
 
     @classmethod
     async def test_get_actions_within_hours_recent(cls, client: TestClient) -> None:
-        """Test actions endpoint with within_hours=1 (recent tasks only)."""
-        response = client.get("/actions?within_hours=1")
+        """Test tasks endpoint with within_hours=1 (recent tasks only)."""
+        response = client.get("/tasks?within_hours=1")
 
         assert response.status_code == status.HTTP_200_OK
-        actions = response.json()
-        assert isinstance(actions, list)
+        tasks = response.json()
+        assert isinstance(tasks, list)
 
-        for action in actions:
+        for action in tasks:
             assert "created_at" in action
             assert "end_date" in action
 
     @classmethod
     async def test_get_actions_within_hours_extended(cls, client: TestClient) -> None:
-        """Test actions endpoint with within_hours=3 (includes older tasks)."""
+        """Test tasks endpoint with within_hours=3 (includes older tasks)."""
         results = 2
-        response = client.get("/actions?within_hours=3")
+        response = client.get("/tasks?within_hours=3")
 
         assert response.status_code == status.HTTP_200_OK
-        actions = response.json()
-        assert isinstance(actions, list)
-        assert len(actions) >= results
+        tasks = response.json()
+        assert isinstance(tasks, list)
+        assert len(tasks) >= results
 
     @classmethod
     async def test_get_actions_combined_filters(cls, client: TestClient) -> None:
-        """Test actions endpoint with multiple filters combined."""
+        """Test tasks endpoint with multiple filters combined."""
         limit = 5
         response = client.get(
-            f"/actions?limit={limit}&completed=false&status=P&within_hours=2"
+            f"/tasks?limit={limit}&completed=false&status=P&within_hours=2"
         )
 
         assert response.status_code == status.HTTP_200_OK
-        actions = response.json()
-        assert isinstance(actions, list)
-        assert len(actions) <= limit
+        tasks = response.json()
+        assert isinstance(tasks, list)
+        assert len(tasks) <= limit
 
-        for action in actions:
+        for action in tasks:
             assert action["task_status"] == TaskStatus.PENDING.value
             assert "created_at" in action
             assert action["task_type"] in _TASK_TYPE_OPTIONS
 
     @classmethod
     async def test_actions_response_structure(cls, client: TestClient) -> None:
-        """Test that actions response has correct structure."""
-        response = client.get("/actions?limit=1")
+        """Test that tasks response has correct structure."""
+        response = client.get("/tasks?limit=1")
 
         assert response.status_code == status.HTTP_200_OK
-        actions = response.json()
-        assert isinstance(actions, list)
+        tasks = response.json()
+        assert isinstance(tasks, list)
 
-        if actions:
-            action = actions[0]
+        if tasks:
+            action = tasks[0]
             required_fields = ["id", "task_status", "created_at", "task_type"]
             for field in required_fields:
                 assert field in action

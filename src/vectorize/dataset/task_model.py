@@ -19,7 +19,7 @@ class UploadDatasetTask(SQLModel, table=True):
         description="Unique identifier for the dataset upload task.",
     )
 
-    dataset_tag: str = Field(
+    tag: str = Field(
         description="Tag or identifier of the dataset being uploaded.",
         index=True,
         min_length=1,

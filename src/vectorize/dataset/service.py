@@ -172,7 +172,7 @@ async def upload_hf_dataset_svc(db: AsyncSession, dataset_tag: str) -> UUID:
             raise UnsupportedHuggingFaceFormatError(column_names)
 
     subset_list = list(dataset_infos.keys())
-    upload_dataset_task = UploadDatasetTask(dataset_tag=dataset_tag)
+    upload_dataset_task = UploadDatasetTask(tag=dataset_tag)
     await save_upload_dataset_task_db(db, upload_dataset_task)
 
     upload_hf_dataset_bg.send(dataset_tag, str(upload_dataset_task.id), subset_list)

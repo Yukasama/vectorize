@@ -1,14 +1,14 @@
-"""Query and filter schemas for actions."""
+"""Query and filter schemas for tasks."""
 
 from pydantic import BaseModel, Field
 
 from vectorize.common.task_status import TaskStatus
 
-__all__ = ["ActionsFilters"]
+__all__ = ["TaskFilters"]
 
 
-class ActionsFilters(BaseModel):
-    """Parameters for filtering actions."""
+class TaskFilters(BaseModel):
+    """Parameters for filtering tasks."""
 
     limit: int | None = Field(
         None, ge=1, le=100, description="Maximum number of records to return"

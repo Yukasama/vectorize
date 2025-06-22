@@ -81,7 +81,7 @@ async def load_model_huggingface(
         ) from e
 
     upload_task = UploadTask(
-        model_tag=key,
+        tag=key,
         task_status=TaskStatus.PENDING,
         source=RemoteModelSource.HUGGINGFACE,
     )
@@ -141,7 +141,7 @@ async def load_model_github(
         raise InternalServerError("Error checking GitHub repository") from e
 
     task = UploadTask(
-        model_tag=key, task_status=TaskStatus.PENDING, source=RemoteModelSource.GITHUB
+        tag=key, task_status=TaskStatus.PENDING, source=RemoteModelSource.GITHUB
     )
     await save_upload_task_db(db, task)
     background_tasks.add_task(process_github_model_bg, db, owner, repo, branch, task.id)

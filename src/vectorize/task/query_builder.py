@@ -1,4 +1,4 @@
-"""Helpers for actions repository."""
+"""Helpers for tasks repository."""
 
 from datetime import UTC, datetime, timedelta
 
@@ -34,12 +34,19 @@ def build_query(  # noqa: ANN201
     Returns:
         SQLAlchemy Select query with standardized columns and filters.
     """
+    if hasattr(model, "tag"):
+        tag_field = model.tag.label("tag")
+    else:
+        tag_field = literal(None).label("tag")
+
     return (
         select(
             model.id,
+            tag_field.label("tag"),
             model.task_status,
             model.created_at,
             model.end_date,
+            model.error_msg,
             cast(literal(tag), String).label("task_type"),
         )
         .where(_status_filter(model, completed=completed, statuses=statuses))
