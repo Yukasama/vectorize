@@ -20,7 +20,7 @@ class UploadTask(SQLModel, table=True):
         description="Unique identifier for the upload task.",
     )
 
-    model_tag: str = Field(
+    tag: str = Field(
         description="Tag of the model file being uploaded.",
         index=True,
         min_length=1,

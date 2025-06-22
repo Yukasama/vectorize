@@ -173,7 +173,7 @@ async def seed_db(session: AsyncSession) -> None:
     session.add(
         UploadTask(
             id=UPLOAD_TASK_GH_ID,
-            model_tag="example-github-model",
+            tag="example-github-model",
             task_status=TaskStatus.PENDING,
             source=RemoteModelSource.GITHUB,
             created_at=datetime(2025, 6, 10, 9, 0, tzinfo=UTC),
@@ -185,7 +185,7 @@ async def seed_db(session: AsyncSession) -> None:
     session.add(
         UploadTask(
             id=UPLOAD_TASK_HF_ID,
-            model_tag="example-hf-model",
+            tag="example-hf-model",
             task_status=TaskStatus.PENDING,
             source=RemoteModelSource.HUGGINGFACE,
             created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
@@ -196,24 +196,24 @@ async def seed_db(session: AsyncSession) -> None:
     )
     session.add(
         UploadDatasetTask(
-            dataset_tag="example_hf_dataset",
+            tag="example_hf_dataset",
             task_status=TaskStatus.QUEUED,
             created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
         ),
     )
     session.add(
         UploadDatasetTask(
-            dataset_tag="example_hf_dataset_done",
+            tag="example_hf_dataset_done",
             task_status=TaskStatus.DONE,
-            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
+            created_at=datetime.now(tz=UTC) - timedelta(minutes=1),
             end_date=datetime.now(tz=UTC),
         ),
     )
     session.add(
         UploadDatasetTask(
-            dataset_tag="example_hf_dataset_failed",
+            tag="example_hf_dataset_failed",
             task_status=TaskStatus.FAILED,
-            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
+            created_at=datetime.now(tz=UTC) - timedelta(hours=3),
             end_date=datetime.now(tz=UTC) - timedelta(hours=2),
             error_msg="Failed to upload dataset due to network error.",
         ),

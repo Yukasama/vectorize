@@ -54,7 +54,7 @@ class TestHuggingFaceUpload:
         assert task_data is not None, f"Task {task_id} did not complete"
         assert task_data["id"] == task_id
         assert task_data["task_status"] == "D"
-        assert task_data["dataset_tag"] is not None
+        assert task_data["tag"] is not None
         assert task_data["error_msg"] is None
 
         dataset_name_base = dataset_tag.replace("/", "_")

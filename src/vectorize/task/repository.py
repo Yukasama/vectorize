@@ -1,4 +1,4 @@
-"""Actions repository."""
+"""Tasks repository."""
 
 from collections.abc import Sequence
 
@@ -11,13 +11,13 @@ from vectorize.synthesis.models import SynthesisTask
 from vectorize.upload.models import UploadTask
 
 from .query_builder import build_query
-from .schemas import ActionsFilters
+from .schemas import TaskFilters
 
-__all__ = ["get_actions_db"]
+__all__ = ["get_tasks_db"]
 
 
-async def get_actions_db(db: AsyncSession, params: ActionsFilters) -> Sequence:
-    """Retrieve task actions from database with filtering and pagination.
+async def get_tasks_db(db: AsyncSession, params: TaskFilters) -> Sequence:
+    """Retrieve tasks from database with filtering and pagination.
 
     Aggregates tasks from multiple types (upload, synthesis, dataset) with
     comprehensive filtering and pagination support.
@@ -64,5 +64,5 @@ async def get_actions_db(db: AsyncSession, params: ActionsFilters) -> Sequence:
     result = await db.exec(stmt)
 
     rows = result.all()
-    logger.debug("Actions fetched from DB", rows=rows, params=str(params))
+    logger.debug("Tasks fetched from DB", count=len(rows), params=str(params))
     return rows
