@@ -19,7 +19,7 @@ from loguru import logger
 from redis import Redis
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
-from sqlmodel import SQLModel, select
+from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from testcontainers.redis import RedisContainer
 
@@ -27,19 +27,6 @@ from vectorize.app import app
 from vectorize.config import settings
 from vectorize.config.db import get_session
 from vectorize.config.seed import seed_db
-from vectorize.dataset.models import Dataset
-from vectorize.dataset.task_model import UploadDatasetTask
-
-# Import all SQLModel tables, to ensure they are available for create_all
-# This must be done before any database operations
-from vectorize.evaluation.models import EvaluationTask
-from vectorize.inference.models import InferenceCounter
-from vectorize.synthesis.models import SynthesisTask
-from vectorize.training.models import TrainingTask
-from vectorize.upload.models import UploadTask
-
-# Explicitly ensure all models are loaded by referencing them
-_MODELS = [EvaluationTask, TrainingTask, UploadTask, SynthesisTask, AIModel, InferenceCounter, UploadDatasetTask, Dataset]
 
 REDIS_TEST_PORT = 56379
 
