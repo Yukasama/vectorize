@@ -115,10 +115,6 @@ async def load_model_github(
     Returns:
         Response with 201 status and Location header.
     """
-    # owner = data.owner
-    # repo = data.repo_name
-    # branch = data.revision or "main"
-
     key = f"{data.owner}/{data.repo_name}@{data.revision}"
     base_url = f"https://github.com/{data.owner}/{data.repo_name}"
 
@@ -141,7 +137,12 @@ async def load_model_github(
         model_tag=key, task_status=TaskStatus.PENDING, source=RemoteModelSource.GITHUB
     )
     await save_upload_task_db(db, upload_task)
-    process_github_model_bg.send(data.owner, data.repo_name, data.revision, str(upload_task.id))
+    process_github_model_bg.send(
+        data.owner,
+        data.repo_name,
+        data.revision,
+       str(upload_task.id))
+
     return Response(
         status_code=status.HTTP_201_CREATED,
         headers={"Location": f"{request.base_url}v1/upload/tasks/{upload_task.id}"},
