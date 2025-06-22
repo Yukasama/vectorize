@@ -4,4 +4,9 @@ from .dataset_validator import DatasetValidator, EvaluationDatasetValidationErro
 from .model_resolver import resolve_model_path
 from .similarity_calculator import SimilarityCalculator
 
-__all__ = ["DatasetValidator", "EvaluationDatasetValidationError", "SimilarityCalculator", "resolve_model_path"]
+__all__ = [
+    "DatasetValidator",
+    "EvaluationDatasetValidationError",
+    "SimilarityCalculator",
+    "resolve_model_path",
+]

@@ -48,8 +48,16 @@ __all__ = ["router"]
 router = APIRouter(tags=["Training"])
 
 
+def has_model_weights(path: str) -> bool:
+    for _root, _dirs, files in os.walk(path):
+        for file in files:
+            if file.endswith((".safetensors", ".bin")):
+                return True
+    return False
+
+
 @router.post("/train")
-async def train_model(  # noqa: PLR0914, PLR0915
+async def train_model(  # noqa: PLR0914, PLR0915, PLR0912
     train_request: TrainRequest,
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
@@ -66,13 +74,6 @@ async def train_model(  # noqa: PLR0914, PLR0915
     if not model:
         raise ModelNotFoundError(train_request.model_tag)
     model_path = str(Path("data/models") / model.model_tag)
-
-    def has_model_weights(path: str) -> bool:
-        for _root, _dirs, files in os.walk(path):
-            for file in files:
-                if file.endswith((".safetensors", ".bin")):
-                    return True
-        return False
 
     if not has_model_weights(model_path):
         raise TrainingModelWeightsNotFoundError(

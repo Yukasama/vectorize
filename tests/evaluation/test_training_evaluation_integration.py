@@ -14,6 +14,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from httpx import Response
 
+from vectorize.config import settings
+
 # Test constants
 MINILM_MODEL_TAG = "models--sentence-transformers--all-MiniLM-L6-v2"
 DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
@@ -27,11 +29,12 @@ HTTP_400_BAD_REQUEST = status.HTTP_400_BAD_REQUEST
 HTTP_404_NOT_FOUND = status.HTTP_404_NOT_FOUND
 HTTP_422_UNPROCESSABLE_ENTITY = status.HTTP_422_UNPROCESSABLE_ENTITY
 
+UUID_LENGTH = 36
+UUID_HYPHEN_COUNT = 4
+
 
 def ensure_minilm_model_available() -> None:
     """Ensure the required model files are present for integration tests."""
-    from vectorize.config import settings
-
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
     dst = settings.model_upload_dir / "models--sentence-transformers--all-MiniLM-L6-v2"
     if not dst.exists() and src.exists():
@@ -51,7 +54,10 @@ def extract_task_id(response: Response, endpoint_type: str = "training") -> str:
             task_id = match.group(1)
 
     # Fallback to JSON body
-    elif response.content and response.headers.get("content-type", "").startswith("application/json"):
+    elif (
+        response.content
+        and response.headers.get("content-type", "").startswith("application/json")
+    ):
         data = response.json()
         task_id = data.get("task_id")
 
@@ -59,7 +65,12 @@ def extract_task_id(response: Response, endpoint_type: str = "training") -> str:
     return task_id
 
 
-def wait_for_task(client: TestClient, task_id: str, endpoint_type: str = "training", max_wait: int = 60) -> dict[str, Any]:
+def wait_for_task(
+    client: TestClient,
+    task_id: str,
+    endpoint_type: str = "training",
+    max_wait: int = 60,
+) -> dict[str, Any]:
     """Wait for a task to complete and return final status."""
     for _ in range(max_wait):
         response = client.get(f"/{endpoint_type}/{task_id}/status")
@@ -76,8 +87,6 @@ def wait_for_task(client: TestClient, task_id: str, endpoint_type: str = "traini
 
 def cleanup_trained_models() -> None:
     """Clean up any trained model directories."""
-    from vectorize.config import settings
-
     trained_models_dir = settings.model_upload_dir / "trained_models"
     if trained_models_dir.exists():
         for model_dir in trained_models_dir.glob("*-finetuned-*"):
@@ -91,9 +100,7 @@ def load_test_dataset(dataset_filename: str) -> list[dict[str, Any]]:
 
     examples = []
     with file_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            if line.strip():
-                examples.append(json.loads(line))
+        examples.extend(json.loads(line) for line in f if line.strip())
 
     assert examples, f"No examples found in {file_path}"
     return examples
@@ -103,7 +110,8 @@ def load_test_dataset(dataset_filename: str) -> list[dict[str, Any]]:
 class TestTrainingEvaluationIntegration:
     """Integration tests for training and evaluation workflows."""
 
-    def test_concurrent_training_and_evaluation(self, client: TestClient) -> None:
+    @staticmethod
+    def test_concurrent_training_and_evaluation(client: TestClient) -> None:
         """Test running training and evaluation concurrently."""
         ensure_minilm_model_available()
 
@@ -125,7 +133,9 @@ class TestTrainingEvaluationIntegration:
             "dataset_id": DATASET_ID_2,
         }
 
-        evaluation_response = client.post("/evaluation/evaluate", json=evaluation_payload)
+        evaluation_response = client.post(
+            "/evaluation/evaluate", json=evaluation_payload
+        )
         assert evaluation_response.status_code == HTTP_202_ACCEPTED
         evaluation_task_id = extract_task_id(evaluation_response, "evaluation")
 
@@ -141,7 +151,8 @@ class TestTrainingEvaluationIntegration:
 
         cleanup_trained_models()
 
-    def test_dataset_schema_consistency(self, client: TestClient) -> None:
+    @staticmethod
+    def test_dataset_schema_consistency(client: TestClient) -> None:
         """Test that both training and evaluation work with same dataset schema."""
         # Verify our test datasets have consistent schema
         dataset1_examples = load_test_dataset(f"__rm_-rf__2F_{DATASET_ID_1}.jsonl")
@@ -154,7 +165,9 @@ class TestTrainingEvaluationIntegration:
                 required_fields = ["question", "positive", "negative"]
                 for field in required_fields:
                     assert field in example, f"Missing field: {field}"
-                    assert isinstance(example[field], str), f"Field {field} should be string"
+                    assert isinstance(
+                        example[field], str
+                    ), f"Field {field} should be string"
                     assert example[field].strip(), f"Field {field} should not be empty"
 
         ensure_minilm_model_available()
@@ -183,7 +196,8 @@ class TestTrainingEvaluationIntegration:
 
         cleanup_trained_models()
 
-    def test_api_response_consistency(self, client: TestClient) -> None:
+    @staticmethod
+    def test_api_response_consistency(client: TestClient) -> None:
         """Test that training and evaluation APIs have consistent response formats."""
         ensure_minilm_model_available()
 
@@ -206,7 +220,9 @@ class TestTrainingEvaluationIntegration:
             "dataset_id": DATASET_ID_1,
         }
 
-        evaluation_response = client.post("/evaluation/evaluate", json=evaluation_payload)
+        evaluation_response = client.post(
+            "/evaluation/evaluate", json=evaluation_payload
+        )
         assert evaluation_response.status_code == HTTP_202_ACCEPTED
         evaluation_task_id = extract_task_id(evaluation_response, "evaluation")
 
@@ -237,7 +253,8 @@ class TestTrainingEvaluationIntegration:
 
         cleanup_trained_models()
 
-    def test_resource_isolation(self, client: TestClient) -> None:
+    @staticmethod
+    def test_resource_isolation(client: TestClient) -> None:
         """Test that training and evaluation tasks don't interfere with each other."""
         ensure_minilm_model_available()
 
@@ -260,7 +277,9 @@ class TestTrainingEvaluationIntegration:
             "dataset_id": DATASET_ID_2,
         }
 
-        evaluation_response = client.post("/evaluation/evaluate", json=evaluation_payload)
+        evaluation_response = client.post(
+            "/evaluation/evaluate", json=evaluation_payload
+        )
         assert evaluation_response.status_code == HTTP_202_ACCEPTED
         evaluation_task_id = extract_task_id(evaluation_response, "evaluation")
 
@@ -284,7 +303,8 @@ class TestTrainingEvaluationIntegration:
 
         cleanup_trained_models()
 
-    def test_validation_error_consistency(self, client: TestClient) -> None:
+    @staticmethod
+    def test_validation_error_consistency(client: TestClient) -> None:
         """Test that validation errors are consistent across training and evaluation."""
         # Test missing required fields
 
@@ -302,7 +322,9 @@ class TestTrainingEvaluationIntegration:
         evaluation_payload = {
             "dataset_id": DATASET_ID_1,
         }
-        evaluation_response = client.post("/evaluation/evaluate", json=evaluation_payload)
+        evaluation_response = client.post(
+            "/evaluation/evaluate", json=evaluation_payload
+        )
         assert evaluation_response.status_code == HTTP_422_UNPROCESSABLE_ENTITY
 
         # Both should handle invalid UUID formats similarly
@@ -321,9 +343,15 @@ class TestTrainingEvaluationIntegration:
             "model_tag": MINILM_MODEL_TAG,
             "dataset_id": invalid_uuid,
         }
-        evaluation_response = client.post("/evaluation/evaluate", json=evaluation_payload)
+        evaluation_response = client.post(
+            "/evaluation/evaluate", json=evaluation_payload
+        )
 
         # Both should handle invalid UUIDs consistently
-        valid_error_codes = [HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_422_UNPROCESSABLE_ENTITY]
+        valid_error_codes = {
+            HTTP_400_BAD_REQUEST,
+            HTTP_404_NOT_FOUND,
+            HTTP_422_UNPROCESSABLE_ENTITY,
+        }
         assert training_response.status_code in valid_error_codes
         assert evaluation_response.status_code in valid_error_codes

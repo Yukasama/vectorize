@@ -7,6 +7,7 @@ from uuid import uuid4
 import pytest
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from vectorize.config import settings
 from vectorize.evaluation.schemas import EvaluationRequest
 from vectorize.evaluation.service import resolve_evaluation_dataset
 from vectorize.training.models import TrainingTask
@@ -32,8 +33,6 @@ class TestEvaluationIntegration:
         await save_training_task(session, task)
 
         # Create validation dataset file
-        from vectorize.config import settings
-
         validation_path = settings.dataset_upload_dir / "validation_test.jsonl"
         validation_path.parent.mkdir(parents=True, exist_ok=True)
         validation_path.write_text(

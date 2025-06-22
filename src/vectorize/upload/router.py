@@ -199,7 +199,11 @@ async def load_model_local(
     headers = {}
     if result["models"]:
         first_model = result["models"][0]
-        model_id = first_model.get("id") or first_model.get("model_id") or first_model.get("model_tag")
+        model_id = (
+            first_model.get("id")
+            or first_model.get("model_id")
+            or first_model.get("model_tag")
+        )
         if model_id:
             headers["Location"] = f"{request.url}/{model_id}"
 

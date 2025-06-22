@@ -42,10 +42,14 @@ class DatasetValidator:
             EvaluationDatasetValidationError: If dataset is invalid or cannot be loaded
         """
         if not dataset_path.exists():
-            raise EvaluationDatasetValidationError(f"Dataset file does not exist: {dataset_path}")
+            raise EvaluationDatasetValidationError(
+                f"Dataset file does not exist: {dataset_path}"
+            )
 
         if not dataset_path.is_file():
-            raise EvaluationDatasetValidationError(f"Path is not a file: {dataset_path}")
+            raise EvaluationDatasetValidationError(
+                f"Path is not a file: {dataset_path}"
+            )
 
         try:
             df = pd.read_json(dataset_path, lines=True)

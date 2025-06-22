@@ -68,7 +68,8 @@ class TestHuggingFaceUpload:
 
                 file_path = settings.dataset_upload_dir / file_name
                 assert file_path.exists(), (
-                    f"File {file_path} was not created for split '{split}', subset '{subset}'"  # noqa: E501
+                    f"File {file_path} was not created for split '{split}', "
+                    f"subset '{subset}'"
                 )
 
                 file_size = file_path.stat().st_size

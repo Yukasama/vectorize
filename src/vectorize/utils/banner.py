@@ -40,7 +40,11 @@ def create_banner(settings: Settings, silent: bool = False) -> str:
     env_color = "\033[1;31m" if settings.app_env == "production" else "\033[1;32m"
     lines.extend([
         f"🌍 Environment: {env_color}{settings.app_env}\033[0m",
-        f"🔌 API: http://{'0.0.0.0' if settings.host_binding == '0.0.0.0' else 'localhost'}:{settings.port}{settings.prefix}",  # noqa: E501, S104
+        (
+            f"🔌 API: http://"
+            f"{'0.0.0.0' if settings.host_binding == '0.0.0.0' else 'localhost'}:"  # noqa: S104
+            f"{settings.port}{settings.prefix}"
+        ),
         f"📋 Docs: http://localhost:{settings.port}/docs",
         f"📊 Metrics: http://localhost:{settings.port}/metrics",
     ])
@@ -48,7 +52,10 @@ def create_banner(settings: Settings, silent: bool = False) -> str:
     lines.extend([
         "\n\033[1;33m💾 Database Configuration\033[0m",
         f"  • Engine: {settings.db_url.split('://')[0]}",
-        f"  • Pool Size: {settings.db_pool_size} (max: {settings.db_pool_size + settings.db_max_overflow})",  # noqa: E501
+        (
+            f"  • Pool Size: {settings.db_pool_size} "
+            f"(max: {settings.db_pool_size + settings.db_max_overflow})"
+        ),
         f"  • Clear on Restart: {'✅' if settings.clear_db_on_restart else '❌'}",
     ])
 
@@ -68,7 +75,10 @@ def create_banner(settings: Settings, silent: bool = False) -> str:
     lines.extend([
         "\n\033[1;33m📝 Logging Configuration\033[0m",
         f"  • Log Level: {log_level_color}{settings.log_level}\033[0m",
-        f"  • Log Path: {settings.log_path if settings.app_env != 'production' else 'stderr'}",  # noqa: E501
+        (
+            f"  • Log Path: "
+            f"{settings.log_path if settings.app_env != 'production' else 'stderr'}"
+        ),
     ])
 
     lines.extend([

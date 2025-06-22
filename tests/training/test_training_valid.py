@@ -1,7 +1,8 @@
 # ruff: noqa: S101
 
-"""Tests for the training endpoint (/training/train) with valid data using real test datasets."""
+"""Tests for the training endpoint with valid data using real test datasets."""
 
+import json
 import re
 import shutil
 import uuid
@@ -11,6 +12,8 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 from httpx import Response
+
+from vectorize.config import settings
 
 MINILM_MODEL_TAG = "models--sentence-transformers--all-MiniLM-L6-v2"
 DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
@@ -27,8 +30,6 @@ HTTP_404_NOT_FOUND = status.HTTP_404_NOT_FOUND
 
 def ensure_minilm_model_available() -> None:
     """Ensure the required model files are present for training tests."""
-    from vectorize.config import settings
-
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
     dst = settings.model_upload_dir / "models--sentence-transformers--all-MiniLM-L6-v2"
     if not dst.exists() and src.exists():
@@ -89,7 +90,7 @@ def extract_task_id_from_response(response: Response) -> str:
 
 @pytest.mark.training
 class TestTrainingValid:
-    """Tests for the training endpoint (/training/train) with valid data using real test datasets."""
+    """Tests for the training endpoint with valid data using real test datasets."""
 
     @staticmethod
     def test_valid_training(client: TestClient) -> None:
@@ -113,7 +114,7 @@ class TestTrainingValid:
         status_data = status_response.json()
         assert status_data["status"] in {"Q", "R", "D", "F"}
 
-        from vectorize.config import settings
+        # Import an den Dateianfang verschoben (PLC0415)
         trained_models_dir = settings.model_upload_dir / "trained_models"
         model_dirs = trained_models_dir.glob("*-finetuned-*")
         for d in model_dirs:
@@ -171,10 +172,8 @@ class TestTrainingValid:
         assert status_response.status_code == HTTP_200_OK
 
     @staticmethod
-    def test_dataset_schema_validation(client: TestClient) -> None:
-        """Test that our test datasets have the correct schema (question/positive/negative)."""
-        import json
-
+    def test_dataset_schema_validation(_client: TestClient) -> None:
+        """Test that our test datasets have the correct schema."""
         ensure_test_datasets_exist()
 
         test_files = [
@@ -189,11 +188,22 @@ class TestTrainingValid:
                         try:
                             example = json.loads(line)
                         except json.JSONDecodeError:
-                            pytest.fail(f"Invalid JSON in {test_file.name} line {line_num}")
+                            pytest.fail(
+                                f"Invalid JSON in {test_file.name} line {line_num}"
+                            )
 
-                        # Check required fields
                         required_fields = ["question", "positive", "negative"]
                         for field in required_fields:
-                            assert field in example, f"Missing '{field}' in {test_file.name} line {line_num}"
-                            assert isinstance(example[field], str), f"Field '{field}' should be string in {test_file.name} line {line_num}"
-                            assert example[field].strip(), f"Field '{field}' should not be empty in {test_file.name} line {line_num}"
+                            assert field in example, (
+                                f"Missing '{field}' in {test_file.name} line {line_num}"
+                            )
+                            assert isinstance(
+                                example[field], str
+                            ), (
+                                f"Field '{field}' should be string in {test_file.name} "
+                                f"line {line_num}"
+                            )
+                            assert example[field].strip(), (
+                                f"Field '{field}' should not be empty in "
+                                f"{test_file.name} line {line_num}"
+                            )

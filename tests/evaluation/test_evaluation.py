@@ -188,5 +188,7 @@ class TestTrainingEvaluator:
             df.to_json(f.name, orient="records", lines=True)
             temp_file = Path(f.name)
 
-        with pytest.raises(EvaluationDatasetValidationError, match=r"contains \d+ null values"):
+        with pytest.raises(
+            EvaluationDatasetValidationError, match=r"contains \d+ null values"
+        ):
             DatasetValidator.validate_dataset(temp_file)

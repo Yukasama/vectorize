@@ -15,6 +15,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from httpx import Response
 
+from vectorize.config import settings
+
 # Test constants
 MINILM_MODEL_TAG = "models--sentence-transformers--all-MiniLM-L6-v2"
 DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
@@ -28,11 +30,13 @@ HTTP_400_BAD_REQUEST = status.HTTP_400_BAD_REQUEST
 HTTP_404_NOT_FOUND = status.HTTP_404_NOT_FOUND
 HTTP_422_UNPROCESSABLE_ENTITY = status.HTTP_422_UNPROCESSABLE_ENTITY
 
+UUID_LENGTH = 36
+UUID_HYPHEN_COUNT = 4
+
 
 def ensure_minilm_model_available() -> None:
     """Ensure the required model files are present for training tests."""
-    from vectorize.config import settings
-
+    # Import an den Dateianfang verschoben (PLC0415)
     src = Path("test_data/training/models--sentence-transformers--all-MiniLM-L6-v2")
     dst = settings.model_upload_dir / "models--sentence-transformers--all-MiniLM-L6-v2"
     if not dst.exists() and src.exists():
@@ -44,22 +48,29 @@ def extract_task_id_from_response(response: Response) -> str:
     """Extract task_id from training response."""
     task_id = None
 
-    # Try Location header first
     if response.headers.get("Location"):
-        match = re.search(r"/training/([a-f0-9\-]+)/status", response.headers["Location"])
+        match = re.search(
+            r"/training/([a-f0-9\-]+)/status",
+            response.headers["Location"],
+        )
         if match:
             task_id = match.group(1)
 
-    # Fallback to JSON body
-    elif response.content and response.headers.get("content-type", "").startswith("application/json"):
+    elif response.content and response.headers.get("content-type", "").startswith(
+        "application/json"
+    ):
         data = response.json()
         task_id = data.get("task_id")
 
-    assert task_id, "No task_id found in response or headers"
+    assert task_id, (
+        "No task_id found in response or headers"
+    )
     return task_id
 
 
-def wait_for_task_completion(client: TestClient, task_id: str, max_wait: int = 30) -> dict[str, Any]:
+def wait_for_task_completion(
+    client: TestClient, task_id: str, max_wait: int = 30
+) -> dict[str, Any]:
     """Wait for a training task to complete and return final status."""
     for _ in range(max_wait):
         response = client.get(f"/training/{task_id}/status")
@@ -71,13 +82,13 @@ def wait_for_task_completion(client: TestClient, task_id: str, max_wait: int = 3
 
     # Return last known status
     response = client.get(f"/training/{task_id}/status")
-    return response.json() if response.status_code == HTTP_200_OK else {}
+    return (
+        response.json() if response.status_code == HTTP_200_OK else {}
+    )
 
 
 def cleanup_trained_models() -> None:
     """Clean up any trained model directories."""
-    from vectorize.config import settings
-
     trained_models_dir = settings.model_upload_dir / "trained_models"
     if trained_models_dir.exists():
         for model_dir in trained_models_dir.glob("*-finetuned-*"):
@@ -87,15 +98,17 @@ def cleanup_trained_models() -> None:
 def load_test_dataset(dataset_filename: str) -> list[dict[str, Any]]:
     """Load a test dataset from file and return as list of examples."""
     file_path = TEST_DATA_DIR / dataset_filename
-    assert file_path.exists(), f"Test dataset not found: {file_path}"
+    assert file_path.exists(), (
+        f"Test dataset not found: {file_path}"
+    )
 
     examples = []
     with file_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            if line.strip():
-                examples.append(json.loads(line))
+        examples.extend(json.loads(line) for line in f if line.strip())
 
-    assert examples, f"No examples found in {file_path}"
+    assert examples, (
+        f"No examples found in {file_path}"
+    )
     return examples
 
 
@@ -103,7 +116,8 @@ def load_test_dataset(dataset_filename: str) -> list[dict[str, Any]]:
 class TestTrainingComprehensive:
     """Comprehensive tests for training endpoints with real test data."""
 
-    def test_training_single_dataset_with_split(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_single_dataset_with_split(client: TestClient) -> None:
         """Test training with single dataset (should auto-split 90/10)."""
         ensure_minilm_model_available()
 
@@ -130,7 +144,8 @@ class TestTrainingComprehensive:
 
         cleanup_trained_models()
 
-    def test_training_separate_train_val_datasets(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_separate_train_val_datasets(client: TestClient) -> None:
         """Test training with separate training and validation datasets."""
         ensure_minilm_model_available()
 
@@ -158,7 +173,8 @@ class TestTrainingComprehensive:
 
         cleanup_trained_models()
 
-    def test_training_multiple_datasets(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_multiple_datasets(client: TestClient) -> None:
         """Test training with multiple training datasets."""
         ensure_minilm_model_available()
 
@@ -181,7 +197,8 @@ class TestTrainingComprehensive:
 
         cleanup_trained_models()
 
-    def test_training_parameter_validation(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_parameter_validation(client: TestClient) -> None:
         """Test training parameter validation with various edge cases."""
         ensure_minilm_model_available()
 
@@ -208,7 +225,8 @@ class TestTrainingComprehensive:
         response = client.post("/training/train", json=payload)
         assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_training_nonexistent_model(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_nonexistent_model(client: TestClient) -> None:
         """Test training with nonexistent model tag."""
         payload = {
             "model_tag": "nonexistent-model-tag",
@@ -222,7 +240,8 @@ class TestTrainingComprehensive:
         # Should return 404 for nonexistent model
         assert response.status_code == HTTP_404_NOT_FOUND
 
-    def test_training_nonexistent_dataset(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_nonexistent_dataset(client: TestClient) -> None:
         """Test training with nonexistent dataset IDs."""
         ensure_minilm_model_available()
 
@@ -237,9 +256,14 @@ class TestTrainingComprehensive:
 
         response = client.post("/training/train", json=payload)
         # Should either fail immediately or start and fail during execution
-        assert response.status_code in [HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED]
+        assert response.status_code in {
+            HTTP_400_BAD_REQUEST,
+            HTTP_404_NOT_FOUND,
+            HTTP_202_ACCEPTED,
+        }
 
-    def test_training_status_invalid_task_id(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_status_invalid_task_id(client: TestClient) -> None:
         """Test status endpoint with invalid task IDs."""
         # Test with completely random UUID
         random_id = str(uuid.uuid4())
@@ -248,9 +272,13 @@ class TestTrainingComprehensive:
 
         # Test with invalid UUID format
         response = client.get("/training/invalid-uuid/status")
-        assert response.status_code in [HTTP_400_BAD_REQUEST, HTTP_422_UNPROCESSABLE_ENTITY]
+        assert response.status_code in {
+            HTTP_400_BAD_REQUEST,
+            HTTP_422_UNPROCESSABLE_ENTITY,
+        }
 
-    def test_training_response_structure(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_response_structure(client: TestClient) -> None:
         """Test that training response has correct structure."""
         ensure_minilm_model_available()
 
@@ -277,7 +305,8 @@ class TestTrainingComprehensive:
 
         cleanup_trained_models()
 
-    def test_training_status_response_structure(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_status_response_structure(client: TestClient) -> None:
         """Test that status response has correct structure."""
         ensure_minilm_model_available()
 
@@ -301,17 +330,22 @@ class TestTrainingComprehensive:
         status_data = status_response.json()
         required_fields = ["task_id", "status", "created_at"]
         for field in required_fields:
-            assert field in status_data, f"Missing required field: {field}"
+            assert field in status_data, (
+                f"Missing required field: {field}"
+            )
 
         assert status_data["task_id"] == task_id
         assert status_data["status"] in {"Q", "R", "D", "F"}
 
         # created_at should be ISO format timestamp
-        assert isinstance(status_data["created_at"], str)
+        assert isinstance(
+            status_data["created_at"], str
+        )
 
         cleanup_trained_models()
 
-    def test_training_with_extreme_parameters(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_with_extreme_parameters(client: TestClient) -> None:
         """Test training with extreme but valid parameters."""
         ensure_minilm_model_available()
 
@@ -333,8 +367,9 @@ class TestTrainingComprehensive:
 
         cleanup_trained_models()
 
-    def test_training_dataset_schema_validation(self, client: TestClient) -> None:
-        """Test that training works with our test data schema (question/positive/negative)."""
+    @staticmethod
+    def test_training_dataset_schema_validation(_client: TestClient) -> None:
+        """Test that training works with our test data schema."""
         # Verify our test datasets have the correct schema
         dataset1_examples = load_test_dataset(f"__rm_-rf__2F_{DATASET_ID_2}.jsonl")
         dataset2_examples = load_test_dataset(f"__rm_-rf__2F_{DATASET_ID_1}.jsonl")
@@ -349,16 +384,29 @@ class TestTrainingComprehensive:
                 assert "negative" in example, "Missing 'negative' field"
 
                 # Validate field types
-                assert isinstance(example["question"], str), "'question' should be string"
-                assert isinstance(example["positive"], str), "'positive' should be string"
-                assert isinstance(example["negative"], str), "'negative' should be string"
+                assert isinstance(
+                    example["question"], str
+                ), "'question' should be string"
+                assert isinstance(
+                    example["positive"], str
+                ), "'positive' should be string"
+                assert isinstance(
+                    example["negative"], str
+                ), "'negative' should be string"
 
                 # Validate content is not empty
-                assert example["question"].strip(), "'question' should not be empty"
-                assert example["positive"].strip(), "'positive' should not be empty"
-                assert example["negative"].strip(), "'negative' should not be empty"
+                assert example["question"].strip(), (
+                    "'question' should not be empty"
+                )
+                assert example["positive"].strip(), (
+                    "'positive' should not be empty"
+                )
+                assert example["negative"].strip(), (
+                    "'negative' should not be empty"
+                )
 
-    def test_training_concurrent_requests(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_concurrent_requests(client: TestClient) -> None:
         """Test handling of concurrent training requests."""
         ensure_minilm_model_available()
 
@@ -391,7 +439,8 @@ class TestTrainingComprehensive:
 
         cleanup_trained_models()
 
-    def test_training_missing_required_fields(self, client: TestClient) -> None:
+    @staticmethod
+    def test_training_missing_required_fields(client: TestClient) -> None:
         """Test training request with missing required fields."""
         # Missing model_tag
         payload = {
