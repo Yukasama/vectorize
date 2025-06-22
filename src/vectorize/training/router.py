@@ -15,6 +15,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.ai_model.exceptions import ModelNotFoundError
 from vectorize.ai_model.repository import get_ai_model_db
 from vectorize.common.task_status import TaskStatus
+from vectorize.config.config import settings
 from vectorize.config.db import get_session
 from vectorize.dataset.repository import get_dataset_db
 
@@ -73,7 +74,7 @@ async def train_model(  # noqa: PLR0914, PLR0915, PLR0912
     model = await get_ai_model_db(db, train_request.model_tag)
     if not model:
         raise ModelNotFoundError(train_request.model_tag)
-    model_path = str(Path("data/models") / model.model_tag)
+    model_path = str(settings.model_upload_dir / model.model_tag)
 
     if not has_model_weights(model_path):
         raise TrainingModelWeightsNotFoundError(
@@ -86,7 +87,7 @@ async def train_model(  # noqa: PLR0914, PLR0915, PLR0912
             raise InvalidDatasetIdError(train_ds_id)
         train_ds_uuid = uuid.UUID(train_ds_id)
         train_ds = await get_dataset_db(db, train_ds_uuid)
-        train_dataset_path = Path("data/datasets") / train_ds.file_name
+        train_dataset_path = settings.dataset_upload_dir / train_ds.file_name
         try:
             df = pd.read_json(train_dataset_path, lines=True)
         except Exception as exc:
