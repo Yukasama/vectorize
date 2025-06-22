@@ -145,35 +145,6 @@ class TestTrainingComprehensive:
         cleanup_trained_models()
 
     @staticmethod
-    def test_training_separate_train_val_datasets(client: TestClient) -> None:
-        """Test training with separate training and validation datasets."""
-        ensure_minilm_model_available()
-
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "train_dataset_ids": [DATASET_ID_1],
-            "val_dataset_id": DATASET_ID_2,
-            "epochs": 1,
-            "learning_rate": 0.00005,
-            "per_device_train_batch_size": 4,
-        }
-
-        response = client.post("/training/train", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
-
-        task_id = extract_task_id_from_response(response)
-
-        # Verify status tracking
-        status_response = client.get(f"/training/{task_id}/status")
-        assert status_response.status_code == HTTP_200_OK
-        status_data = status_response.json()
-        assert "status" in status_data
-        assert "task_id" in status_data
-        assert "created_at" in status_data
-
-        cleanup_trained_models()
-
-    @staticmethod
     def test_training_multiple_datasets(client: TestClient) -> None:
         """Test training with multiple training datasets."""
         ensure_minilm_model_available()

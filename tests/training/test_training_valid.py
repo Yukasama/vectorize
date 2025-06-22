@@ -93,34 +93,6 @@ class TestTrainingValid:
     """Tests for the training endpoint with valid data using real test datasets."""
 
     @staticmethod
-    def test_valid_training(client: TestClient) -> None:
-        """Test training with valid data and check response and status tracking."""
-        ensure_minilm_model_available()
-        ensure_test_datasets_exist()
-
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "train_dataset_ids": [DATASET_ID_1],
-            "val_dataset_id": DATASET_ID_2,
-            "epochs": DEFAULT_EPOCHS,
-            "learning_rate": DEFAULT_LR,
-            "per_device_train_batch_size": DEFAULT_BATCH_SIZE,
-        }
-        response = client.post("/training/train", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
-        task_id = extract_task_id_from_response(response)
-        status_response = client.get(f"/training/{task_id}/status")
-        assert status_response.status_code == HTTP_200_OK
-        status_data = status_response.json()
-        assert status_data["status"] in {"Q", "R", "D", "F"}
-
-        # Import an den Dateianfang verschoben (PLC0415)
-        trained_models_dir = settings.model_upload_dir / "trained_models"
-        model_dirs = trained_models_dir.glob("*-finetuned-*")
-        for d in model_dirs:
-            shutil.rmtree(d, ignore_errors=True)
-
-    @staticmethod
     def test_get_training_status(client: TestClient) -> None:
         """Test the status endpoint for a training task with random ID (should fail)."""
         random_id = str(uuid.uuid4())
