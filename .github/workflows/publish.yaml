@@ -59,8 +59,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           platforms: ${{ matrix.platform }}
           tags: ghcr.io/${{ steps.owner.outputs.owner_lc }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.arch_tag }}
-          cache-from: type=registry,ref=ghcr.io/${{ steps.owner.outputs.owner_lc }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ steps.owner.outputs.owner_lc }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ steps.owner.outputs.owner_lc }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.platform }}
+          cache-to: type=registry,ref=ghcr.io/${{ steps.owner.outputs.owner_lc }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.platform }},mode=max
 
   manifest:
     if: ${{ github.event_name != 'pull_request' }}
