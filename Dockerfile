@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-ARG PYTHON_LATEST_VERSION=3.13
-ARG PYTHON_VERSION=${PYTHON_LATEST_VERSION}.3
+ARG PYTHON_LATEST_VERSION=3.12
+ARG PYTHON_VERSION=${PYTHON_LATEST_VERSION}.11
 
 # ----------------------------------------------
 # Stage 1: Builder
