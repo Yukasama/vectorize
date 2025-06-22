@@ -368,7 +368,7 @@ class TestTrainingComprehensive:
         cleanup_trained_models()
 
     @staticmethod
-    def test_training_dataset_schema_validation(client: TestClient) -> None:
+    def test_training_dataset_schema_validation() -> None:
         """Test that training works with our test data schema."""
         # Verify our test datasets have the correct schema
         dataset1_examples = load_test_dataset(f"__rm_-rf__2F_{DATASET_ID_2}.jsonl")

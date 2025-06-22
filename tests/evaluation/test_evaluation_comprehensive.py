@@ -258,7 +258,7 @@ class TestEvaluationComprehensive:
             # Results structure may vary, but should be JSON serializable
 
     @staticmethod
-    def test_evaluation_dataset_schema_validation(client: TestClient) -> None:
+    def test_evaluation_dataset_schema_validation() -> None:
         """Test that evaluation works with our test data schema."""
         # Verify our test datasets have the correct schema
         dataset1_examples = load_test_dataset(f"__rm_-rf__2F_{DATASET_ID_2}.jsonl")
