@@ -13,7 +13,6 @@ from fastapi.testclient import TestClient
 from httpx import Response
 
 MINILM_MODEL_TAG = "models--sentence-transformers--all-MiniLM-L6-v2"
-# Using the actual test dataset IDs that match the real test files
 DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
 DATASET_ID_2 = "0a9d5e87-e497-4737-9829-2070780d10df"
 DEFAULT_EPOCHS = 3
