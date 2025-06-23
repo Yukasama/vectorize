@@ -15,7 +15,7 @@ class TasksModel(BaseModel):
     """Pydantic model for action responses."""
 
     id: UUID
-    tag: str
+    tag: str | None = None
     task_status: TaskStatus
     created_at: datetime
     end_date: datetime | None

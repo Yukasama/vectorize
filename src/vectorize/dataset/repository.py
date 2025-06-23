@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from loguru import logger
-from sqlmodel import select
+from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.common.exceptions import TaskNotFoundError, VersionMismatchError
@@ -24,21 +24,27 @@ __all__ = [
 ]
 
 
-async def get_datasets_db(db: AsyncSession) -> Sequence[Dataset]:
+async def get_datasets_db(
+    db: AsyncSession, *, limit: int, offset: int
+) -> tuple[Sequence[Dataset], int]:
     """Retrieve all datasets from the database.
 
     Args:
         db: Database session instance.
+        limit: Maximum number of datasets to return.
+        offset: Number of datasets to skip.
 
     Returns:
-        A list of all Dataset objects in the database.
+        A paged list of all Dataset objects in the database.
     """
-    statement = select(Dataset)
-    result = await db.exec(statement)
-    datasets = result.all()
+    stmt = select(Dataset).offset(offset).limit(limit)
+    datasets = (await db.exec(stmt)).all()
 
-    logger.debug("Retrieved {} datasets from database", len(datasets))
-    return datasets
+    total_stmt = select(func.count()).select_from(Dataset)
+    total: int = await db.scalar(total_stmt)
+
+    logger.debug("Datasets retrieved", items=len(datasets), total=total)
+    return datasets, total
 
 
 async def get_dataset_db(db: AsyncSession, dataset_id: UUID) -> Dataset:
