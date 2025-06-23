@@ -2,6 +2,9 @@
 
 Dieses Modul enthält die gesamte Logik für das Training von SBERT-Modellen (Sentence-BERT) inklusive Datenvalidierung, Trainingsorchestrierung, Fehlerbehandlung und Utilities für die Integration in REST-APIs.
 
+## Database
+docker run --rm -p 8080:8080 -v vectorize-stack_db_data:/data --platform linux/amd64 -e SQLITE_DATABASE=/data/app.db ghcr.io/coleifer/sqlite-web
+
 ## Übersicht
 
 Das Trainingssystem ist modular aufgebaut und bietet:
