@@ -95,13 +95,31 @@ async def update_evaluation_task_results(
         baseline_metrics: JSON string of baseline metrics
         evaluation_summary: Human-readable evaluation summary
     """
+    await _update_evaluation_task_fields(
+        db,
+        task_id,
+        evaluation_metrics=evaluation_metrics,
+        baseline_metrics=baseline_metrics,
+        evaluation_summary=evaluation_summary,
+    )
+
+
+async def _update_evaluation_task_fields(
+    db: AsyncSession,
+    task_id: UUID,
+    **field_updates: str | None,
+) -> None:
+    """Generic function to update evaluation task fields.
+
+    Args:
+        db: Database session
+        task_id: UUID of the evaluation task
+        **field_updates: Field values to update
+    """
     task = await get_evaluation_task_by_id(db, task_id)
     if task:
-        if evaluation_metrics is not None:
-            task.evaluation_metrics = evaluation_metrics
-        if baseline_metrics is not None:
-            task.baseline_metrics = baseline_metrics
-        if evaluation_summary is not None:
-            task.evaluation_summary = evaluation_summary
+        for field, value in field_updates.items():
+            if value is not None and hasattr(task, field):
+                setattr(task, field, value)
         db.add(task)
         await db.commit()

@@ -287,7 +287,20 @@ async def resolve_evaluation_dataset(
         InvalidDatasetIdError: If dataset ID is invalid.
         TrainingDatasetNotFoundError: If dataset or training task not found.
     """
-    # Validate that exactly one of dataset_id or training_task_id is provided
+    _validate_dataset_resolution_input(evaluation_request)
+
+    if evaluation_request.dataset_id:
+        return await _resolve_explicit_dataset(db, evaluation_request.dataset_id)
+
+    if evaluation_request.training_task_id is None:
+        raise ValueError("training_task_id must be set at this point")
+    return await _resolve_training_validation_dataset(
+        db, evaluation_request.training_task_id
+    )
+
+
+def _validate_dataset_resolution_input(evaluation_request: EvaluationRequest) -> None:
+    """Validate dataset resolution input parameters."""
     if evaluation_request.dataset_id and evaluation_request.training_task_id:
         raise ValueError(
             "Cannot specify both dataset_id and training_task_id. "
@@ -296,65 +309,61 @@ async def resolve_evaluation_dataset(
         )
 
     if not evaluation_request.dataset_id and not evaluation_request.training_task_id:
-        raise ValueError(
-            "Must specify either dataset_id or training_task_id."
-        )    # Case 1: Explicit dataset_id provided
-    if evaluation_request.dataset_id is not None:
-        try:
-            dataset_uuid = UUID(evaluation_request.dataset_id)
-        except ValueError as exc:
-            raise InvalidDatasetIdError(evaluation_request.dataset_id) from exc
+        raise ValueError("Must specify either dataset_id or training_task_id.")
 
-        dataset = await get_dataset_db(db, dataset_uuid)
-        if not dataset:
-            raise TrainingDatasetNotFoundError(
-                f"Dataset not found: {evaluation_request.dataset_id}"
-            )
 
-        dataset_path = Path("data/datasets") / dataset.file_name
-        if not dataset_path.exists():
-            raise TrainingDatasetNotFoundError(
-                f"Dataset file not found: {dataset_path}"
-            )
+async def _resolve_explicit_dataset(db: AsyncSession, dataset_id: str) -> Path:
+    """Resolve explicit dataset by ID."""
+    try:
+        dataset_uuid = UUID(dataset_id)
+    except ValueError as exc:
+        raise InvalidDatasetIdError(dataset_id) from exc
 
-        logger.info(
-            "Using explicit dataset for evaluation",
-            dataset_id=evaluation_request.dataset_id,
-            dataset_path=str(dataset_path)
+    dataset = await get_dataset_db(db, dataset_uuid)
+    if not dataset:
+        raise TrainingDatasetNotFoundError(f"Dataset not found: {dataset_id}")
+
+    dataset_path = Path("data/datasets") / dataset.file_name
+    if not dataset_path.exists():
+        raise TrainingDatasetNotFoundError(f"Dataset file not found: {dataset_path}")
+
+    logger.info(
+        "Using explicit dataset for evaluation",
+        dataset_id=dataset_id,
+        dataset_path=str(dataset_path)
+    )
+    return dataset_path
+
+
+async def _resolve_training_validation_dataset(
+    db: AsyncSession, training_task_id: str
+) -> Path:
+    """Resolve validation dataset from training task."""
+    try:
+        task_uuid = UUID(training_task_id)
+    except ValueError as exc:
+        raise InvalidDatasetIdError(training_task_id) from exc
+
+    training_task = await get_train_task_by_id(db, task_uuid)
+    if not training_task:
+        raise TrainingDatasetNotFoundError(
+            f"Training task not found: {training_task_id}"
         )
-        return dataset_path
 
-    # Case 2: training_task_id provided - use its validation dataset
-    if evaluation_request.training_task_id is not None:
-        try:
-            task_uuid = UUID(evaluation_request.training_task_id)
-        except ValueError as exc:
-            raise InvalidDatasetIdError(evaluation_request.training_task_id) from exc
-
-        training_task = await get_train_task_by_id(db, task_uuid)
-        if not training_task:
-            raise TrainingDatasetNotFoundError(
-                f"Training task not found: {evaluation_request.training_task_id}"
-            )
-
-        if not training_task.validation_dataset_path:
-            raise TrainingDatasetNotFoundError(
-                f"Training task {evaluation_request.training_task_id} "
-                "has no validation dataset path"
-            )
-
-        dataset_path = Path(training_task.validation_dataset_path)
-        if not dataset_path.exists():
-            raise TrainingDatasetNotFoundError(
-                f"Validation dataset file not found: {dataset_path}"
-            )
-
-        logger.info(
-            "Using validation dataset from training task",
-            training_task_id=evaluation_request.training_task_id,
-            validation_dataset_path=str(dataset_path)
+    if not training_task.validation_dataset_path:
+        raise TrainingDatasetNotFoundError(
+            f"Training task {training_task_id} has no validation dataset path"
         )
-        return dataset_path
 
-    # This should never be reached due to validation above
-    raise ValueError("No valid dataset source provided")
+    dataset_path = Path(training_task.validation_dataset_path)
+    if not dataset_path.exists():
+        raise TrainingDatasetNotFoundError(
+            f"Validation dataset file not found: {dataset_path}"
+        )
+
+    logger.info(
+        "Using validation dataset from training task",
+        training_task_id=training_task_id,
+        validation_dataset_path=str(dataset_path)
+    )
+    return dataset_path

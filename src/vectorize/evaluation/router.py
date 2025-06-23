@@ -8,8 +8,9 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config.db import get_session
+from vectorize.training.exceptions import InvalidDatasetIdError
 
-from .exceptions import EvaluationTaskNotFoundError, InvalidDatasetIdError
+from .exceptions import EvaluationTaskNotFoundError
 from .models import EvaluationTask
 from .repository import get_evaluation_task_by_id, save_evaluation_task
 from .schemas import EvaluationRequest, EvaluationStatusResponse
