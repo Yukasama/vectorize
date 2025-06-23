@@ -82,7 +82,7 @@ async def load_model_huggingface(
 
     upload_task = UploadTask(
         tag=key,
-        task_status=TaskStatus.QUEUED,
+        task_status=TaskStatus.RUNNING,
         source=RemoteModelSource.HUGGINGFACE,
         model_tag=key,
     )

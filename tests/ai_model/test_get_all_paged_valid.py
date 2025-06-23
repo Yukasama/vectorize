@@ -8,7 +8,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-SEEDED_MODEL_COUNT = 10  # Set to the actual number of seeded models
+SEEDED_MODEL_COUNT = 10
 
 
 @pytest.mark.ai_model

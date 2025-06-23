@@ -40,15 +40,14 @@ Thumbs.db
 
 # === Pytest ===
 .pytest_cache/
-.coverage
 htmlcov/
 .cache/
+.coverage
 nosetests.xml
 coverage.xml
 .coverage.*
 *.cover
 *.py,cover
-.coverage.*
 
 # === Black / mypy / linting ===
 .mypy_cache/

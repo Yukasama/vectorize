@@ -18,6 +18,7 @@ DATASET_ID_1 = "0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"
 DEFAULT_EPOCHS = 1
 DEFAULT_LR = 0.00005
 DEFAULT_BATCH_SIZE = 8
+REDIS_EXPIRATION_SECONDS = 3600
 
 HTTP_200_OK = status.HTTP_200_OK
 HTTP_202_ACCEPTED = status.HTTP_202_ACCEPTED
@@ -84,7 +85,7 @@ class TestTrainingCancel:
         call_args = mock_redis.set.call_args
         assert call_args[0][0].startswith("cancel_training:")  # cancellation key
         assert call_args[0][1] == "true"  # value
-        assert call_args[1]["ex"] == 3600  # expiration
+        assert call_args[1]["ex"] == REDIS_EXPIRATION_SECONDS  # expiration
 
         # Verify task status is now CANCELED
         status_response = client.get(f"/training/{task_id}/status")
@@ -126,7 +127,9 @@ class TestTrainingCancel:
 
     @staticmethod
     @patch("redis.Redis")
-    def test_cancel_with_redis_failure(mock_redis_class: Mock, client: TestClient) -> None:
+    def test_cancel_with_redis_failure(
+        mock_redis_class: Mock, client: TestClient
+    ) -> None:
         """Test canceling when Redis connection fails."""
         ensure_minilm_model_available()
 

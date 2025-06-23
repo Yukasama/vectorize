@@ -559,7 +559,6 @@ class TrainingOrchestrator:
             model_tag=new_model_tag,
             source=ModelSource.LOCAL,
             trained_from_id=parent_model.id,
-            trained_from_tag=parent_model.model_tag,
         )
 
         new_model_id = await save_ai_model_db(self.db, new_model)

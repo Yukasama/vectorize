@@ -114,8 +114,3 @@ class AIModel(SQLModel, table=True):
         ),
         description="Timestamp when the AI model was last updated.",
     )
-
-    trained_from_tag: str | None = Field(
-        default=None,
-        description="Tag of the parent model this model was trained from.",
-    )
