@@ -46,7 +46,6 @@ async def process_huggingface_model_bg(
         Exception: If an error occurs during model processing or database operations.
     """
     async with AsyncSession(engine, expire_on_commit=False) as db:
-        key = f"{model_tag}@{revision}"
         task_uid = UUID(task_id)
 
         try:
@@ -54,7 +53,7 @@ async def process_huggingface_model_bg(
             await load_huggingface_model_and_cache_only_svc(model_tag, revision)
 
             ai_model = AIModel(
-                model_tag=key,
+                model_tag=model_tag.replace("/", "_"),
                 name=model_tag,
                 source=ModelSource.HUGGINGFACE,
             )
