@@ -44,7 +44,7 @@ router = APIRouter(tags=["Dataset"])
 @router.get("", summary="Get paginated datasets")
 async def get_datasets(
     db: Annotated[AsyncSession, Depends(get_session)],
-    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+    limit: Annotated[int, Query(ge=1, le=500)] = 10,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> Page[DatasetAll]:
     """Retrieve all datasets with limited fields.
