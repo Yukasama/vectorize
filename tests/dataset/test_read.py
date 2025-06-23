@@ -16,25 +16,53 @@ _VALID_ID = "5d2f3e4b-8c7f-4d2a-9f1e-0a6f3e4d2a5b"
 class TestGetDatasets:
     """Tests for GET /datasets and GET /datasets/{dataset_id} endpoints."""
 
+    @staticmethod
+    def _assert_dataset_shape(dataset: dict) -> None:
+        """Ensure a single dataset dict exposes only the public fields."""
+        required = {"id", "name", "classification", "created_at", "rows"}
+        forbidden = {"file_name", "updated_at", "synthesis_id"}
+
+        assert required.issubset(dataset.keys())
+        assert forbidden.isdisjoint(dataset.keys())
+
     @classmethod
-    async def test_get_all_datasets(cls, client: TestClient) -> None:
-        """Test retrieving all datasets."""
+    async def test_get_datasets_default(cls, client: TestClient) -> None:
+        """Default call (no params) returns a Page wrapper with items."""
         response = client.get("/datasets")
         assert response.status_code == status.HTTP_200_OK
 
-        datasets = response.json()
-        assert isinstance(datasets, list)
-        assert len(datasets) > 0
+        page = response.json()
+        assert isinstance(page, dict)
+        assert set(page.keys()) == {"items", "total", "limit", "offset"}
 
-        for dataset in datasets:
-            assert "id" in dataset
-            assert "name" in dataset
-            assert "classification" in dataset
-            assert "created_at" in dataset
-            assert "rows" in dataset
-            assert "file_name" not in dataset
-            assert "updated_at" not in dataset
-            assert "synthesis_id" not in dataset
+        items = page["items"]
+        assert isinstance(items, list)
+        assert len(items) > 0
+        cls._assert_dataset_shape(items[0])
+
+    @classmethod
+    async def test_get_datasets_limit(cls, client: TestClient) -> None:
+        """?limit constrains number of returned items and is echoed back."""
+        limit = 2
+        response = client.get(f"/datasets?limit={limit}")
+        assert response.status_code == status.HTTP_200_OK
+
+        page = response.json()
+        assert page["limit"] == limit
+        assert len(page["items"]) <= limit
+
+    @classmethod
+    async def test_get_datasets_offset_pagination(cls, client: TestClient) -> None:
+        """Offset should skip the first *offset* rows; pages must not overlap."""
+        limit = 3
+        first_page = client.get(f"/datasets?limit={limit}&offset=0").json()
+        second_page = client.get(f"/datasets?limit={limit}&offset={limit}").json()
+
+        first_ids = {d["id"] for d in first_page["items"]}
+        second_ids = {d["id"] for d in second_page["items"]}
+        assert first_ids.isdisjoint(second_ids)
+
+        assert len(first_ids | second_ids) <= first_page["total"]
 
     @classmethod
     async def test_get_dataset_by_id(cls, client: TestClient) -> None:

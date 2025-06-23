@@ -7,6 +7,7 @@ from fastapi import (
     APIRouter,
     Depends,
     File,
+    Query,
     Request,
     Response,
     UploadFile,
@@ -18,6 +19,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.common.exceptions import InvalidFileError
 from vectorize.config.db import get_session
+from vectorize.dataset.pagination import Page
 from vectorize.dataset.utils.process_upload import _process_uploads
 
 from .models import DatasetAll, DatasetPublic, DatasetUpdate
@@ -39,21 +41,25 @@ __all__ = ["router"]
 router = APIRouter(tags=["Dataset"])
 
 
-@router.get("", summary="Get all datasets")
+@router.get("", summary="Get paginated datasets")
 async def get_datasets(
     db: Annotated[AsyncSession, Depends(get_session)],
-) -> list[DatasetAll]:
+    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> Page[DatasetAll]:
     """Retrieve all datasets with limited fields.
 
     Args:
         db: Database session for persistence operations
+        limit: Maximum number of datasets to return (default 10, max 100)
+        offset: Number of datasets to skip (default 0)
 
     Returns:
         List of datasets with limited fields (DatasetAll model)
     """
-    datasets = await get_datasets_svc(db)
-    logger.debug("Datasets retrieved", length=len(datasets))
-    return datasets
+    items, total = await get_datasets_svc(db, limit=limit, offset=offset)
+    logger.debug("Datasets retrieved", length=len(items), total=total)
+    return Page[DatasetAll](items=items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/{dataset_id}", response_model=None, summary="Get dataset by ID")

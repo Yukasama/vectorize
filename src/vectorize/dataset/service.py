@@ -48,7 +48,9 @@ __all__ = [
 ]
 
 
-async def get_datasets_svc(db: AsyncSession) -> list[DatasetAll]:
+async def get_datasets_svc(
+    db: AsyncSession, *, limit: int, offset: int
+) -> tuple[list[DatasetAll], int]:
     """Read all datasets from the database.
 
     This function retrieves all datasets from the database and returns them as a
@@ -58,9 +60,8 @@ async def get_datasets_svc(db: AsyncSession) -> list[DatasetAll]:
     Returns:
         List of dictionaries representing datasets with limited fields.
     """
-    datasets = await get_datasets_db(db)
-
-    return [DatasetAll.model_validate(dataset) for dataset in datasets]
+    rows, total = await get_datasets_db(db, limit=limit, offset=offset)
+    return [DatasetAll.model_validate(row) for row in rows], total
 
 
 async def get_dataset_svc(
