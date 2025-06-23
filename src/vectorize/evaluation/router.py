@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -14,7 +14,7 @@ from .exceptions import EvaluationTaskNotFoundError
 from .models import EvaluationTask
 from .repository import get_evaluation_task_by_id, save_evaluation_task
 from .schemas import EvaluationRequest, EvaluationStatusResponse
-from .service import evaluate_model_background_task
+from .tasks import run_evaluation_bg
 
 __all__ = ["router"]
 
@@ -24,7 +24,6 @@ router = APIRouter(tags=["Evaluation"])
 @router.post("/evaluate")
 async def evaluate_model(
     evaluation_request: EvaluationRequest,
-    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
     """Start model evaluation as a background task.
@@ -55,11 +54,10 @@ async def evaluate_model(
     task = EvaluationTask(id=uuid4())
     await save_evaluation_task(db, task)
 
-    background_tasks.add_task(
-        evaluate_model_background_task,
-        get_session,
-        evaluation_request,
-        task.id,
+    # Start evaluation task using Dramatiq
+    run_evaluation_bg.send(
+        evaluation_request.model_dump(),
+        str(task.id),
     )
 
     logger.debug(
