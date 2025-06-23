@@ -1,6 +1,7 @@
 """Common test fixtures for the application."""
 
 import os
+import shutil
 from pathlib import Path
 
 import redis
@@ -141,3 +142,22 @@ def client_fixture(session: AsyncSession) -> Generator[TestClient]:
     yield client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def copy_training_datasets() -> Generator[None]:
+    """Copy training datasets from the test data directory to the datasets directory."""
+    src = Path("test_data/training/datasets")
+    dst = Path("test_data/datasets")
+    if not src.exists():
+        return
+    dst.mkdir(parents=True, exist_ok=True)
+    for item in src.iterdir():
+        if item.is_file():
+            shutil.copy2(item, dst / item.name)
+        elif item.is_dir():
+            target_dir = dst / item.name
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+            shutil.copytree(item, target_dir)
+    yield

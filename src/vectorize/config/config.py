@@ -60,9 +60,10 @@ class Settings(BaseSettings):
     )
 
     # Dataset configuration
-    dataset_upload_dir: Path = Field(
+    dataset_upload_dir_config: Path = Field(
         default=Path(_dataset_config.get("dataset_upload_dir")),
-        description="Directory for storing uploaded dataset files.",
+        description="Base directory for storing uploaded dataset files.",
+        exclude=True,
     )
 
     allowed_extensions: frozenset[str] = Field(
@@ -96,9 +97,10 @@ class Settings(BaseSettings):
     )
 
     # Model configuration
-    model_upload_dir: Path = Field(
+    model_upload_dir_config: Path = Field(
         default=Path(_model_config.get("model_upload_dir")),
-        description="Directory for storing uploaded model files.",
+        description="Base directory for storing uploaded model files.",
+        exclude=True,
     )
 
     model_max_upload_size: int = Field(
@@ -185,6 +187,22 @@ class Settings(BaseSettings):
         default=_log_config.get("rotation"),
         description="Log rotation strategy (time or size-based).",
     )
+
+    @computed_field
+    @property
+    def dataset_upload_dir(self) -> Path:
+        """Directory for storing uploaded dataset files."""
+        if self.app_env == "testing":
+            return Path("test_data/datasets")
+        return self.dataset_upload_dir_config
+
+    @computed_field
+    @property
+    def model_upload_dir(self) -> Path:
+        """Directory for storing uploaded model files."""
+        if self.app_env == "testing":
+            return Path("test_data/models")
+        return self.model_upload_dir_config
 
     @computed_field
     @property

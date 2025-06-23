@@ -23,7 +23,7 @@ _models = {}
 __all__ = ["load_huggingface_model_and_cache_only_svc"]
 
 
-async def load_huggingface_model_and_cache_only_svc(  # noqa: RUF029
+async def load_huggingface_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
     model_tag: str, revision: str) -> None:
     """Load a Hugging Face model and cache it locally if not already cached.
 
