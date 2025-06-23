@@ -5,14 +5,18 @@ import builtins
 import time
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 import pandas as pd
+import redis
 from loguru import logger
-from sentence_transformers import SentenceTransformer, losses
+from sentence_transformers import losses
 from sqlmodel.ext.asyncio.session import AsyncSession
 from torch.utils.data import DataLoader
+
+if TYPE_CHECKING:
+    from dramatiq import Message
 
 from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
@@ -51,7 +55,35 @@ class TrainingOrchestrator:
         """
         self.db = db
         self.task_id = task_id
-        self.model: SentenceTransformer | None = None
+        self._redis_client = None
+
+    def _get_redis_client(self) -> redis.Redis:
+        """Get Redis client for cancellation checks."""
+        if self._redis_client is None:
+            self._redis_client = redis.Redis(
+                host='redis', port=6379, db=0, decode_responses=True
+            )
+        return self._redis_client
+
+    def _check_cancellation(self, dramatiq_message: object | None) -> bool:
+        """Check if the training should be cancelled.
+
+        Args:
+            dramatiq_message: Dramatiq message object
+
+        Returns:
+            True if training should be cancelled, False otherwise
+        """
+        if dramatiq_message and hasattr(dramatiq_message, 'message_id'):
+            try:
+                redis_client = self._get_redis_client()
+                message = cast("Message", dramatiq_message)
+                message_id = message.message_id
+                cancellation_key = f"cancel_training:{message_id}"
+                return bool(redis_client.exists(cancellation_key))
+            except Exception as e:
+                logger.warning("Failed to check cancellation status", error=str(e))
+        return False
 
     @staticmethod
     async def validate_datasets(
@@ -150,6 +182,7 @@ class TrainingOrchestrator:
         train_request: TrainRequest,
         dataset_paths: list[str],
         output_dir: str,
+        dramatiq_message: object | None = None,
     ) -> None:
         """Main orchestration function for SBERT training.
 
@@ -158,6 +191,7 @@ class TrainingOrchestrator:
             train_request: Training configuration
             dataset_paths: List of dataset file paths
             output_dir: Output directory for the trained model
+            dramatiq_message: Dramatiq message for cancellation checks
         """
         logger.debug(
             "Starting SBERT training",
@@ -168,7 +202,23 @@ class TrainingOrchestrator:
         )
 
         try:
+            # Check for cancellation before starting
+            if self._check_cancellation(dramatiq_message):
+                await update_training_task_status(
+                    self.db, self.task_id, TaskStatus.CANCELED,
+                    error_msg="Training cancelled before model loading"
+                )
+                return
+
             self.model = load_and_prepare_model(model_path)
+
+            # Check for cancellation after model loading
+            if self._check_cancellation(dramatiq_message):
+                await update_training_task_status(
+                    self.db, self.task_id, TaskStatus.CANCELED,
+                    error_msg="Training cancelled after model loading"
+                )
+                return
 
             (
                 train_dataloader,
@@ -177,12 +227,29 @@ class TrainingOrchestrator:
                 dataset_paths, train_request.per_device_train_batch_size
             )
 
+            # Check for cancellation after data preparation
+            if self._check_cancellation(dramatiq_message):
+                await update_training_task_status(
+                    self.db, self.task_id, TaskStatus.CANCELED,
+                    error_msg="Training cancelled after data preparation"
+                )
+                return
+
             await self._update_validation_dataset(validation_dataset_path)
+
+            # Check for cancellation before training starts
+            if self._check_cancellation(dramatiq_message):
+                await update_training_task_status(
+                    self.db, self.task_id, TaskStatus.CANCELED,
+                    error_msg="Training cancelled before model training"
+                )
+                return
 
             training_metrics = self._train_model(
                 train_dataloader,
                 train_request,
                 output_dir,
+                dramatiq_message,  # Pass for internal checks
             )
 
             await self._save_training_metrics(training_metrics)
@@ -358,6 +425,7 @@ class TrainingOrchestrator:
         train_dataloader: DataLoader,
         train_request: TrainRequest,
         output_dir: str,
+        dramatiq_message: object | None = None,
     ) -> dict:
         """Train the SBERT model.
 
@@ -365,12 +433,17 @@ class TrainingOrchestrator:
             train_dataloader: Training data loader
             train_request: Training configuration
             output_dir: Output directory for the trained model
+            dramatiq_message: Dramatiq message for cancellation checks
 
         Returns:
             Dictionary containing training metrics
         """
         if self.model is None:
             raise RuntimeError("Model not loaded")
+
+        # Check for cancellation before training
+        if self._check_cancellation(dramatiq_message):
+            raise RuntimeError("Training cancelled before model training started")
 
         loss = losses.CosineSimilarityLoss(self.model)
 

@@ -13,6 +13,7 @@ from .models import TrainingTask
 __all__ = [
     "get_train_task_by_id",
     "save_training_task",
+    "update_training_task_dramatiq_id",
     "update_training_task_metrics",
     "update_training_task_status",
     "update_training_task_validation_dataset",
@@ -114,3 +115,22 @@ async def get_train_task_by_id(db: AsyncSession, task_id: UUID) -> TrainingTask 
     """
     result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
     return result.first()
+
+
+async def update_training_task_dramatiq_id(
+    db: AsyncSession, task_id: UUID, dramatiq_message_id: str
+) -> None:
+    """Update the Dramatiq message ID of a TrainingTask for cancellation.
+
+    Args:
+        db (AsyncSession): The database session.
+        task_id (UUID): The ID of the training task.
+        dramatiq_message_id (str): The Dramatiq message ID.
+    """
+    result = await db.exec(select(TrainingTask).where(TrainingTask.id == task_id))
+    task = result.first()
+    if task:
+        task.dramatiq_message_id = dramatiq_message_id
+        task.updated_at = datetime.now(UTC)
+        await db.commit()
+        await db.refresh(task)

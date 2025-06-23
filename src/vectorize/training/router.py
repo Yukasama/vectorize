@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 
+import redis
 from fastapi import APIRouter, Depends, Response, status
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -23,6 +24,7 @@ from .models import TrainingTask
 from .repository import (
     get_train_task_by_id,
     save_training_task,
+    update_training_task_dramatiq_id,
     update_training_task_status,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
@@ -79,13 +81,17 @@ async def train_model(
     )
     await save_training_task(db, task)
 
-    run_training_bg.send(
-        model_path=model_path,
-        train_request_dict=train_request.model_dump(),
-        task_id=str(task.id),
-        dataset_paths=dataset_paths,
-        output_dir=output_dir,
+    message = run_training_bg.send_with_options(
+        args=(
+            model_path,
+            train_request.model_dump(),
+            str(task.id),
+            dataset_paths,
+            output_dir,
+        ),
     )
+
+    await update_training_task_dramatiq_id(db, task.id, message.message_id)
     logger.debug(
         "SBERT-Triplet-Training started in background with Dramatiq.",
         task_id=str(task.id),
@@ -126,6 +132,30 @@ async def cancel_training(
             status_code=status.HTTP_400_BAD_REQUEST,
             content=f"Cannot cancel task with status: {task.task_status.name}",
         )
+
+    if task.dramatiq_message_id:
+        try:
+
+            redis_client = redis.Redis(
+                host='redis', port=6379, db=0, decode_responses=True
+            )
+            cancellation_key = f"cancel_training:{task.dramatiq_message_id}"
+            redis_client.set(cancellation_key, "true", ex=3600)
+
+            logger.debug(
+                "Cancellation signal sent via Redis",
+                task_id=task_id,
+                dramatiq_message_id=task.dramatiq_message_id,
+                cancellation_key=cancellation_key,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to send cancellation signal",
+                task_id=task_id,
+                dramatiq_message_id=task.dramatiq_message_id,
+                error=str(e),
+            )
+
     await update_training_task_status(
         db, task_id, TaskStatus.CANCELED, error_msg="Training canceled by user"
     )
