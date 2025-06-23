@@ -76,7 +76,6 @@ class TrainingOrchestrator:
         dataset_paths = []
         required_columns = {"question", "positive", "negative"}
 
-        # Validate training datasets
         for train_ds_id in train_dataset_ids:
             try:
                 train_ds_uuid = uuid.UUID(train_ds_id)
@@ -95,7 +94,6 @@ class TrainingOrchestrator:
             )
             dataset_paths.append(str(train_dataset_path))
 
-        # Validate validation dataset if provided
         if val_dataset_id:
             try:
                 val_ds_uuid = uuid.UUID(val_dataset_id)
@@ -114,7 +112,6 @@ class TrainingOrchestrator:
             )
             dataset_paths.append(str(val_dataset_path))
 
-        # Check that all files exist
         missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
         if missing:
             raise TrainingDatasetNotFoundError(
@@ -180,17 +177,14 @@ class TrainingOrchestrator:
                 dataset_paths, train_request.per_device_train_batch_size
             )
 
-            # Store validation dataset path in the training task
             await self._update_validation_dataset(validation_dataset_path)
 
-            # Train the model and capture metrics
             training_metrics = self._train_model(
                 train_dataloader,
                 train_request,
                 output_dir,
             )
 
-            # Save training metrics to database
             await self._save_training_metrics(training_metrics)
 
             await self._save_trained_model(train_request, output_dir)
@@ -245,7 +239,6 @@ class TrainingOrchestrator:
             validation_dataset=validation_path,
         )
 
-        # Combine all training datasets
         all_train_examples = []
         dataset_stats = []
 
@@ -269,7 +262,6 @@ class TrainingOrchestrator:
                 examples_generated=len(examples),
             )
 
-        # Log validation dataset info
         val_df = DatasetValidator.validate_dataset(Path(validation_path))
         val_examples_count = len(prepare_input_examples(val_df))
         dataset_stats.append({
@@ -299,7 +291,6 @@ class TrainingOrchestrator:
         df = DatasetValidator.validate_dataset(Path(dataset_path))
         all_examples = prepare_input_examples(df)
 
-        # 10% for validation, 90% for training
         val_split = int(0.1 * len(all_examples))
         train_examples = all_examples[val_split:]
         val_examples = all_examples[:val_split]
@@ -344,7 +335,6 @@ class TrainingOrchestrator:
         validation_dataset_path: str | None,
     ) -> None:
         """Log final training data preparation summary."""
-        # Convert dataset_stats to string to avoid Loguru formatting issues
         dataset_summary = []
         for stat in dataset_stats:
             summary = (
@@ -384,27 +374,21 @@ class TrainingOrchestrator:
 
         loss = losses.CosineSimilarityLoss(self.model)
 
-        # Capture training start time for runtime calculation
         start_time = time.time()
         captured_metrics = {}
 
-        # Monkey patch print to capture the metrics output
         original_print = builtins.print
 
         def custom_print(*args: Any, **kwargs: Any) -> None:  # noqa: ANN401
             """Custom print that captures training metrics."""
-            # Convert args to string to check for metrics
             text = " ".join(str(arg) for arg in args)
 
-            # Check if this looks like the metrics dict
             if (
                 "train_runtime" in text
                 and "train_loss" in text
                 and "train_samples_per_second" in text
             ):
                 try:
-                    # Try to parse as a Python dict
-                    # Clean up the text - sometimes there might be extra content
                     if "{" in text and "}" in text:
                         start_idx = text.find("{")
                         end_idx = text.rfind("}") + 1
@@ -422,30 +406,29 @@ class TrainingOrchestrator:
                         text=text,
                         error=str(e),
                     )
-            # Call original print
             original_print(*args, **kwargs)
 
-        # Replace print temporarily
         builtins.print = custom_print
 
         try:
-            # Train the model
+            checkpoint_dir = Path(output_dir) / "checkpoints"
+            checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
             self.model.fit(
                 train_objectives=[(train_dataloader, loss)],
                 epochs=train_request.epochs,
                 warmup_steps=train_request.warmup_steps or 0,
                 show_progress_bar=False,
                 output_path=str(Path(output_dir)),
+                checkpoint_path=str(checkpoint_dir),
+                checkpoint_save_steps=0,
             )
         finally:
-            # Restore original print
             builtins.print = original_print
 
-        # Calculate training runtime
         end_time = time.time()
         train_runtime = end_time - start_time
 
-        # Use captured metrics if available, otherwise fall back to calculated
         try:
             total_samples = len(train_dataloader.dataset)  # type: ignore
         except (TypeError, AttributeError):
@@ -469,7 +452,6 @@ class TrainingOrchestrator:
             "epoch": captured_metrics.get("epoch", float(train_request.epochs)),
         }
 
-        # Log what we captured
         if captured_metrics:
             logger.info(
                 "Using captured training metrics",
@@ -587,15 +569,12 @@ class TrainingOrchestrator:
             DatasetValidationError: If any dataset file is invalid
         """
         for path in dataset_paths:
-            # Check if file exists
             if not Path(path).is_file():
                 raise DatasetValidationError(f"Dataset file not found: {path}")
 
-            # Check file size (must be > 0)
             if Path(path).stat().st_size == 0:
                 raise DatasetValidationError(f"Dataset file is empty: {path}")
 
-            # Check file extension
             if Path(path).suffix not in {".csv", ".tsv", ".jsonl"}:
                 raise DatasetValidationError(
                     f"Invalid file type for dataset: {path}. "

@@ -88,7 +88,6 @@ class TrainingStatusResponse(BaseModel):
     trained_model_id: str | None = None
     validation_dataset_path: str | None = None
 
-    # Training Metrics
     train_runtime: float | None = None
     train_samples_per_second: float | None = None
     train_steps_per_second: float | None = None

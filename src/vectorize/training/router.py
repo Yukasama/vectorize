@@ -61,7 +61,6 @@ async def train_model(
             f"Model weights not found in {model_path} (searched recursively)"
         )
 
-    # Validate datasets and get paths
     dataset_paths = await TrainingOrchestrator.validate_datasets(
         db, train_request.train_dataset_ids, train_request.val_dataset_id
     )
@@ -80,7 +79,6 @@ async def train_model(
     )
     await save_training_task(db, task)
 
-    # Send training task to Dramatiq for background processing
     run_training_bg.send(
         model_path=model_path,
         train_request_dict=train_request.model_dump(),
