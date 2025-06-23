@@ -86,7 +86,7 @@ class TestUpdateDatasets:
         """Test successful deletion of a dataset."""
         response = client.get("/datasets?limit=500")
         assert response.status_code == status.HTTP_200_OK
-        datasets_length = len(response.json())
+        datasets_length = len(response.json()["items"])
 
         response = client.delete(f"/datasets/{_VALID_ID}")
         assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -95,14 +95,14 @@ class TestUpdateDatasets:
         assert dataset.status_code == status.HTTP_404_NOT_FOUND
 
         response = client.get("/datasets?limit=500")
-        assert len(response.json()) == datasets_length - 1
+        assert len(response.json()["items"]) == datasets_length - 1
 
     @classmethod
     async def test_delete_not_exist(cls, client: TestClient) -> None:
         """Test deletion of a non-existent dataset."""
         response = client.get("/datasets")
         assert response.status_code == status.HTTP_200_OK
-        datasets_length = len(response.json())
+        datasets_length = len(response.json()["items"])
 
         response = client.delete(f"/datasets/{_NON_EXISTENT_ID}")
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -110,4 +110,4 @@ class TestUpdateDatasets:
         assert response_body["code"] == "NOT_FOUND"
 
         response = client.get("/datasets")
-        assert len(response.json()) == datasets_length
+        assert len(response.json()["items"]) == datasets_length

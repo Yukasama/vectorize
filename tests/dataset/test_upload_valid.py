@@ -79,7 +79,7 @@ class TestValidDatasets:
 
         response = client.get("/datasets?limit=500")
         assert response.status_code == status.HTTP_200_OK
-        datasets_length = len(response.json())
+        datasets_length = len(response.json()["items"])
 
         response = client.post("/datasets?limit=500", files=build_files(file_path))
         assert response.status_code == status.HTTP_201_CREATED
@@ -87,7 +87,7 @@ class TestValidDatasets:
 
         response = client.get("/datasets?limit=500")
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.json()) == datasets_length + file_length
+        assert len(response.json()["items"]) == datasets_length + file_length
 
     async def test_zip_partial_invalid_upload(self, client: TestClient) -> None:
         """Uploading a ZIP archive succeeds and returns 201."""
