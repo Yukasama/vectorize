@@ -603,27 +603,3 @@ class TrainingOrchestrator:
                 )
 
             logger.info("Validated dataset file", dataset_file=path)
-
-
-async def run_training(  # noqa: PLR0913, PLR0917
-    db: AsyncSession,
-    model_path: str,
-    train_request: TrainRequest,
-    task_id: UUID,
-    dataset_paths: list[str],
-    output_dir: str,
-) -> None:
-    """Legacy wrapper function for backward compatibility.
-
-    Args:
-        db: Database session
-        model_path: Path to the base model
-        train_request: Training configuration
-        task_id: Training task ID
-        dataset_paths: List of dataset file paths
-        output_dir: Output directory for the trained model
-    """
-    orchestrator = TrainingOrchestrator(db, task_id)
-    await orchestrator.run_training(
-        model_path, train_request, dataset_paths, output_dir
-    )

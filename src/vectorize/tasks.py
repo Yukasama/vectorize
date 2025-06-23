@@ -15,6 +15,7 @@ broker.add_middleware(AsyncIO())
 dramatiq.set_broker(broker)
 
 from vectorize.dataset.tasks import upload_hf_dataset_bg  # noqa: E402, I001
+from vectorize.training.tasks import run_training_bg  # noqa: E402, F401
 
 from vectorize.ai_model.models import AIModel  # noqa: E402, F401
 from vectorize.dataset.models import Dataset  # noqa: E402, F401

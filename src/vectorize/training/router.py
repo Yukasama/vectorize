@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -26,7 +26,8 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
-from .service import TrainingOrchestrator, run_training
+from .service import TrainingOrchestrator
+from .tasks import run_training_bg
 
 __all__ = ["router"]
 
@@ -42,7 +43,6 @@ def has_model_weights(path: str) -> bool:
 @router.post("/train")
 async def train_model(
     train_request: TrainRequest,
-    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
     """Starts SBERT triplet training as a background task.
@@ -80,17 +80,16 @@ async def train_model(
     )
     await save_training_task(db, task)
 
-    background_tasks.add_task(
-        run_training,
-        db,
-        model_path,
-        train_request,
-        task.id,
-        dataset_paths,
-        output_dir,
+    # Send training task to Dramatiq for background processing
+    run_training_bg.send(
+        model_path=model_path,
+        train_request_dict=train_request.model_dump(),
+        task_id=str(task.id),
+        dataset_paths=dataset_paths,
+        output_dir=output_dir,
     )
     logger.debug(
-        "SBERT-Triplet-Training started in background.",
+        "SBERT-Triplet-Training started in background with Dramatiq.",
         task_id=str(task.id),
         model_tag=train_request.model_tag,
         dataset_count=len(dataset_paths),
