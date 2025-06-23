@@ -76,7 +76,7 @@ jobs:
         with:
           python-path: ".venv/bin/python"
           python-platform: "Linux"
-          python-version: "3.13.5"
+          python-version: "3.12.11"
 
   outdated:
     needs: install

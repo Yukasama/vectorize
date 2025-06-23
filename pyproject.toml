@@ -18,7 +18,7 @@ maintainers = [
 ]
 readme = "README.md"
 license = { text = "Apache 2.0" }
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 keywords = [
     "AI",
     "AI Training",
@@ -38,7 +38,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
@@ -195,7 +195,7 @@ ignore = [
 case-sensitive = true
 
 [tool.pyright]
-pythonVersion = "3.13"
+pythonVersion = "3.12"
 include = ["src"]
 exclude = ["**/__pycache__"]
 
