@@ -1,13 +1,10 @@
 """Training router for SBERT triplet training (Hugging Face TRL)."""
 
-import os
-import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 
-import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -17,12 +14,8 @@ from vectorize.ai_model.repository import get_ai_model_db
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.config import settings
 from vectorize.config.db import get_session
-from vectorize.dataset.repository import get_dataset_db
 
 from .exceptions import (
-    InvalidDatasetIdError,
-    InvalidModelIdError,
-    TrainingDatasetNotFoundError,
     TrainingModelWeightsNotFoundError,
     TrainingTaskNotFoundError,
 )
@@ -33,16 +26,7 @@ from .repository import (
     update_training_task_status,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
-
-# Lazy import of service to avoid heavy dependencies during module loading
-try:
-    from .service import train_model_task
-    TRAINING_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"Training service unavailable: {e}")
-    TRAINING_AVAILABLE = False
-    train_model_task = None
-from .utils.uuid_validator import is_valid_uuid
+from .service import TrainingOrchestrator, run_training
 
 __all__ = ["router"]
 
@@ -50,15 +34,13 @@ router = APIRouter(tags=["Training"])
 
 
 def has_model_weights(path: str) -> bool:
-    for _root, _dirs, files in os.walk(path):
-        for file in files:
-            if file.endswith((".safetensors", ".bin")):
-                return True
-    return False
+    """Check if model directory contains weight files."""
+    model_path = Path(path)
+    return any(model_path.glob("**/*.safetensors")) or any(model_path.glob("**/*.bin"))
 
 
 @router.post("/train")
-async def train_model(  # noqa: PLR0914, PLR0915, PLR0912
+async def train_model(
     train_request: TrainRequest,
     background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
@@ -69,8 +51,6 @@ async def train_model(  # noqa: PLR0914, PLR0915, PLR0912
     If no val_dataset_id is provided,
     10% of the first training dataset will be used for validation.
     """
-    if not hasattr(train_request, "model_tag"):
-        raise InvalidModelIdError("TrainRequest muss ein model_tag enthalten!")
     model = await get_ai_model_db(db, train_request.model_tag)
     if not model:
         raise ModelNotFoundError(train_request.model_tag)
@@ -80,51 +60,11 @@ async def train_model(  # noqa: PLR0914, PLR0915, PLR0912
         raise TrainingModelWeightsNotFoundError(
             f"Model weights not found in {model_path} (searched recursively)"
         )
-    dataset_paths = []
-    required_columns = {"question", "positive", "negative"}
-    for _idx, train_ds_id in enumerate(train_request.train_dataset_ids):
-        if not is_valid_uuid(train_ds_id):
-            raise InvalidDatasetIdError(train_ds_id)
-        train_ds_uuid = uuid.UUID(train_ds_id)
-        train_ds = await get_dataset_db(db, train_ds_uuid)
-        train_dataset_path = settings.dataset_upload_dir / train_ds.file_name
-        try:
-            df = pd.read_json(train_dataset_path, lines=True)
-        except Exception as exc:
-            raise TrainingDatasetNotFoundError(
-                f"Dataset {train_dataset_path} is not a valid JSONL file: {exc}"
-            ) from exc
-        if not required_columns.issubset(df.columns):
-            missing_cols = required_columns - set(df.columns)
-            raise TrainingDatasetNotFoundError(
-                f"Dataset {train_dataset_path} is missing required columns: "
-                f"{missing_cols}"
-            )
-        dataset_paths.append(str(train_dataset_path))
-    if train_request.val_dataset_id:
-        val_ds_id = train_request.val_dataset_id
-        if not is_valid_uuid(val_ds_id):
-            raise InvalidDatasetIdError(val_ds_id)
-        val_ds_uuid = uuid.UUID(val_ds_id)
-        val_ds = await get_dataset_db(db, val_ds_uuid)
-        val_dataset_path = Path("data/datasets") / val_ds.file_name
-        try:
-            val_df = pd.read_json(val_dataset_path, lines=True)
-        except Exception as exc:
-            raise TrainingDatasetNotFoundError(
-                f"Validation dataset {val_dataset_path} is not a valid JSONL file: "
-                f"{exc}"
-            ) from exc
-        if not required_columns.issubset(val_df.columns):
-            missing_cols = required_columns - set(val_df.columns)
-            raise TrainingDatasetNotFoundError(
-                f"Validation dataset {val_dataset_path} is missing required columns: "
-                f"{missing_cols}"
-            )
-        dataset_paths.append(str(val_dataset_path))
-    missing = [str(p) for p in dataset_paths if not Path(p).is_file()]
-    if missing:
-        raise TrainingDatasetNotFoundError(f"Missing datasets: {', '.join(missing)}")
+
+    # Validate datasets and get paths
+    dataset_paths = await TrainingOrchestrator.validate_datasets(
+        db, train_request.train_dataset_ids, train_request.val_dataset_id
+    )
     tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     task = TrainingTask(id=uuid4())
     output_dir = (
@@ -140,16 +80,8 @@ async def train_model(  # noqa: PLR0914, PLR0915, PLR0912
     )
     await save_training_task(db, task)
 
-    if not TRAINING_AVAILABLE or train_model_task is None:
-        # Update task to failed if training dependencies are not available
-        task.task_status = TaskStatus.FAILED
-        task.message = "Training dependencies not available"
-        await update_training_task_status(db, task.id, TaskStatus.FAILED,
-                                         "Training dependencies not available")
-        return Response(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
-
     background_tasks.add_task(
-        train_model_task,
+        run_training,
         db,
         model_path,
         train_request,

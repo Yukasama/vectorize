@@ -17,7 +17,6 @@ from vectorize.training.exceptions import (
     TrainingDatasetNotFoundError,
 )
 from vectorize.training.repository import get_train_task_by_id
-from vectorize.training.utils.uuid_validator import is_valid_uuid
 
 from .evaluation import TrainingEvaluator
 from .repository import update_evaluation_task_results, update_evaluation_task_status
@@ -301,10 +300,11 @@ async def resolve_evaluation_dataset(
             "Must specify either dataset_id or training_task_id."
         )    # Case 1: Explicit dataset_id provided
     if evaluation_request.dataset_id is not None:
-        if not is_valid_uuid(evaluation_request.dataset_id):
-            raise InvalidDatasetIdError(evaluation_request.dataset_id)
+        try:
+            dataset_uuid = UUID(evaluation_request.dataset_id)
+        except ValueError as exc:
+            raise InvalidDatasetIdError(evaluation_request.dataset_id) from exc
 
-        dataset_uuid = UUID(evaluation_request.dataset_id)
         dataset = await get_dataset_db(db, dataset_uuid)
         if not dataset:
             raise TrainingDatasetNotFoundError(
@@ -326,10 +326,11 @@ async def resolve_evaluation_dataset(
 
     # Case 2: training_task_id provided - use its validation dataset
     if evaluation_request.training_task_id is not None:
-        if not is_valid_uuid(evaluation_request.training_task_id):
-            raise InvalidDatasetIdError(evaluation_request.training_task_id)
+        try:
+            task_uuid = UUID(evaluation_request.training_task_id)
+        except ValueError as exc:
+            raise InvalidDatasetIdError(evaluation_request.training_task_id) from exc
 
-        task_uuid = UUID(evaluation_request.training_task_id)
         training_task = await get_train_task_by_id(db, task_uuid)
         if not training_task:
             raise TrainingDatasetNotFoundError(

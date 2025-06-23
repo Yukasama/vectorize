@@ -8,7 +8,6 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config.db import get_session
-from vectorize.training.utils.uuid_validator import is_valid_uuid
 
 from .exceptions import EvaluationTaskNotFoundError, InvalidDatasetIdError
 from .models import EvaluationTask
@@ -46,11 +45,11 @@ async def evaluate_model(
         202 Accepted with Location header pointing to task status
     """
     # Validate dataset_id if provided
-    if (
-        evaluation_request.dataset_id
-        and not is_valid_uuid(evaluation_request.dataset_id)
-    ):
-        raise InvalidDatasetIdError(evaluation_request.dataset_id)
+    if evaluation_request.dataset_id:
+        try:
+            UUID(evaluation_request.dataset_id)
+        except ValueError as exc:
+            raise InvalidDatasetIdError(evaluation_request.dataset_id) from exc
 
     task = EvaluationTask(id=uuid4())
     await save_evaluation_task(db, task)
