@@ -84,7 +84,7 @@ class TestUpdateDatasets:
     @classmethod
     async def test_delete(cls, client: TestClient) -> None:
         """Test successful deletion of a dataset."""
-        response = client.get("/datasets")
+        response = client.get("/datasets?limit=500")
         assert response.status_code == status.HTTP_200_OK
         datasets_length = len(response.json())
 
@@ -94,7 +94,7 @@ class TestUpdateDatasets:
         dataset = client.get(f"/datasets/{_VALID_ID}")
         assert dataset.status_code == status.HTTP_404_NOT_FOUND
 
-        response = client.get("/datasets")
+        response = client.get("/datasets?limit=500")
         assert len(response.json()) == datasets_length - 1
 
     @classmethod

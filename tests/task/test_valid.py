@@ -8,11 +8,7 @@ from fastapi.testclient import TestClient
 
 from vectorize.common.task_status import TaskStatus
 
-_TASK_TYPE_OPTIONS = {
-    "model_upload",
-    "synthesis",
-    "dataset_upload",
-}
+_TASK_TYPE_OPTIONS = {"model_upload", "synthesis", "dataset_upload"}
 
 
 @pytest.mark.asyncio
@@ -21,7 +17,7 @@ class TestTasksValid:
     """Tests for valid tasks endpoint requests."""
 
     @classmethod
-    async def test_get_all_actions_default(cls, client: TestClient) -> None:
+    async def test_get_all_tasks_default(cls, client: TestClient) -> None:
         """Test getting all tasks with default parameters."""
         default_hours = 1
         response = client.get("/tasks")
@@ -32,7 +28,7 @@ class TestTasksValid:
         assert len(tasks) >= default_hours
 
     @classmethod
-    async def test_get_actions_with_limit(cls, client: TestClient) -> None:
+    async def test_get_tasks_with_limit(cls, client: TestClient) -> None:
         """Test tasks endpoint with limit parameter."""
         limit = 2
         response = client.get(f"/tasks?limit={limit}")
@@ -43,33 +39,33 @@ class TestTasksValid:
         assert len(tasks) <= limit
 
     @classmethod
-    async def test_get_actions_with_offset(cls, client: TestClient) -> None:
+    async def test_get_tasks_with_offset(cls, client: TestClient) -> None:
         """Test tasks endpoint with offset parameter."""
         all_response = client.get("/tasks?limit=100")
-        all_actions = all_response.json()
+        all_tasks = all_response.json()
 
-        if len(all_actions) > 1:
+        if len(all_tasks) > 1:
             response = client.get("/tasks?offset=1")
             assert response.status_code == status.HTTP_200_OK
-            offset_actions = response.json()
-            assert isinstance(offset_actions, list)
-            assert len(offset_actions) <= len(all_actions)
+            offset_tasks = response.json()
+            assert isinstance(offset_tasks, list)
+            assert len(offset_tasks) <= len(all_tasks)
 
     @classmethod
-    async def test_get_actions_completed_filter(cls, client: TestClient) -> None:
+    async def test_get_tasks_completed_filter(cls, client: TestClient) -> None:
         """Test tasks endpoint filtering by completed status."""
         completed_response = client.get("/tasks?completed=true")
         assert completed_response.status_code == status.HTTP_200_OK
-        completed_actions = completed_response.json()
-        assert isinstance(completed_actions, list)
+        completed_tasks = completed_response.json()
+        assert isinstance(completed_tasks, list)
 
         pending_response = client.get("/tasks?completed=false")
         assert pending_response.status_code == status.HTTP_200_OK
-        pending_actions = pending_response.json()
-        assert isinstance(pending_actions, list)
+        pending_tasks = pending_response.json()
+        assert isinstance(pending_tasks, list)
 
     @classmethod
-    async def test_get_actions_status_filter_pending(cls, client: TestClient) -> None:
+    async def test_get_tasks_status_filter_pending(cls, client: TestClient) -> None:
         """Test tasks endpoint filtering by PENDING status."""
         response = client.get("/tasks?status=P")
 
@@ -81,7 +77,7 @@ class TestTasksValid:
             assert action["task_status"] == TaskStatus.PENDING.value
 
     @classmethod
-    async def test_get_actions_status_filter_done(cls, client: TestClient) -> None:
+    async def test_get_tasks_status_filter_done(cls, client: TestClient) -> None:
         """Test tasks endpoint filtering by DONE status."""
         response = client.get("/tasks?status=D")
 
@@ -93,7 +89,7 @@ class TestTasksValid:
             assert action["task_status"] == TaskStatus.DONE.value
 
     @classmethod
-    async def test_get_actions_multiple_status_filter(cls, client: TestClient) -> None:
+    async def test_get_tasks_multiple_status_filter(cls, client: TestClient) -> None:
         """Test tasks endpoint filtering by multiple statuses."""
         response = client.get("/tasks?status=P&status=D")
 
@@ -106,7 +102,7 @@ class TestTasksValid:
             assert action["task_status"] in valid_statuses
 
     @classmethod
-    async def test_get_actions_within_hours_recent(cls, client: TestClient) -> None:
+    async def test_get_tasks_within_hours_recent(cls, client: TestClient) -> None:
         """Test tasks endpoint with within_hours=1 (recent tasks only)."""
         response = client.get("/tasks?within_hours=1")
 
@@ -119,7 +115,7 @@ class TestTasksValid:
             assert "end_date" in action
 
     @classmethod
-    async def test_get_actions_within_hours_extended(cls, client: TestClient) -> None:
+    async def test_get_tasks_within_hours_extended(cls, client: TestClient) -> None:
         """Test tasks endpoint with within_hours=3 (includes older tasks)."""
         results = 2
         response = client.get("/tasks?within_hours=3")
@@ -130,7 +126,7 @@ class TestTasksValid:
         assert len(tasks) >= results
 
     @classmethod
-    async def test_get_actions_combined_filters(cls, client: TestClient) -> None:
+    async def test_get_tasks_combined_filters(cls, client: TestClient) -> None:
         """Test tasks endpoint with multiple filters combined."""
         limit = 5
         response = client.get(
@@ -148,7 +144,7 @@ class TestTasksValid:
             assert action["task_type"] in _TASK_TYPE_OPTIONS
 
     @classmethod
-    async def test_actions_response_structure(cls, client: TestClient) -> None:
+    async def test_tasks_response_structure(cls, client: TestClient) -> None:
         """Test that tasks response has correct structure."""
         response = client.get("/tasks?limit=1")
 

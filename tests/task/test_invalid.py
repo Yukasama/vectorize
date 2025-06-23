@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 @pytest.mark.asyncio
 @pytest.mark.tasks
-class TestActionsInvalidParams:
+class TestTasksInvalidParams:
     """Tests for invalid query parameter values on the /tasks endpoint."""
 
     @classmethod
