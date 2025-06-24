@@ -34,7 +34,7 @@ from .repository import (
 from .schemas import DatasetUploadOptions
 from .task_model import UploadDatasetTask
 from .utils.cache_dataset_infos import _get_cached_dataset_infos
-from .utils.check_hf_schema import _match_schema
+from .utils.check_hf_schema import match_schema
 from .utils.csv_escaper import _escape_csv_formulas
 from .utils.dataset_classifier import _classify_dataset
 from .utils.dataset_fs import _delete_dataset_from_fs, _save_dataframe_to_fs
@@ -169,7 +169,7 @@ async def upload_hf_dataset_svc(db: AsyncSession, dataset_tag: str) -> UUID:
     first_info = next(iter(dataset_infos.values()))
     if first_info.features:
         column_names = list(first_info.features.keys())
-        if not _match_schema(set(column_names)):
+        if not match_schema(set(column_names)):
             raise UnsupportedHuggingFaceFormatError(column_names)
 
     subset_list = list(dataset_infos.keys())
