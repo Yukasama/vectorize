@@ -8,7 +8,7 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config.db import engine
-from vectorize.dataset.utils.process_hf_model import _process_dataset
+from vectorize.dataset.utils.process_hf_model import process_dataset
 
 __all__ = ["upload_hf_dataset_bg"]
 
@@ -43,7 +43,7 @@ async def upload_hf_dataset_bg(
                     splits=list(info.splits.keys()) if info.splits else None,
                     features=list(info.features.keys()) if info.features else None,
                 )
-                await _process_dataset(db, dataset_tag, UUID(task_id), subset, info)
+                await process_dataset(db, dataset_tag, UUID(task_id), subset, info)
 
             await db.commit()
             logger.info(

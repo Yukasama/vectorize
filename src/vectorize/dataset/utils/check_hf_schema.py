@@ -2,10 +2,10 @@
 
 from vectorize.config.config import settings
 
-__all__ = ["_match_schema"]
+__all__ = ["match_schema"]
 
 
-def _match_schema(feature_names: set[str]) -> bool:
+def match_schema(feature_names: set[str]) -> bool:
     """Check if feature_names matches any allowed schema.
 
     Args:
