@@ -80,9 +80,19 @@ class TrainingOrchestrator:
                 message = cast("Message", dramatiq_message)
                 message_id = message.message_id
                 cancellation_key = f"cancel_training:{message_id}"
-                return bool(redis_client.exists(cancellation_key))
+                is_cancelled = bool(redis_client.exists(cancellation_key))
+                
+                # Debug logging
+                if is_cancelled:
+                    logger.debug(f"Cancellation detected! Key: {cancellation_key}")
+                else:
+                    logger.debug(f"No cancellation found for key: {cancellation_key}")
+                    
+                return is_cancelled
             except Exception as e:
                 logger.warning("Failed to check cancellation status", error=str(e))
+        else:
+            logger.debug("No dramatiq message or message_id available for cancellation check")
         return False
 
     @staticmethod
@@ -487,15 +497,59 @@ class TrainingOrchestrator:
             checkpoint_dir = Path(output_dir) / "checkpoints"
             checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-            self.model.fit(
-                train_objectives=[(train_dataloader, loss)],
-                epochs=train_request.epochs,
-                warmup_steps=train_request.warmup_steps or 0,
-                show_progress_bar=False,
-                output_path=str(Path(output_dir)),
-                checkpoint_path=str(checkpoint_dir),
-                checkpoint_save_steps=0,
-            )
+            # Create cancellation callback with detailed logging
+            def cancellation_callback(score, epoch, steps):
+                """Callback that checks for cancellation at each training step."""
+                logger.debug(f"Callback triggered: epoch={epoch}, steps={steps}, score={score}")
+                if self._check_cancellation(dramatiq_message):
+                    logger.info("Training cancelled during callback", epoch=epoch, steps=steps)
+                    raise KeyboardInterrupt("Training cancelled by user")
+
+            # Start background cancellation monitoring thread
+            import threading
+            import time as time_module
+            stop_monitoring = threading.Event()
+            
+            def cancellation_monitor():
+                """Background thread that monitors for cancellation every second."""
+                logger.debug("Monitor thread started - checking every second")
+                while not stop_monitoring.is_set():
+                    logger.debug("Monitor thread: checking for cancellation...")
+                    if self._check_cancellation(dramatiq_message):
+                        logger.info("Training cancellation detected by monitor thread")
+                        # Force stop by raising KeyboardInterrupt in main thread
+                        import os
+                        import signal
+                        os.kill(os.getpid(), signal.SIGINT)
+                        break
+                    time_module.sleep(1)  # Check every second
+                logger.debug("Monitor thread finished")
+            
+            # Start monitoring thread
+            monitor_thread = threading.Thread(target=cancellation_monitor, daemon=True)
+            monitor_thread.start()
+            logger.debug("Started cancellation monitor thread")
+            
+            try:
+                self.model.fit(
+                    train_objectives=[(train_dataloader, loss)],
+                    epochs=train_request.epochs,
+                    warmup_steps=train_request.warmup_steps or 0,
+                    show_progress_bar=False,
+                    output_path=str(Path(output_dir)),
+                    checkpoint_path=str(checkpoint_dir),
+                    checkpoint_save_steps=500,  # More frequent checkpoints for cancellation
+                    callback=cancellation_callback,  # Add cancellation callback
+                )
+            finally:
+                # Stop monitoring thread
+                stop_monitoring.set()
+                logger.debug("Stopped cancellation monitor thread")
+                
+        except KeyboardInterrupt:
+            logger.info("Training was cancelled by user during model training")
+            # Re-raise as RuntimeError with specific message
+            raise RuntimeError("Training cancelled by user")
         finally:
             builtins.print = original_print
 
