@@ -3,6 +3,7 @@
 import os
 import tempfile
 from collections.abc import Iterable, Iterator, Mapping
+from itertools import chain
 from pathlib import Path
 from typing import Any, cast
 from uuid import UUID
@@ -213,7 +214,7 @@ def _write_jsonl(
         except StopIteration as e:
             raise ValueError("Dataset appears to be empty") from e
         feature_names = set(first_row.keys())
-        iterator = (row for row in (first_row, *iterator))
+        iterator = chain([first_row], iterator)
         total_rows = None
 
     if not match_schema(feature_names):
