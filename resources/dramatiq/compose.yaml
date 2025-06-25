@@ -25,6 +25,7 @@ services:
       UPLOAD_DIR: /app/data/datasets
       MODELS_DIR: /app/data/models
       DB_DIR: /app/db
+      TZ: Europe/Berlin
       LOG_LEVEL: INFO
       HF_HOME: /app/data/hf_home
     volumes:

@@ -49,11 +49,6 @@ class Settings(BaseSettings):
         description="Version of the application.",
     )
 
-    prefix: str = Field(
-        default=_server_config.get("prefix", ""),
-        description="API URL prefix for all endpoints.",
-    )
-
     allow_origin: list[str] = Field(
         default=_server_config.get("allow_origin", ["http://localhost:3000"]),
         description="CORS allowed origins for cross-origin requests.",

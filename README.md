@@ -138,7 +138,7 @@ uvx locust -f scripts/locust.py
 
 # Run headless locust
 # -u for users, -r for rate of spawning users until max
-uvx locust -f scripts/locust.py --host=https://localhost/v1 --headless -u 1 -r 1
+uvx locust -f scripts/locust.py --host=https://localhost --headless -u 1 -r 1
 ```
 
 ### Build Docker Image

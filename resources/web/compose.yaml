@@ -1,0 +1,35 @@
+services:
+  vectorize_web:
+    image: vectorize_web:0.1.0
+    hostname: vectorize_web
+    container_name: vectorize_web
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_HOST_URL: "https://localhost"
+      TZ: Europe/Berlin
+    restart: unless-stopped
+    networks: [vectorize-network]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    volumes:
+      - nextjs_logs:/app/log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on: [vectorize, dramatiq_worker, caddy]
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+volumes:
+  nextjs_logs:

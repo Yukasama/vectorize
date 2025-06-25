@@ -93,7 +93,7 @@ async def load_model_huggingface(
 
     return Response(
         status_code=status.HTTP_201_CREATED,
-        headers={"Location": f"{request.base_url}v1/upload/tasks/{upload_task.id}"},
+        headers={"Location": f"{request.base_url}upload/tasks/{upload_task.id}"},
     )
 
 
@@ -149,7 +149,7 @@ async def load_model_github(
 
     return Response(
         status_code=status.HTTP_201_CREATED,
-        headers={"Location": f"{request.base_url}v1/upload/tasks/{task.id}"},
+        headers={"Location": f"{request.base_url}upload/tasks/{task.id}"},
     )
 
 

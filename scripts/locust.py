@@ -1,7 +1,7 @@
 """Load testing with Locust.
 
 Run with: uvx locust -f scripts/locust.py
-Run headless with: uvx locust -f scripts/locust.py --host=https://localhost/v1 --headless -u 1 -r 1
+Run headless with: uvx locust -f scripts/locust.py --host=https://localhost --headless -u 1 -r 1
 """  # noqa: E501
 
 from pathlib import Path
@@ -30,7 +30,7 @@ class AppLoadTests(HttpUser):
     """Load tests for the API."""
 
     base_path = Path(__file__).parent.parent / "test_data" / "datasets"
-    host = "http://localhost:8000/v1"
+    host = "http://localhost:8000"
     wait_time = constant_pacing(0)
 
     def on_start(self) -> None:

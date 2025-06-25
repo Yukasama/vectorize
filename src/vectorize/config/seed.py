@@ -1,7 +1,8 @@
 """Seed the database with initial data."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from loguru import logger
 from sqlmodel import select
@@ -15,9 +16,13 @@ from vectorize.dataset.classification import Classification
 from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.dataset.models import Dataset
 from vectorize.dataset.task_model import UploadDatasetTask
+from vectorize.evaluation.models import EvaluationTask
+from vectorize.training.models import TrainingTask
 from vectorize.upload.models import UploadTask
 
 __all__ = ["seed_db"]
+
+GERMANY_TZ = ZoneInfo("Europe/Berlin")
 
 
 DATASET_READ_ID = UUID("8b8c7f3e-4d2a-4b5c-9f1e-0a6f3e4d2a5b")
@@ -217,9 +222,9 @@ async def seed_db(session: AsyncSession) -> None:
             tag="example-github-model",
             task_status=TaskStatus.PENDING,
             source=RemoteModelSource.GITHUB,
-            created_at=datetime(2025, 6, 10, 9, 0, tzinfo=UTC),
-            updated_at=datetime(2025, 6, 10, 9, 5, tzinfo=UTC),
-            end_date=datetime(2025, 6, 10, 9, 5, tzinfo=UTC),
+            created_at=datetime(2025, 6, 10, 9, 0, tzinfo=GERMANY_TZ),
+            updated_at=datetime(2025, 6, 10, 9, 5, tzinfo=GERMANY_TZ),
+            end_date=datetime(2025, 6, 10, 9, 5, tzinfo=GERMANY_TZ),
             error_msg=None,
         ),
     )
@@ -229,9 +234,9 @@ async def seed_db(session: AsyncSession) -> None:
             tag="example-hf-model",
             task_status=TaskStatus.PENDING,
             source=RemoteModelSource.HUGGINGFACE,
-            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
-            updated_at=datetime(2025, 6, 11, 14, 31, tzinfo=UTC),
-            end_date=datetime(2025, 6, 11, 14, 35, tzinfo=UTC),
+            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=GERMANY_TZ),
+            updated_at=datetime(2025, 6, 11, 14, 31, tzinfo=GERMANY_TZ),
+            end_date=datetime(2025, 6, 11, 14, 35, tzinfo=GERMANY_TZ),
             error_msg=None,
         ),
     )
@@ -239,24 +244,40 @@ async def seed_db(session: AsyncSession) -> None:
         UploadDatasetTask(
             tag="example_hf_dataset",
             task_status=TaskStatus.QUEUED,
-            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
+            created_at=datetime(2025, 6, 11, 14, 30, tzinfo=GERMANY_TZ),
         ),
     )
     session.add(
         UploadDatasetTask(
             tag="example_hf_dataset_done",
             task_status=TaskStatus.DONE,
-            created_at=datetime.now(tz=UTC) - timedelta(minutes=1),
-            end_date=datetime.now(tz=UTC),
+            created_at=datetime.now(tz=GERMANY_TZ) - timedelta(minutes=1),
+            end_date=datetime.now(tz=GERMANY_TZ),
         ),
     )
     session.add(
         UploadDatasetTask(
             tag="example_hf_dataset_failed",
             task_status=TaskStatus.FAILED,
-            created_at=datetime.now(tz=UTC) - timedelta(hours=3),
-            end_date=datetime.now(tz=UTC) - timedelta(hours=2),
+            created_at=datetime.now(tz=GERMANY_TZ) - timedelta(hours=3),
+            end_date=datetime.now(tz=GERMANY_TZ) - timedelta(hours=2),
             error_msg="Failed to upload dataset due to network error.",
+        ),
+    )
+    session.add(
+        TrainingTask(
+            tag="training_task",
+            task_status=TaskStatus.PENDING,
+            created_at=datetime.now(tz=GERMANY_TZ) - timedelta(minutes=30),
+            trained_model_id=AI_MODEL_LOCALTRAINMODEL_ID,
+        ),
+    )
+    session.add(
+        EvaluationTask(
+            tag="evaluation_task",
+            task_status=TaskStatus.PENDING,
+            created_at=datetime.now(tz=GERMANY_TZ) - timedelta(minutes=30),
+            model_id=AI_MODEL_LOCALTRAINMODEL_ID,
         ),
     )
     await session.commit()

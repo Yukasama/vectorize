@@ -20,4 +20,6 @@ class TasksModel(BaseModel):
     created_at: datetime
     end_date: datetime | None
     error_msg: str | None = None
-    task_type: Literal["model_upload", "synthesis", "dataset_upload"]
+    task_type: Literal[
+        "model_upload", "synthesis", "dataset_upload", "training", "evaluation"
+    ]
