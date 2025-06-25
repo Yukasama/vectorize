@@ -8,7 +8,13 @@ from fastapi.testclient import TestClient
 
 from vectorize.common.task_status import TaskStatus
 
-_TASK_TYPE_OPTIONS = {"model_upload", "synthesis", "dataset_upload"}
+_TASK_TYPE_OPTIONS = {
+    "model_upload",
+    "synthesis",
+    "dataset_upload",
+    "training",
+    "evaluation",
+}
 
 
 @pytest.mark.asyncio

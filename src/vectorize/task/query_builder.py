@@ -43,15 +43,20 @@ def build_query(  # noqa: ANN201
             ai_table, model_table.c.trained_model_id == ai_table.c.id
         )
 
-        return select(
-            model_table.c.id,
-            ai_table.c.model_tag.label("tag"),
-            model_table.c.task_status,
-            model_table.c.created_at,
-            model_table.c.end_date,
-            model_table.c.error_msg,
-            cast(literal(tag), String).label("task_type"),
-        ).select_from(join_expr)
+        return (
+            select(
+                model_table.c.id,
+                ai_table.c.model_tag.label("tag"),
+                model_table.c.task_status,
+                model_table.c.created_at,
+                model_table.c.end_date,
+                model_table.c.error_msg,
+                cast(literal(tag), String).label("task_type"),
+            )
+            .select_from(join_expr)
+            .where(_status_filter(model, completed=completed, statuses=statuses))
+            .where(_time_filter(model, hours=hours))
+        )
 
     if hasattr(model, "evaluation_metrics"):
         model_table = model.__table__
@@ -61,15 +66,20 @@ def build_query(  # noqa: ANN201
             ai_table, model_table.c.model_id == ai_table.c.id
         )
 
-        return select(
-            model_table.c.id,
-            ai_table.c.model_tag.label("tag"),
-            model_table.c.task_status,
-            model_table.c.created_at,
-            model_table.c.end_date,
-            model_table.c.error_msg,
-            cast(literal(tag), String).label("task_type"),
-        ).select_from(join_expr)
+        return (
+            select(
+                model_table.c.id,
+                ai_table.c.model_tag.label("tag"),
+                model_table.c.task_status,
+                model_table.c.created_at,
+                model_table.c.end_date,
+                model_table.c.error_msg,
+                cast(literal(tag), String).label("task_type"),
+            )
+            .select_from(join_expr)
+            .where(_status_filter(model, completed=completed, statuses=statuses))
+            .where(_time_filter(model, hours=hours))
+        )
 
     if hasattr(model, "tag"):
         tag_field = model.tag.label("tag")

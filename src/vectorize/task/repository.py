@@ -77,7 +77,7 @@ async def get_tasks_db(db: AsyncSession, params: TaskFilters) -> Sequence:
         .limit(params.limit)
         .offset(params.offset or 0)
     )
-    result = await db.exec(stmt)
+    result = await db.exec(stmt)  # type: ignore
 
     rows = result.all()
     logger.debug("Tasks fetched from DB", count=len(rows), params=str(params))
