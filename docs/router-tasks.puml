@@ -1,0 +1,6 @@
+@startuml tasks_endpoints
+actor User
+rectangle "Tasks Router" {
+  [User] --> [GET ]
+}
+@enduml

@@ -1,0 +1,12 @@
+@startuml datasets_endpoints
+actor User
+rectangle "Datasets Router" {
+  [User] --> [GET ]
+  [User] --> [GET /{dataset_id}]
+  [User] --> [POST ]
+  [User] --> [POST /huggingface]
+  [User] --> [GET /huggingface/status/{task_id}]
+  [User] --> [PUT /{dataset_id}]
+  [User] --> [DELETE /{dataset_id}]
+}
+@enduml

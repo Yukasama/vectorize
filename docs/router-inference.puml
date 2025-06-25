@@ -1,0 +1,7 @@
+@startuml inference_endpoints
+actor User
+rectangle "Inference Router" {
+  [User] --> [POST ]
+  [User] --> [GET /counter/{model_tag}]
+}
+@enduml

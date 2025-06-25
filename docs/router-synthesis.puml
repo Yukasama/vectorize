@@ -1,0 +1,8 @@
+@startuml synthesis_endpoints
+actor User
+rectangle "Synthesis Router" {
+  [User] --> [POST /media]
+  [User] --> [GET /tasks/{task_id}]
+  [User] --> [GET )]
+}
+@enduml

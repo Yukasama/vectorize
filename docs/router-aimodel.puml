@@ -1,0 +1,9 @@
+@startuml ai_models_endpoints
+actor User
+rectangle "AI Models Router" {
+  [User] --> [GET ]
+  [User] --> [GET /{ai_model_tag}]
+  [User] --> [PUT /{ai_model_id}]
+  [User] --> [DELETE /{model_id}]
+}
+@enduml

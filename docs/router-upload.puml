@@ -1,0 +1,9 @@
+@startuml model_upload_endpoints
+actor User
+rectangle "Model Upload Router" {
+  [User] --> [POST /huggingface]
+  [User] --> [POST /github]
+  [User] --> [POST /local]
+  [User] --> [GET /{task_id}]
+}
+@enduml
