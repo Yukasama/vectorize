@@ -7,9 +7,8 @@ services:
       - models_data:/app/data/models
       - db_data:/app/db
       - hf_home_data:/app/data/hf_home
-      - log_data:/app/log
     environment:
-      ENV: development
+      ENV: production
       DATABASE_URL: sqlite+aiosqlite:///db/app.db
       REDIS_URL: redis://redis:6379
       UPLOAD_DIR: /app/data/datasets
