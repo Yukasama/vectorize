@@ -5,7 +5,7 @@ import builtins
 import time
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from uuid import UUID
 
 import pandas as pd
@@ -13,9 +13,6 @@ from loguru import logger
 from sentence_transformers import losses
 from sqlmodel.ext.asyncio.session import AsyncSession
 from torch.utils.data import DataLoader
-
-if TYPE_CHECKING:
-    pass
 
 from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
