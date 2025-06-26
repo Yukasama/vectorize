@@ -57,19 +57,28 @@ async def process_huggingface_model_bg(
                 name=model_tag,
                 source=ModelSource.HUGGINGFACE,
             )
-            await save_ai_model_db(db, ai_model)
-            await update_upload_task_status_db(db, task_uid, TaskStatus.DONE)
 
+            try:
+                await save_ai_model_db(db, ai_model)
+            except IntegrityError as integrity_error:
+                # Check if it's a unique constraint violation for model_tag
+                constraint_msg = "UNIQUE constraint failed: ai_model.model_tag"
+                if constraint_msg in str(integrity_error):
+                    # Model was already created by another request, this is fine
+                    logger.info(
+                        "[BG] Model already exists, skipping creation",
+                        modelTag=ai_model.model_tag,
+                        taskId=task_uid,
+                    )
+                else:
+                    # Re-raise other integrity errors
+                    raise
+
+            await update_upload_task_status_db(db, task_uid, TaskStatus.DONE)
             logger.info("[BG] Task completed successfully", taskId=task_uid)
 
         except ModelAlreadyExistsError as e:
             logger.error(f"[BG] Model already exists for task {task_uid}: {e}")
-            await db.rollback()
-            await update_upload_task_status_db(
-                db, task_uid, TaskStatus.FAILED, error_msg=str(e)
-            )
-        except IntegrityError as e:
-            logger.error(f"[BG] IntegrityError in task {task_uid}: {e}")
             await db.rollback()
             await update_upload_task_status_db(
                 db, task_uid, TaskStatus.FAILED, error_msg=str(e)

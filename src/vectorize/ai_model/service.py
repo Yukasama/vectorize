@@ -1,17 +1,56 @@
 """AIModel service."""
 
+import shutil
 from uuid import UUID
 
 from fastapi import Request
 from loguru import logger
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from vectorize.config.config import settings
 from vectorize.utils.etag_parser import parse_etag
 
-from .models import AIModelPublic, AIModelUpdate
+from .exceptions import ModelNotFoundError
+from .models import AIModel, AIModelPublic, AIModelUpdate
 from .repository import delete_model_db, get_ai_model_db, update_ai_model_db
 
-__all__ = ["get_ai_model_svc", "update_ai_model_svc"]
+__all__ = ["delete_model_svc", "get_ai_model_svc", "update_ai_model_svc"]
+
+
+def _cleanup_model_files(model_tag: str) -> None:
+    """Remove physical model files from filesystem.
+
+    Args:
+        model_tag: The model tag to determine the correct filesystem path.
+    """
+    try:
+        # Convert database model_tag to filesystem path using same logic as
+        # training/evaluation
+        if model_tag.startswith("trained_models/"):
+            filesystem_model_tag = model_tag
+        else:
+            filesystem_model_tag = model_tag.replace("_", "--")
+            if not filesystem_model_tag.startswith("models--"):
+                filesystem_model_tag = f"models--{filesystem_model_tag}"
+
+        model_path = settings.model_upload_dir / filesystem_model_tag
+
+        if model_path.exists():
+            shutil.rmtree(model_path)
+            logger.debug(
+                "Model files deleted from filesystem", path=str(model_path)
+            )
+        else:
+            logger.debug(
+                "Model path does not exist, skipping cleanup",
+                path=str(model_path),
+            )
+
+    except Exception as e:
+        logger.warning(
+            "Failed to cleanup model files", model_tag=model_tag, error=str(e)
+        )
 
 
 async def get_ai_model_svc(
@@ -61,11 +100,26 @@ async def update_ai_model_svc(
 
 
 async def delete_model_svc(db: AsyncSession, model_id: UUID) -> None:
-    """Delete an AI model by its ID from the database.
+    """Delete an AI model by its ID from the database and filesystem.
 
     Args:
         db: Database session.
         model_id: UUID of the model to delete.
     """
+    # Get model info before deletion for filesystem cleanup
+    statement = select(AIModel).where(AIModel.id == model_id)
+    result = await db.exec(statement)
+    model = result.first()
+
+    if model is None:
+        raise ModelNotFoundError(str(model_id))
+
+    # Delete from database first
     await delete_model_db(db, model_id)
-    logger.debug("Model deleted from service", model_id=model_id)
+
+    # Delete physical files
+    _cleanup_model_files(model.model_tag)
+
+    logger.debug(
+        "Model deleted from service and filesystem", model_id=model_id
+    )
