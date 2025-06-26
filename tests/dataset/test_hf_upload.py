@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from vectorize.common.task_status import TaskStatus
 from vectorize.config.config import settings
 
-_TIMEOUT = 45  # seconds
+_TIMEOUT = 15  # seconds
 _FILE_SIZE_THRESHOLD = 100
 
 

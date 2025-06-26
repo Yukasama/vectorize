@@ -71,16 +71,16 @@ class TestTasksValid:
         assert isinstance(pending_tasks, list)
 
     @classmethod
-    async def test_get_tasks_status_filter_pending(cls, client: TestClient) -> None:
-        """Test tasks endpoint filtering by PENDING status."""
-        response = client.get("/tasks?status=P")
+    async def test_get_tasks_status_filter_running(cls, client: TestClient) -> None:
+        """Test tasks endpoint filtering by RUNNING status."""
+        response = client.get("/tasks?status=R")
 
         assert response.status_code == status.HTTP_200_OK
         tasks = response.json()
         assert isinstance(tasks, list)
 
         for action in tasks:
-            assert action["task_status"] == TaskStatus.PENDING.value
+            assert action["task_status"] == TaskStatus.RUNNING.value
 
     @classmethod
     async def test_get_tasks_status_filter_done(cls, client: TestClient) -> None:
@@ -97,13 +97,13 @@ class TestTasksValid:
     @classmethod
     async def test_get_tasks_multiple_status_filter(cls, client: TestClient) -> None:
         """Test tasks endpoint filtering by multiple statuses."""
-        response = client.get("/tasks?status=P&status=D")
+        response = client.get("/tasks?status=R&status=D")
 
         assert response.status_code == status.HTTP_200_OK
         tasks = response.json()
         assert isinstance(tasks, list)
 
-        valid_statuses = {TaskStatus.PENDING.value, TaskStatus.DONE.value}
+        valid_statuses = {TaskStatus.RUNNING.value, TaskStatus.DONE.value}
         for action in tasks:
             assert action["task_status"] in valid_statuses
 
@@ -136,7 +136,7 @@ class TestTasksValid:
         """Test tasks endpoint with multiple filters combined."""
         limit = 5
         response = client.get(
-            f"/tasks?limit={limit}&completed=false&status=P&within_hours=2"
+            f"/tasks?limit={limit}&completed=false&status=R&within_hours=2"
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -145,7 +145,7 @@ class TestTasksValid:
         assert len(tasks) <= limit
 
         for action in tasks:
-            assert action["task_status"] == TaskStatus.PENDING.value
+            assert action["task_status"] == TaskStatus.RUNNING.value
             assert "created_at" in action
             assert action["task_type"] in _TASK_TYPE_OPTIONS
 

@@ -144,7 +144,7 @@ async def load_model_github(
         raise InternalServerError("Error checking GitHub repository") from e
 
     task = UploadTask(
-        tag=key, task_status=TaskStatus.PENDING, source=RemoteModelSource.GITHUB
+        tag=key, task_status=TaskStatus.RUNNING, source=RemoteModelSource.GITHUB
     )
     await save_upload_task_db(db, task)
     background_tasks.add_task(process_github_model_bg, db, owner, repo, branch, task.id)

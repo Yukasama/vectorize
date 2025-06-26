@@ -9,7 +9,6 @@ class TaskStatus(StrEnum):
     """Status of a process."""
 
     QUEUED = "Q"
-    PENDING = "P"
     RUNNING = "R"
     DONE = "D"
     FAILED = "F"

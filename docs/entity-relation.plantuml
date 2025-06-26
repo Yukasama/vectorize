@@ -1,9 +1,10 @@
 @startuml ER-Diagram für die SQLite Datenbank
 
 enum TaskStatus {
+  queued
   done
   failed
-  pending
+  running
   canceled
 }
 

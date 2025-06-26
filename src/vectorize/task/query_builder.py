@@ -12,7 +12,7 @@ __all__ = ["build_query"]
 
 
 _COMPLETED = {TaskStatus.DONE, TaskStatus.FAILED}
-_UNFINISHED = {TaskStatus.QUEUED, TaskStatus.PENDING}
+_UNFINISHED = {TaskStatus.QUEUED, TaskStatus.RUNNING}
 
 
 def build_query(  # noqa: ANN201

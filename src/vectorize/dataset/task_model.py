@@ -7,6 +7,8 @@ from sqlmodel import Column, DateTime, Field, SQLModel, func
 
 from vectorize.common.task_status import TaskStatus
 
+__all__ = ["UploadDatasetTask"]
+
 
 class UploadDatasetTask(SQLModel, table=True):
     """Dataset upload task model for tracking dataset processing operations."""
@@ -27,7 +29,7 @@ class UploadDatasetTask(SQLModel, table=True):
     )
 
     task_status: TaskStatus = Field(
-        default=TaskStatus.QUEUED,
+        default=TaskStatus.RUNNING,
         index=True,
         description="Current status of the dataset upload task.",
     )
