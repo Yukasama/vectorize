@@ -94,6 +94,90 @@ def load_test_dataset(dataset_filename: str) -> list[dict[str, Any]]:
     return examples
 
 
+def create_base_evaluation_payload(**overrides: Any) -> dict[str, Any]:  # noqa: ANN401
+    """Create a base evaluation payload with optional overrides."""
+    base = {
+        "model_tag": MINILM_MODEL_TAG,
+        "dataset_id": DATASET_ID_1,
+    }
+    return {**base, **overrides}
+
+
+def setup_evaluation_test() -> None:
+    """Common setup for evaluation tests."""
+    ensure_minilm_model_available()
+
+
+def start_evaluation_and_get_task_id(
+    client: TestClient, payload: dict[str, Any]
+) -> str:
+    """Start evaluation and return task ID with standard assertions."""
+    response = client.post("/evaluation/evaluate", json=payload)
+    assert response.status_code == HTTP_202_ACCEPTED
+    return extract_task_id_from_response(response)
+
+
+def assert_valid_evaluation_status_response(
+    client: TestClient, task_id: str
+) -> dict[str, Any]:
+    """Assert valid status response and return status data."""
+    status_response = client.get(f"/evaluation/{task_id}/status")
+    assert status_response.status_code == HTTP_200_OK
+    status_data = status_response.json()
+    assert status_data["task_id"] == task_id
+    assert status_data["status"] in {"Q", "R", "D", "F"}
+    return status_data
+
+
+def assert_evaluation_response_structure(response: Response) -> str:
+    """Assert evaluation response has correct structure and return task_id."""
+    assert response.status_code == HTTP_202_ACCEPTED
+    assert "Location" in response.headers
+    location = response.headers["Location"]
+    assert "/evaluation/" in location and "/status" in location
+
+    task_id = extract_task_id_from_response(response)
+    assert uuid.UUID(task_id)  # Should be valid UUID
+    return task_id
+
+
+def assert_evaluation_status_response_fields(
+    status_data: dict[str, Any], task_id: str
+) -> None:
+    """Assert status response has all required fields."""
+    required_fields = ["task_id", "status", "created_at"]
+    for field in required_fields:
+        assert field in status_data, f"Missing required field: {field}"
+
+    assert status_data["task_id"] == task_id
+    assert status_data["status"] in {"Q", "R", "D", "F"}
+    assert isinstance(status_data["created_at"], str)
+
+
+def assert_error_response(response: Response, expected_status: int) -> None:
+    """Assert response has expected error status."""
+    assert response.status_code == expected_status
+
+
+def validate_dataset_example_fields(example: dict[str, Any]) -> None:
+    """Validate required fields in a dataset example."""
+    required_fields = ["question", "positive", "negative"]
+    for field in required_fields:
+        assert field in example, f"Missing '{field}' field"
+        assert isinstance(example[field], str), f"'{field}' should be string"
+        assert example[field].strip(), f"'{field}' should not be empty"
+
+
+def run_evaluation_test_with_payload(
+    client: TestClient, payload: dict[str, Any]
+) -> str:
+    """Run a complete evaluation test cycle with setup and execution."""
+    setup_evaluation_test()
+    task_id = start_evaluation_and_get_task_id(client, payload)
+    assert_valid_evaluation_status_response(client, task_id)
+    return task_id
+
+
 @pytest.mark.evaluation
 class TestEvaluationComprehensive:
     """Comprehensive tests for evaluation endpoints with real test data."""
@@ -101,45 +185,27 @@ class TestEvaluationComprehensive:
     @staticmethod
     def test_evaluation_different_datasets(client: TestClient) -> None:
         """Test evaluation with different datasets."""
-        ensure_minilm_model_available()
+        setup_evaluation_test()
 
         # Test with first dataset
-        payload1 = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_1,
-        }
-
-        response1 = client.post("/evaluation/evaluate", json=payload1)
-        assert response1.status_code == HTTP_202_ACCEPTED
-        task_id1 = extract_task_id_from_response(response1)
+        payload1 = create_base_evaluation_payload()
+        task_id1 = start_evaluation_and_get_task_id(client, payload1)
 
         # Test with second dataset
-        payload2 = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_2,
-        }
-
-        response2 = client.post("/evaluation/evaluate", json=payload2)
-        assert response2.status_code == HTTP_202_ACCEPTED
-        task_id2 = extract_task_id_from_response(response2)
+        payload2 = create_base_evaluation_payload(dataset_id=DATASET_ID_2)
+        task_id2 = start_evaluation_and_get_task_id(client, payload2)
 
         # Both should have different task IDs
         assert task_id1 != task_id2
 
         # Both should have valid status
-        status1 = client.get(f"/evaluation/{task_id1}/status")
-        status2 = client.get(f"/evaluation/{task_id2}/status")
-        assert status1.status_code == HTTP_200_OK
-        assert status2.status_code == HTTP_200_OK
+        assert_valid_evaluation_status_response(client, task_id1)
+        assert_valid_evaluation_status_response(client, task_id2)
 
     @staticmethod
     def test_evaluation_nonexistent_model(client: TestClient) -> None:
         """Test evaluation with nonexistent model tag."""
-        payload = {
-            "model_tag": "nonexistent-model-tag",
-            "dataset_id": DATASET_ID_1,
-        }
-
+        payload = create_base_evaluation_payload(model_tag="nonexistent-model-tag")
         response = client.post("/evaluation/evaluate", json=payload)
         # Should either fail immediately or start and fail during execution
         assert response.status_code in {HTTP_400_BAD_REQUEST, HTTP_202_ACCEPTED}
@@ -147,14 +213,9 @@ class TestEvaluationComprehensive:
     @staticmethod
     def test_evaluation_nonexistent_dataset(client: TestClient) -> None:
         """Test evaluation with nonexistent dataset ID."""
-        ensure_minilm_model_available()
+        setup_evaluation_test()
 
-        fake_dataset_id = str(uuid.uuid4())
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": fake_dataset_id,
-        }
-
+        payload = create_base_evaluation_payload(dataset_id=str(uuid.uuid4()))
         response = client.post("/evaluation/evaluate", json=payload)
         # Should either fail immediately or start and fail during execution
         assert response.status_code in {
@@ -169,7 +230,7 @@ class TestEvaluationComprehensive:
         # Test with completely random UUID
         random_id = str(uuid.uuid4())
         response = client.get(f"/evaluation/{random_id}/status")
-        assert response.status_code == HTTP_404_NOT_FOUND
+        assert_error_response(response, HTTP_404_NOT_FOUND)
 
         # Test with invalid UUID format
         response = client.get("/evaluation/invalid-uuid/status")
@@ -181,70 +242,30 @@ class TestEvaluationComprehensive:
     @staticmethod
     def test_evaluation_response_structure(client: TestClient) -> None:
         """Test that evaluation response has correct structure."""
-        ensure_minilm_model_available()
+        setup_evaluation_test()
 
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_1,
-        }
-
+        payload = create_base_evaluation_payload()
         response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
-
-        # Check Location header
-        assert "Location" in response.headers
-        location = response.headers["Location"]
-        assert "/evaluation/" in location
-        assert "/status" in location
-
-        # Extract and validate task ID from location
-        task_id = extract_task_id_from_response(response)
-        assert uuid.UUID(task_id)  # Should be valid UUID
+        assert_evaluation_response_structure(response)
 
     @staticmethod
     def test_evaluation_status_response_structure(client: TestClient) -> None:
         """Test that status response has correct structure."""
-        ensure_minilm_model_available()
+        setup_evaluation_test()
 
-        # Start an evaluation task
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_1,
-        }
+        payload = create_base_evaluation_payload()
+        task_id = start_evaluation_and_get_task_id(client, payload)
 
-        response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
-        task_id = extract_task_id_from_response(response)
-
-        # Check status response structure
-        status_response = client.get(f"/evaluation/{task_id}/status")
-        assert status_response.status_code == HTTP_200_OK
-
-        status_data = status_response.json()
-        required_fields = ["task_id", "status", "created_at"]
-        for field in required_fields:
-            assert field in status_data, f"Missing required field: {field}"
-
-        assert status_data["task_id"] == task_id
-        assert status_data["status"] in {"Q", "R", "D", "F"}
-
-        # created_at should be ISO format timestamp
-        assert isinstance(status_data["created_at"], str)
+        status_data = assert_valid_evaluation_status_response(client, task_id)
+        assert_evaluation_status_response_fields(status_data, task_id)
 
     @staticmethod
     def test_evaluation_results_endpoint(client: TestClient) -> None:
         """Test evaluation results endpoint."""
-        ensure_minilm_model_available()
+        setup_evaluation_test()
 
-        # Start evaluation
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_1,
-        }
-
-        response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
-        task_id = extract_task_id_from_response(response)
+        payload = create_base_evaluation_payload()
+        task_id = start_evaluation_and_get_task_id(client, payload)
 
         # Try to get results (may not be ready yet)
         results_response = client.get(f"/evaluation/{task_id}/results")
@@ -261,89 +282,51 @@ class TestEvaluationComprehensive:
     def test_evaluation_dataset_schema_validation() -> None:
         """Test that evaluation works with our test data schema."""
         # Verify our test datasets have the correct schema
-        dataset1_examples = load_test_dataset(f"__rm_-rf__2F_{DATASET_ID_2}.jsonl")
-        dataset2_examples = load_test_dataset(f"__rm_-rf__2F_{DATASET_ID_1}.jsonl")
+        dataset_files = [
+            f"__rm_-rf__2F_{DATASET_ID_2}.jsonl",
+            f"__rm_-rf__2F_{DATASET_ID_1}.jsonl"
+        ]
 
-        # Check that examples have required fields for evaluation
-        for examples in [dataset1_examples, dataset2_examples]:
+        for dataset_file in dataset_files:
+            examples = load_test_dataset(dataset_file)
             assert len(examples) > 0, "Dataset should not be empty"
 
-            for example in examples[:3]:  # Check first few examples
-                assert "question" in example, "Missing 'question' field"
-                assert "positive" in example, "Missing 'positive' field"
-                assert "negative" in example, "Missing 'negative' field"
-
-                # Validate field types
-                assert isinstance(
-                    example["question"], str
-                ), "'question' should be string"
-                assert isinstance(
-                    example["positive"], str
-                ), "'positive' should be string"
-                assert isinstance(
-                    example["negative"], str
-                ), "'negative' should be string"
-
-                # Validate content is not empty
-                assert example["question"].strip(), (
-                    "'question' should not be empty"
-                )
-                assert example["positive"].strip(), (
-                    "'positive' should not be empty"
-                )
-                assert example["negative"].strip(), (
-                    "'negative' should not be empty"
-                )
+            # Check first few examples
+            for example in examples[:3]:
+                validate_dataset_example_fields(example)
 
     @staticmethod
     def test_evaluation_concurrent_requests(client: TestClient) -> None:
         """Test handling of concurrent evaluation requests."""
-        ensure_minilm_model_available()
-
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_1,
-        }
+        setup_evaluation_test()
 
         # Start first evaluation
-        response1 = client.post("/evaluation/evaluate", json=payload)
-        assert response1.status_code == HTTP_202_ACCEPTED
-        task_id1 = extract_task_id_from_response(response1)
+        payload1 = create_base_evaluation_payload()
+        task_id1 = start_evaluation_and_get_task_id(client, payload1)
 
         # Start second evaluation immediately
-        payload2 = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_2,
-        }
-        response2 = client.post("/evaluation/evaluate", json=payload2)
-        assert response2.status_code == HTTP_202_ACCEPTED
-        task_id2 = extract_task_id_from_response(response2)
+        payload2 = create_base_evaluation_payload(dataset_id=DATASET_ID_2)
+        task_id2 = start_evaluation_and_get_task_id(client, payload2)
 
         # Both should have different task IDs
         assert task_id1 != task_id2
 
         # Both should have valid status
-        status1 = client.get(f"/evaluation/{task_id1}/status")
-        status2 = client.get(f"/evaluation/{task_id2}/status")
-        assert status1.status_code == HTTP_200_OK
-        assert status2.status_code == HTTP_200_OK
+        assert_valid_evaluation_status_response(client, task_id1)
+        assert_valid_evaluation_status_response(client, task_id2)
 
     @staticmethod
     def test_evaluation_missing_required_fields(client: TestClient) -> None:
         """Test evaluation request with missing required fields."""
         # Missing model_tag
-        payload = {
-            "dataset_id": DATASET_ID_1,
-        }
+        payload = {"dataset_id": DATASET_ID_1}
         response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY
+        assert_error_response(response, HTTP_422_UNPROCESSABLE_ENTITY)
 
         # Missing dataset_id - backend accepts this and fails in background task
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-        }
+        payload = {"model_tag": MINILM_MODEL_TAG}
         response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
+        assert_error_response(response, HTTP_202_ACCEPTED)
 
     @staticmethod
     def test_evaluation_invalid_request_data(client: TestClient) -> None:
@@ -354,7 +337,7 @@ class TestEvaluationComprehensive:
             "dataset_id": DATASET_ID_1,
         }
         response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY
+        assert_error_response(response, HTTP_422_UNPROCESSABLE_ENTITY)
 
         # Invalid dataset_id type
         payload = {
@@ -362,49 +345,30 @@ class TestEvaluationComprehensive:
             "dataset_id": 123,  # Should be string
         }
         response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY
+        assert_error_response(response, HTTP_422_UNPROCESSABLE_ENTITY)
 
     @staticmethod
     def test_evaluation_empty_string_parameters(client: TestClient) -> None:
         """Test evaluation with empty string parameters."""
         # Empty model_tag - backend accepts this and fails in background task
-        payload = {
-            "model_tag": "",
-            "dataset_id": DATASET_ID_1,
-        }
+        payload = create_base_evaluation_payload(model_tag="")
         response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
+        assert_error_response(response, HTTP_202_ACCEPTED)
 
         # Empty dataset_id - backend also accepts this and fails in background task
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": "",
-        }
+        payload = create_base_evaluation_payload(dataset_id="")
         response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
+        assert_error_response(response, HTTP_202_ACCEPTED)
 
     @staticmethod
     def test_evaluation_status_field_validation(client: TestClient) -> None:
         """Test that evaluation status contains all expected fields."""
-        ensure_minilm_model_available()
+        setup_evaluation_test()
 
-        payload = {
-            "model_tag": MINILM_MODEL_TAG,
-            "dataset_id": DATASET_ID_1,
-        }
+        payload = create_base_evaluation_payload()
+        task_id = start_evaluation_and_get_task_id(client, payload)
 
-        response = client.post("/evaluation/evaluate", json=payload)
-        assert response.status_code == HTTP_202_ACCEPTED
-        task_id = extract_task_id_from_response(response)
-
-        status_response = client.get(f"/evaluation/{task_id}/status")
-        assert status_response.status_code == HTTP_200_OK
-        status_data = status_response.json()
-
-        # Required fields
-        required_fields = ["task_id", "status", "created_at"]
-        for field in required_fields:
-            assert field in status_data, f"Missing required field: {field}"
+        status_data = assert_valid_evaluation_status_response(client, task_id)
 
         # Field type validation
         assert isinstance(status_data["task_id"], str)
@@ -418,7 +382,7 @@ class TestEvaluationComprehensive:
     @staticmethod
     def test_evaluation_with_small_dataset(client: TestClient) -> None:
         """Test evaluation behavior with small datasets."""
-        ensure_minilm_model_available()
+        setup_evaluation_test()
 
         # Load our test datasets to check size
         dataset1_examples = load_test_dataset(f"__rm_-rf__2F_{DATASET_ID_1}.jsonl")
@@ -429,14 +393,6 @@ class TestEvaluationComprehensive:
             (DATASET_ID_1, dataset1_examples),
             (DATASET_ID_2, dataset2_examples),
         ]:
-            payload = {
-                "model_tag": MINILM_MODEL_TAG,
-                "dataset_id": dataset_id,
-            }
-
-            response = client.post("/evaluation/evaluate", json=payload)
-            assert response.status_code == HTTP_202_ACCEPTED
-
-            task_id = extract_task_id_from_response(response)
-            status_response = client.get(f"/evaluation/{task_id}/status")
-            assert status_response.status_code == HTTP_200_OK
+            payload = create_base_evaluation_payload(dataset_id=dataset_id)
+            task_id = start_evaluation_and_get_task_id(client, payload)
+            assert_valid_evaluation_status_response(client, task_id)
