@@ -53,16 +53,9 @@ async def train_model(
     if not model:
         raise ModelNotFoundError(train_request.model_tag)
 
-    # Convert database model_tag to filesystem path
-    # Handle different model tag formats:
-    # 1. HuggingFace: "sentence-transformers_all-MiniLM-L6-v2" → "models--sentence-transformers--all-MiniLM-L6-v2"
-    # 2. Trained: "trained_models/sentence-transformers_all-MiniLM-L6-v2-finetuned-..." → "trained_models/sentence-transformers_all-MiniLM-L6-v2-finetuned-..."
-
     if model.model_tag.startswith("trained_models/"):
-        # Trained models: use as-is, they already have the correct path format
         filesystem_model_tag = model.model_tag
     else:
-        # HuggingFace models: convert underscore format to dash format
         filesystem_model_tag = model.model_tag.replace("_", "--")
         if not filesystem_model_tag.startswith("models--"):
             filesystem_model_tag = f"models--{filesystem_model_tag}"
