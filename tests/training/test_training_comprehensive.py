@@ -67,7 +67,7 @@ def extract_task_id_from_response(response: Response) -> str:
 
 
 def wait_for_task_completion(
-    client: TestClient, task_id: str, max_wait: int = 45
+    client: TestClient, task_id: str, max_wait: int = 30
 ) -> dict[str, Any]:
     """Wait for a training task to complete and return final status."""
     for _ in range(max_wait):
