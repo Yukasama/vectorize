@@ -13,4 +13,3 @@ class TaskStatus(StrEnum):
     RUNNING = "R"
     DONE = "D"
     FAILED = "F"
-    CANCELED = "C"

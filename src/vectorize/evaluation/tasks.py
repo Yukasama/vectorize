@@ -166,13 +166,7 @@ async def run_evaluation_bg(
                 improvement = trained_metrics.get_improvement_over_baseline(
                     baseline_metrics
                 )
-                success_status = (
-                    "successful"
-                    if trained_metrics.is_training_successful()
-                    else "unsuccessful"
-                )
                 summary = (
-                    f"Training {success_status}. "
                     f"Similarity ratio improved by "
                     f"{improvement['ratio_improvement']:.3f} "
                     f"({baseline_metrics.similarity_ratio:.3f} → "
@@ -199,11 +193,7 @@ async def run_evaluation_bg(
                     dataset_path, evaluation_request.max_samples
                 )
 
-                success_status = (
-                    "successful" if metrics.is_training_successful() else "unsuccessful"
-                )
                 summary = (
-                    f"Training {success_status}. "
                     f"Positive similarity: {metrics.avg_positive_similarity:.3f}, "
                     f"Negative similarity: {metrics.avg_negative_similarity:.3f}, "
                     f"Ratio: {metrics.similarity_ratio:.3f}"

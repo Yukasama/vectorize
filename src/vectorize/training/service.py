@@ -5,18 +5,17 @@ import builtins
 import time
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import pandas as pd
-import redis
 from loguru import logger
 from sentence_transformers import losses
 from sqlmodel.ext.asyncio.session import AsyncSession
 from torch.utils.data import DataLoader
 
 if TYPE_CHECKING:
-    from dramatiq import Message
+    pass
 
 from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
@@ -55,45 +54,6 @@ class TrainingOrchestrator:
         """
         self.db = db
         self.task_id = task_id
-        self._redis_client = None
-
-    def _get_redis_client(self) -> redis.Redis:
-        """Get Redis client for cancellation checks."""
-        if self._redis_client is None:
-            self._redis_client = redis.Redis(
-                host='redis', port=6379, db=0, decode_responses=True
-            )
-        return self._redis_client
-
-    def _check_cancellation(self, dramatiq_message: object | None) -> bool:
-        """Check if the training should be cancelled.
-
-        Args:
-            dramatiq_message: Dramatiq message object
-
-        Returns:
-            True if training should be cancelled, False otherwise
-        """
-        if dramatiq_message and hasattr(dramatiq_message, 'message_id'):
-            try:
-                redis_client = self._get_redis_client()
-                message = cast("Message", dramatiq_message)
-                message_id = message.message_id
-                cancellation_key = f"cancel_training:{message_id}"
-                is_cancelled = bool(redis_client.exists(cancellation_key))
-                
-                # Debug logging
-                if is_cancelled:
-                    logger.debug(f"Cancellation detected! Key: {cancellation_key}")
-                else:
-                    logger.debug(f"No cancellation found for key: {cancellation_key}")
-                    
-                return is_cancelled
-            except Exception as e:
-                logger.warning("Failed to check cancellation status", error=str(e))
-        else:
-            logger.debug("No dramatiq message or message_id available for cancellation check")
-        return False
 
     @staticmethod
     async def validate_datasets(
@@ -192,7 +152,6 @@ class TrainingOrchestrator:
         train_request: TrainRequest,
         dataset_paths: list[str],
         output_dir: str,
-        dramatiq_message: object | None = None,
     ) -> None:
         """Main orchestration function for SBERT training.
 
@@ -201,7 +160,6 @@ class TrainingOrchestrator:
             train_request: Training configuration
             dataset_paths: List of dataset file paths
             output_dir: Output directory for the trained model
-            dramatiq_message: Dramatiq message for cancellation checks
         """
         logger.debug(
             "Starting SBERT training",
@@ -212,23 +170,7 @@ class TrainingOrchestrator:
         )
 
         try:
-            # Check for cancellation before starting
-            if self._check_cancellation(dramatiq_message):
-                await update_training_task_status(
-                    self.db, self.task_id, TaskStatus.CANCELED,
-                    error_msg="Training cancelled before model loading"
-                )
-                return
-
             self.model = load_and_prepare_model(model_path)
-
-            # Check for cancellation after model loading
-            if self._check_cancellation(dramatiq_message):
-                await update_training_task_status(
-                    self.db, self.task_id, TaskStatus.CANCELED,
-                    error_msg="Training cancelled after model loading"
-                )
-                return
 
             (
                 train_dataloader,
@@ -237,29 +179,12 @@ class TrainingOrchestrator:
                 dataset_paths, train_request.per_device_train_batch_size
             )
 
-            # Check for cancellation after data preparation
-            if self._check_cancellation(dramatiq_message):
-                await update_training_task_status(
-                    self.db, self.task_id, TaskStatus.CANCELED,
-                    error_msg="Training cancelled after data preparation"
-                )
-                return
-
             await self._update_validation_dataset(validation_dataset_path)
-
-            # Check for cancellation before training starts
-            if self._check_cancellation(dramatiq_message):
-                await update_training_task_status(
-                    self.db, self.task_id, TaskStatus.CANCELED,
-                    error_msg="Training cancelled before model training"
-                )
-                return
 
             training_metrics = self._train_model(
                 train_dataloader,
                 train_request,
                 output_dir,
-                dramatiq_message,  # Pass for internal checks
             )
 
             await self._save_training_metrics(training_metrics)
@@ -435,7 +360,6 @@ class TrainingOrchestrator:
         train_dataloader: DataLoader,
         train_request: TrainRequest,
         output_dir: str,
-        dramatiq_message: object | None = None,
     ) -> dict:
         """Train the SBERT model.
 
@@ -443,17 +367,12 @@ class TrainingOrchestrator:
             train_dataloader: Training data loader
             train_request: Training configuration
             output_dir: Output directory for the trained model
-            dramatiq_message: Dramatiq message for cancellation checks
 
         Returns:
             Dictionary containing training metrics
         """
         if self.model is None:
             raise RuntimeError("Model not loaded")
-
-        # Check for cancellation before training
-        if self._check_cancellation(dramatiq_message):
-            raise RuntimeError("Training cancelled before model training started")
 
         loss = losses.CosineSimilarityLoss(self.model)
 
@@ -497,59 +416,15 @@ class TrainingOrchestrator:
             checkpoint_dir = Path(output_dir) / "checkpoints"
             checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-            # Create cancellation callback with detailed logging
-            def cancellation_callback(score, epoch, steps):
-                """Callback that checks for cancellation at each training step."""
-                logger.debug(f"Callback triggered: epoch={epoch}, steps={steps}, score={score}")
-                if self._check_cancellation(dramatiq_message):
-                    logger.info("Training cancelled during callback", epoch=epoch, steps=steps)
-                    raise KeyboardInterrupt("Training cancelled by user")
-
-            # Start background cancellation monitoring thread
-            import threading
-            import time as time_module
-            stop_monitoring = threading.Event()
-            
-            def cancellation_monitor():
-                """Background thread that monitors for cancellation every second."""
-                logger.debug("Monitor thread started - checking every second")
-                while not stop_monitoring.is_set():
-                    logger.debug("Monitor thread: checking for cancellation...")
-                    if self._check_cancellation(dramatiq_message):
-                        logger.info("Training cancellation detected by monitor thread")
-                        # Force stop by raising KeyboardInterrupt in main thread
-                        import os
-                        import signal
-                        os.kill(os.getpid(), signal.SIGINT)
-                        break
-                    time_module.sleep(1)  # Check every second
-                logger.debug("Monitor thread finished")
-            
-            # Start monitoring thread
-            monitor_thread = threading.Thread(target=cancellation_monitor, daemon=True)
-            monitor_thread.start()
-            logger.debug("Started cancellation monitor thread")
-            
-            try:
-                self.model.fit(
-                    train_objectives=[(train_dataloader, loss)],
-                    epochs=train_request.epochs,
-                    warmup_steps=train_request.warmup_steps or 0,
-                    show_progress_bar=False,
-                    output_path=str(Path(output_dir)),
-                    checkpoint_path=str(checkpoint_dir),
-                    checkpoint_save_steps=500,  # More frequent checkpoints for cancellation
-                    callback=cancellation_callback,  # Add cancellation callback
-                )
-            finally:
-                # Stop monitoring thread
-                stop_monitoring.set()
-                logger.debug("Stopped cancellation monitor thread")
-                
-        except KeyboardInterrupt:
-            logger.info("Training was cancelled by user during model training")
-            # Re-raise as RuntimeError with specific message
-            raise RuntimeError("Training cancelled by user")
+            self.model.fit(
+                train_objectives=[(train_dataloader, loss)],
+                epochs=train_request.epochs,
+                warmup_steps=train_request.warmup_steps or 0,
+                show_progress_bar=False,
+                output_path=str(Path(output_dir)),
+                checkpoint_path=str(checkpoint_dir),
+                checkpoint_save_steps=0,
+            )
         finally:
             builtins.print = original_print
 

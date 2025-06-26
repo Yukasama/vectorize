@@ -40,11 +40,6 @@ class TrainingTask(SQLModel, table=True):
         description="Optional error message encountered during training.",
     )
 
-    dramatiq_message_id: str | None = Field(
-        default=None,
-        description="Dramatiq message ID for task cancellation.",
-    )
-
     trained_model_id: UUID | None = Field(
         default=None,
         foreign_key="ai_model.id",
