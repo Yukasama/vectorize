@@ -26,7 +26,7 @@ def resolve_model_path(model_tag: str) -> str:
     # Handle different model tag formats:
     # 1. HuggingFace: "sentence-transformers_all-MiniLM-L6-v2" → "models--sentence-transformers--all-MiniLM-L6-v2"
     # 2. Trained: "trained_models/sentence-transformers_all-MiniLM-L6-v2-finetuned-..." → "trained_models/sentence-transformers_all-MiniLM-L6-v2-finetuned-..."
-    
+
     if model_tag.startswith("trained_models/"):
         # Trained models: use as-is, they already have the correct path format
         filesystem_model_tag = model_tag
@@ -35,7 +35,7 @@ def resolve_model_path(model_tag: str) -> str:
         filesystem_model_tag = model_tag.replace("_", "--")
         if not filesystem_model_tag.startswith("models--"):
             filesystem_model_tag = f"models--{filesystem_model_tag}"
-    
+
     base_path = Path("data/models") / filesystem_model_tag
 
     if not base_path.exists():
