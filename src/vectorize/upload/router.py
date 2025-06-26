@@ -64,10 +64,12 @@ async def load_model_huggingface(
         InternalServerError: If an internal error occurs while checking the model.
     """
     key = f"{data.model_tag}@{data.revision}"
+    # Convert model_tag to the same format as stored in the database
+    db_model_tag = data.model_tag.replace("/", "_")
 
     try:
-        await get_ai_model_svc(db, key)
-        raise ModelAlreadyExistsError(key)
+        await get_ai_model_svc(db, db_model_tag)
+        raise ModelAlreadyExistsError(db_model_tag)
     except ModelNotFoundError:
         pass
 

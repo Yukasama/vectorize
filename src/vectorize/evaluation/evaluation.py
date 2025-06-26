@@ -19,7 +19,6 @@ from .utils import DatasetValidator, SimilarityCalculator
 
 __all__ = ["EvaluationMetrics", "TrainingEvaluator"]
 
-TRAINING_SUCCESS_THRESHOLD = 1.2
 DEFAULT_MAX_SAMPLES = 1000
 DEFAULT_RANDOM_SEED = 42
 
@@ -82,7 +81,7 @@ class EvaluationMetrics:
         """Convert metrics to dictionary format.
 
         Returns:
-            Dictionary containing all metrics and training success status
+            Dictionary containing all metrics
         """
         return {
             "avg_positive_similarity": self.avg_positive_similarity,
@@ -90,7 +89,6 @@ class EvaluationMetrics:
             "similarity_ratio": self.similarity_ratio,
             "spearman_correlation": self.spearman_correlation,
             "num_samples": self.num_samples,
-            "is_training_successful": self.is_training_successful(),
         }
 
     def to_baseline_dict(self) -> dict[str, Any]:
@@ -106,17 +104,6 @@ class EvaluationMetrics:
             "spearman_correlation": self.spearman_correlation,
             "num_samples": self.num_samples,
         }
-
-    def is_training_successful(self) -> bool:
-        """Simple heuristic to determine if training was successful.
-
-        Returns:
-            True if positive similarities > negative similarities and ratio > 1.2
-        """
-        return (
-            self.avg_positive_similarity > self.avg_negative_similarity
-            and self.similarity_ratio > TRAINING_SUCCESS_THRESHOLD
-        )
 
     def get_improvement_over_baseline(
         self, baseline: "EvaluationMetrics"
@@ -151,7 +138,6 @@ class EvaluationMetrics:
             f"  similarity_ratio={self.similarity_ratio:.4f}\n"
             f"  spearman_correlation={self.spearman_correlation:.4f}\n"
             f"  num_samples={self.num_samples}\n"
-            f"  training_successful={self.is_training_successful()}\n"
             f")"
         )
 
@@ -308,15 +294,10 @@ class TrainingEvaluator:
             metrics=baseline_metrics.baseline_str(),
         )
 
-        success_status = (
-            "SUCCESSFUL" if trained_metrics.is_training_successful() else "UNSUCCESSFUL"
-        )
         logger.debug(
-            "Trained model evaluation - Training",
-            success_status=success_status,
+            "Trained model evaluation completed",
             model_type="trained",
             model_path=self.model_path,
-            training_status=success_status.lower(),
             metrics=str(trained_metrics),
         )
 
@@ -342,7 +323,6 @@ class TrainingEvaluator:
                 "model_path": self.model_path,
                 "dataset_path": str(dataset_path),
                 "samples_evaluated": metrics.num_samples,
-                "training_successful": metrics.is_training_successful(),
                 "positive_avg": f"{metrics.avg_positive_similarity:.4f}",
                 "negative_avg": f"{metrics.avg_negative_similarity:.4f}",
                 "ratio": f"{metrics.similarity_ratio:.4f}",

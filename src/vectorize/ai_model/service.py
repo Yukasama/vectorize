@@ -11,7 +11,7 @@ from vectorize.utils.etag_parser import parse_etag
 from .models import AIModelPublic, AIModelUpdate
 from .repository import delete_model_db, get_ai_model_db, update_ai_model_db
 
-__all__ = ["get_ai_model_svc", "update_ai_model_svc"]
+__all__ = ["delete_model_svc", "get_ai_model_svc", "update_ai_model_svc"]
 
 
 async def get_ai_model_svc(

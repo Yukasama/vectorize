@@ -11,7 +11,7 @@ from vectorize.common.task_status import TaskStatus
 __all__ = ["build_query"]
 
 
-_COMPLETED = {TaskStatus.DONE, TaskStatus.FAILED, TaskStatus.CANCELED}
+_COMPLETED = {TaskStatus.DONE, TaskStatus.FAILED}
 _UNFINISHED = {TaskStatus.QUEUED, TaskStatus.PENDING}
 
 

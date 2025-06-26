@@ -42,9 +42,6 @@ class EvaluationResponse(BaseModel):
     metrics: dict
     baseline_metrics: dict | None = None
     evaluation_summary: str
-    training_successful: bool = Field(
-        description="Whether the training was deemed successful based on metrics"
-    )
 
 
 class EvaluationStatusResponse(BaseModel):

@@ -29,17 +29,13 @@ async def evaluate_model(
     """Start model evaluation as a background task.
 
     Computes cosine similarity metrics between question-positive-negative triplets
-    to assess training quality. Optionally compares against a baseline model.
+    to assess model quality. Optionally compares against a baseline model.
 
     Main metrics computed:
     - Average cosine similarity between question and positive examples
     - Average cosine similarity between question and negative examples
-    - Ratio of positive to negative similarities (should be > 1)
+    - Ratio of positive to negative similarities
     - Spearman correlation for similarity ranking
-
-    A training is considered successful if:
-    - Positive similarities > negative similarities
-    - Similarity ratio > 1.2
 
     Returns:
         202 Accepted with Location header pointing to task status

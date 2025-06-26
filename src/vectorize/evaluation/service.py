@@ -70,11 +70,7 @@ async def evaluate_model_task(
         baseline_metrics = comparison_results["baseline"]
 
         improvement = trained_metrics.get_improvement_over_baseline(baseline_metrics)
-        success_status = (
-            "successful" if trained_metrics.is_training_successful() else "unsuccessful"
-        )
         summary = (
-            f"Training {success_status}. "
             f"Similarity ratio improved by {improvement['ratio_improvement']:.3f} "
             f"({baseline_metrics.similarity_ratio:.3f} → "
             f"{trained_metrics.similarity_ratio:.3f})"
@@ -86,16 +82,11 @@ async def evaluate_model_task(
             metrics=trained_metrics.to_dict(),
             baseline_metrics=baseline_metrics.to_baseline_dict(),
             evaluation_summary=summary,
-            training_successful=trained_metrics.is_training_successful(),
         )
 
     metrics = evaluator.evaluate_dataset(dataset_path, evaluation_request.max_samples)
 
-    success_status = (
-        "successful" if metrics.is_training_successful() else "unsuccessful"
-    )
     summary = (
-        f"Training {success_status}. "
         f"Positive similarity: {metrics.avg_positive_similarity:.3f}, "
         f"Negative similarity: {metrics.avg_negative_similarity:.3f}, "
         f"Ratio: {metrics.similarity_ratio:.3f}"
@@ -106,7 +97,6 @@ async def evaluate_model_task(
         dataset_used=str(dataset_path),
         metrics=metrics.to_dict(),
         evaluation_summary=summary,
-        training_successful=metrics.is_training_successful(),
     )
 
 

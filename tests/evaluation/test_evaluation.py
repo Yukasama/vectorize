@@ -49,34 +49,6 @@ class TestEvaluationMetrics:
         assert metrics.num_samples == TestEvaluationMetrics.NUM_SAMPLES
 
     @staticmethod
-    def test_is_training_successful_positive() -> None:
-        """Test successful training detection."""
-        metrics = EvaluationMetrics(
-            avg_positive_similarity=TestEvaluationMetrics.AVG_POSITIVE_SIMILARITY,
-            avg_negative_similarity=TestEvaluationMetrics.AVG_NEGATIVE_SIMILARITY,
-            # > 1.2 and pos > neg
-            similarity_ratio=TestEvaluationMetrics.SIMILARITY_RATIO,
-            spearman_correlation=TestEvaluationMetrics.SPEARMAN_CORRELATION,
-            num_samples=TestEvaluationMetrics.NUM_SAMPLES,
-        )
-        assert metrics.is_training_successful() is True
-
-    @staticmethod
-    def test_is_training_successful_negative() -> None:
-        """Test unsuccessful training detection."""
-        metrics = EvaluationMetrics(
-            avg_positive_similarity=TestEvaluationMetrics.AVG_NEGATIVE_SIMILARITY,
-            avg_negative_similarity=TestEvaluationMetrics.AVG_POSITIVE_SIMILARITY,
-            similarity_ratio=(
-                TestEvaluationMetrics.AVG_NEGATIVE_SIMILARITY
-                / TestEvaluationMetrics.AVG_POSITIVE_SIMILARITY
-            ),  # < 1.2 and pos < neg
-            spearman_correlation=0.2,
-            num_samples=TestEvaluationMetrics.NUM_SAMPLES,
-        )
-        assert metrics.is_training_successful() is False
-
-    @staticmethod
     def test_to_dict() -> None:
         """Test conversion to dictionary."""
         metrics = EvaluationMetrics(
@@ -94,10 +66,8 @@ class TestEvaluationMetrics:
             "similarity_ratio",
             "spearman_correlation",
             "num_samples",
-            "is_training_successful",
         }
         assert set(result.keys()) == expected_keys
-        assert result["is_training_successful"] is True
 
 
 @pytest.mark.evaluation

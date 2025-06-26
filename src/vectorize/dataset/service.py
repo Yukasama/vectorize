@@ -116,7 +116,12 @@ async def upload_dataset_svc(
         )
 
     raw_df = await _convert_file_to_df(file, ext, options.sheet_index if options else 0)
-    escaped_df = _escape_csv_formulas(raw_df)
+
+    if ext.lower() in {"csv", "xlsx", "xls"}:
+        escaped_df = _escape_csv_formulas(raw_df)
+    else:
+        escaped_df = raw_df
+
     df, classification = _classify_dataset(escaped_df, column_mapping)
 
     file_path: Path | None = None
@@ -136,7 +141,6 @@ async def upload_dataset_svc(
         logger.debug("Dataset saved", datasetId=dataset_id)
         return dataset_id
     except Exception:
-        # Roll back file on DB failure
         if file_path is not None and file_path.exists():
             file_path.unlink()
             logger.debug("Cleaned up file after database error", file_path=file_path)

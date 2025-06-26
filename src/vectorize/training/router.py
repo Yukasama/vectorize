@@ -1,18 +1,15 @@
 """Training router for SBERT triplet training (Hugging Face TRL)."""
 
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 
-import redis
 from fastapi import APIRouter, Depends, Response, status
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.ai_model.exceptions import ModelNotFoundError
 from vectorize.ai_model.repository import get_ai_model_db
-from vectorize.common.task_status import TaskStatus
 from vectorize.config.config import settings
 from vectorize.config.db import get_session
 
@@ -24,22 +21,15 @@ from .models import TrainingTask
 from .repository import (
     get_train_task_by_id,
     save_training_task,
-    update_training_task_dramatiq_id,
-    update_training_task_status,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
 from .service import TrainingOrchestrator
 from .tasks import run_training_bg
+from .utils.model_loader import has_model_weights
 
 __all__ = ["router"]
 
 router = APIRouter(tags=["Training"])
-
-
-def has_model_weights(path: str) -> bool:
-    """Check if model directory contains weight files."""
-    model_path = Path(path)
-    return any(model_path.glob("**/*.safetensors")) or any(model_path.glob("**/*.bin"))
 
 
 @router.post("/train")
@@ -56,7 +46,15 @@ async def train_model(
     model = await get_ai_model_db(db, train_request.model_tag)
     if not model:
         raise ModelNotFoundError(train_request.model_tag)
-    model_path = str(settings.model_upload_dir / model.model_tag)
+
+    if model.model_tag.startswith("trained_models/"):
+        filesystem_model_tag = model.model_tag
+    else:
+        filesystem_model_tag = model.model_tag.replace("_", "--")
+        if not filesystem_model_tag.startswith("models--"):
+            filesystem_model_tag = f"models--{filesystem_model_tag}"
+
+    model_path = str(settings.model_upload_dir / filesystem_model_tag)
 
     if not has_model_weights(model_path):
         raise TrainingModelWeightsNotFoundError(
@@ -81,7 +79,7 @@ async def train_model(
     )
     await save_training_task(db, task)
 
-    message = run_training_bg.send_with_options(
+    run_training_bg.send_with_options(
         args=(
             model_path,
             train_request.model_dump(),
@@ -91,7 +89,6 @@ async def train_model(
         ),
     )
 
-    await update_training_task_dramatiq_id(db, task.id, message.message_id)
     logger.debug(
         "SBERT-Triplet-Training started in background with Dramatiq.",
         task_id=str(task.id),
@@ -116,51 +113,3 @@ async def get_training_status(
     if not task:
         raise TrainingTaskNotFoundError(str(task_id))
     return TrainingStatusResponse.from_task(task)
-
-
-@router.post("/{task_id}/cancel")
-async def cancel_training(
-    task_id: UUID,
-    db: Annotated[AsyncSession, Depends(get_session)],
-) -> Response:
-    """Cancel a running training task."""
-    task = await get_train_task_by_id(db, task_id)
-    if not task:
-        raise TrainingTaskNotFoundError(str(task_id))
-    if task.task_status not in {TaskStatus.QUEUED, TaskStatus.RUNNING}:
-        return Response(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content=f"Cannot cancel task with status: {task.task_status.name}",
-        )
-
-    if task.dramatiq_message_id:
-        try:
-
-            redis_client = redis.Redis(
-                host='redis', port=6379, db=0, decode_responses=True
-            )
-            cancellation_key = f"cancel_training:{task.dramatiq_message_id}"
-            redis_client.set(cancellation_key, "true", ex=3600)
-
-            logger.debug(
-                "Cancellation signal sent via Redis",
-                task_id=task_id,
-                dramatiq_message_id=task.dramatiq_message_id,
-                cancellation_key=cancellation_key,
-            )
-        except Exception as e:
-            logger.warning(
-                "Failed to send cancellation signal",
-                task_id=task_id,
-                dramatiq_message_id=task.dramatiq_message_id,
-                error=str(e),
-            )
-
-    await update_training_task_status(
-        db, task_id, TaskStatus.CANCELED, error_msg="Training canceled by user"
-    )
-    logger.debug(
-        "Training task marked for cancellation.",
-        task_id=task_id,
-    )
-    return Response(status_code=status.HTTP_200_OK)

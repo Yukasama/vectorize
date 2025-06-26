@@ -3,7 +3,6 @@
 from uuid import UUID
 
 import dramatiq
-from dramatiq.middleware import CurrentMessage
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -32,9 +31,6 @@ async def run_training_bg(
         dataset_paths: List of dataset file paths
         output_dir: Output directory for the trained model
     """
-    # Get the current Dramatiq message to access cancellation status
-    current_message = CurrentMessage.get_current_message()
-
     async with AsyncSession(engine, expire_on_commit=False) as db:
         try:
             train_request = TrainRequest.model_validate(train_request_dict)
@@ -45,9 +41,6 @@ async def run_training_bg(
                 model_path=model_path,
                 dataset_paths=dataset_paths,
                 output_dir=output_dir,
-                dramatiq_message_id=(
-                    current_message.message_id if current_message else None
-                ),
             )
 
             orchestrator = TrainingOrchestrator(db, UUID(task_id))
@@ -56,7 +49,6 @@ async def run_training_bg(
                 train_request=train_request,
                 dataset_paths=dataset_paths,
                 output_dir=output_dir,
-                dramatiq_message=current_message,  # Pass for cancellation
             )
 
             logger.info(
