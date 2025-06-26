@@ -44,6 +44,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
 app: Final = FastAPI(
     title="Vectorize Service",
     description="Service for text embedding and vector operations",
+    root_path="/v1/api",
     version=settings.version,
     lifespan=lifespan,
 )

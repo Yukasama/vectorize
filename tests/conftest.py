@@ -19,8 +19,7 @@ from fastapi.testclient import TestClient
 from loguru import logger
 from redis import Redis
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.pool import NullPool
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, StaticPool
 from sqlmodel.ext.asyncio.session import AsyncSession
 from testcontainers.redis import RedisContainer
 
@@ -103,8 +102,15 @@ async def session(cleanup_test_db: Generator[None]) -> AsyncGenerator[AsyncSessi
     """
     test_engine = create_async_engine(
         "sqlite+aiosqlite:///app.db",
-        poolclass=NullPool,
-        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        connect_args={
+            "check_same_thread": False,
+            "timeout": 30,
+            "isolation_level": None,
+        },
+        echo=False,
+        pool_pre_ping=True,
+        pool_recycle=300,
     )
 
     async with test_engine.begin() as conn:

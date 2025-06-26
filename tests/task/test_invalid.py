@@ -17,7 +17,7 @@ class TestTasksInvalidParams:
         "url",
         [
             # status
-            "/tasks?status=PENDING",
+            "/tasks?status=RUNNING",
             "/tasks?status=UNKNOWN",
             "/tasks?status=Q&status=FOO",
             "/tasks?status=1",

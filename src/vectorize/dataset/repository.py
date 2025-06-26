@@ -90,6 +90,27 @@ async def find_dataset_by_name_db(db: AsyncSession, name: str) -> Dataset | None
     return result.first()
 
 
+async def is_dataset_being_uploaded_db(db: AsyncSession, dataset_tag: str) -> bool:
+    """Check if a dataset upload task is currently running for the given tag.
+
+    This function queries the database to determine if there is an active
+    upload task (with RUNNING status) for the specified dataset tag.
+
+    Args:
+        db: Database session instance for executing queries.
+        dataset_tag: The tag identifier of the dataset to check.
+
+    Returns:
+        bool: True if there is a running upload task for the dataset tag.
+    """
+    running_task_stmt = select(UploadDatasetTask).where(
+        (UploadDatasetTask.tag == dataset_tag)
+        & (UploadDatasetTask.task_status == TaskStatus.RUNNING)
+    )
+    running_task_result = await db.exec(running_task_stmt)
+    return running_task_result.first() is not None
+
+
 async def upload_dataset_db(db: AsyncSession, dataset: Dataset) -> UUID:
     """Save a new dataset to the database.
 

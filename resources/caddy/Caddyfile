@@ -23,6 +23,37 @@ https://localhost {
     @noSlash path /monitoring
     redir @noSlash /monitoring/ 308
 
+    @docs path /v1/api/docs*
+    handle @docs {
+        header {
+            -Content-Security-Policy     
+            Content-Security-Policy "
+                default-src 'self';
+                img-src 'self' data: https://fastapi.tiangolo.com;
+                style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com;
+                script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
+                font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;
+                connect-src 'self';
+                frame-ancestors 'none'"
+            import api_headers
+        }
+        reverse_proxy vectorize:8000
+    }
+
+    @redoc path /v1/api/redoc*
+    handle @redoc {
+        header {
+            import api_headers
+            Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://fastapi.tiangolo.com https://cdn.redoc.ly; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self'; worker-src blob:; frame-ancestors 'none'"
+        }
+        reverse_proxy vectorize:8000 {
+            header_up Host              {host}
+            header_up X-Real-IP         {remote_host}
+            header_up X-Forwarded-For   {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
     handle /monitoring/* {
         reverse_proxy grafana:3000 {
             header_up Host              {host}
@@ -34,7 +65,7 @@ https://localhost {
         }
     }
 
-    handle_path /v1/api/* {
+    handle /v1/api* {
         @metrics path /metrics*
         handle @metrics {
             @docker_only {
@@ -60,34 +91,6 @@ https://localhost {
                 Referrer-Policy            "no-referrer"
                 Content-Security-Policy    "default-src 'none'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
                 Cache-Control              "no-cache, no-store, must-revalidate"
-            }
-            reverse_proxy vectorize:8000 {
-                header_up Host              {host}
-                header_up X-Real-IP         {remote_host}
-                header_up X-Forwarded-For   {remote_host}
-                header_up X-Forwarded-Proto {scheme}
-            }
-        }
-
-        @docs path /docs*
-        handle @docs {
-            header {
-                import api_headers
-                Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: https://fastapi.tiangolo.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self'; frame-ancestors 'none'"
-            }
-            reverse_proxy vectorize:8000 {
-                header_up Host              {host}
-                header_up X-Real-IP         {remote_host}
-                header_up X-Forwarded-For   {remote_host}
-                header_up X-Forwarded-Proto {scheme}
-            }
-        }
-
-        @redoc path /redoc*
-        handle @redoc {
-            header {
-                import api_headers
-                Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://fastapi.tiangolo.com https://cdn.redoc.ly; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self'; worker-src blob:; frame-ancestors 'none'"
             }
             reverse_proxy vectorize:8000 {
                 header_up Host              {host}

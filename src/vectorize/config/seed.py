@@ -217,7 +217,7 @@ async def seed_db(session: AsyncSession) -> None:
         UploadTask(
             id=UPLOAD_TASK_GH_ID,
             tag="example-github-model",
-            task_status=TaskStatus.PENDING,
+            task_status=TaskStatus.RUNNING,
             source=RemoteModelSource.GITHUB,
             created_at=datetime(2025, 6, 10, 9, 0, tzinfo=UTC),
             updated_at=datetime(2025, 6, 10, 9, 5, tzinfo=UTC),
@@ -229,7 +229,7 @@ async def seed_db(session: AsyncSession) -> None:
         UploadTask(
             id=UPLOAD_TASK_HF_ID,
             tag="example-hf-model",
-            task_status=TaskStatus.PENDING,
+            task_status=TaskStatus.RUNNING,
             source=RemoteModelSource.HUGGINGFACE,
             created_at=datetime(2025, 6, 11, 14, 30, tzinfo=UTC),
             updated_at=datetime(2025, 6, 11, 14, 31, tzinfo=UTC),
@@ -264,7 +264,7 @@ async def seed_db(session: AsyncSession) -> None:
     session.add(
         TrainingTask(
             tag="training_task",
-            task_status=TaskStatus.PENDING,
+            task_status=TaskStatus.RUNNING,
             created_at=datetime.now(tz=UTC) - timedelta(minutes=30),
             trained_model_id=AI_MODEL_LOCALTRAINMODEL_ID,
         ),
@@ -272,7 +272,7 @@ async def seed_db(session: AsyncSession) -> None:
     session.add(
         EvaluationTask(
             tag="evaluation_task",
-            task_status=TaskStatus.PENDING,
+            task_status=TaskStatus.RUNNING,
             created_at=datetime.now(tz=UTC) - timedelta(minutes=30),
             model_id=AI_MODEL_LOCALTRAINMODEL_ID,
         ),
