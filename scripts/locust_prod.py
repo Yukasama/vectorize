@@ -1,7 +1,7 @@
 """Load testing with Locust.
 
 Run with: uvx locust -f scripts/locust.py
-Run headless with: uvx locust -f scripts/locust.py --host=https://localhost/v1 --headless -u 1 -r 1
+Run headless with: uvx locust -f scripts/locust.py --host=https://localhost --headless -u 1 -r 1
 """  # noqa: E501
 
 import urllib3

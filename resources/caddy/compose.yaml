@@ -3,6 +3,8 @@ services:
     image: caddy:latest
     container_name: vectorize_caddy
     ports: [80:80, 443:443, 443:443/udp]
+    environment:
+      TZ: Europe/Berlin
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

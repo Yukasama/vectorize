@@ -17,7 +17,7 @@
     -Via
 }
 
-localhost {
+https://localhost {
     vars cors_origin "{vars.cors_origin}"
 
     @noSlash path /monitoring
@@ -34,101 +34,111 @@ localhost {
         }
     }
 
-    handle /metrics* {
-        @docker_only {
-            remote_ip 172.16.0.0/12
+    handle_path /v1/api/* {
+        @metrics path /metrics*
+        handle @metrics {
+            @docker_only {
+                remote_ip 172.16.0.0/12
+            }
+            handle @docker_only {
+                reverse_proxy vectorize:8000 {
+                    header_up Host              {host}
+                    header_up X-Real-IP         {remote_host}
+                    header_up X-Forwarded-For   {remote_host}
+                    header_up X-Forwarded-Proto {scheme}
+                }
+            }
+            handle {
+                respond "Not Found" 404
+            }
         }
-        handle @docker_only {
-            reverse_proxy vectorize:8000
+        
+        @health path /health*
+        handle @health {
+            header {
+                import api_headers
+                Referrer-Policy            "no-referrer"
+                Content-Security-Policy    "default-src 'none'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+                Cache-Control              "no-cache, no-store, must-revalidate"
+            }
+            reverse_proxy vectorize:8000 {
+                header_up Host              {host}
+                header_up X-Real-IP         {remote_host}
+                header_up X-Forwarded-For   {remote_host}
+                header_up X-Forwarded-Proto {scheme}
+            }
         }
+
+        @docs path /docs*
+        handle @docs {
+            header {
+                import api_headers
+                Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: https://fastapi.tiangolo.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self'; frame-ancestors 'none'"
+            }
+            reverse_proxy vectorize:8000 {
+                header_up Host              {host}
+                header_up X-Real-IP         {remote_host}
+                header_up X-Forwarded-For   {remote_host}
+                header_up X-Forwarded-Proto {scheme}
+            }
+        }
+
+        @redoc path /redoc*
+        handle @redoc {
+            header {
+                import api_headers
+                Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://fastapi.tiangolo.com https://cdn.redoc.ly; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self'; worker-src blob:; frame-ancestors 'none'"
+            }
+            reverse_proxy vectorize:8000 {
+                header_up Host              {host}
+                header_up X-Real-IP         {remote_host}
+                header_up X-Forwarded-For   {remote_host}
+                header_up X-Forwarded-Proto {scheme}
+            }
+        }
+
+        @cors_preflight method OPTIONS
+        handle @cors_preflight {
+            header {
+                import api_headers
+                Access-Control-Allow-Origin      "*"
+                Access-Control-Allow-Credentials "true"
+                Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS"
+                Access-Control-Allow-Headers     "Content-Type, Authorization, X-Requested-With"
+                Access-Control-Max-Age           "86400"
+                Vary                             "Origin"
+            }
+            respond "" 204
+        }
+
         handle {
-            respond "Not Found" 404
+            header {
+                import api_headers
+                Access-Control-Allow-Origin      "*"
+                Access-Control-Allow-Credentials "true"
+                Vary                             "Origin"
+                Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
+            }
+            
+            reverse_proxy vectorize:8000 {
+                header_up Host              {host}
+                header_up X-Real-IP         {remote_host}
+                header_up X-Forwarded-For   {remote_host}
+                header_up X-Forwarded-Proto {scheme}
+            }
         }
-    }
-    
-    handle /health* {
-        header {
-            import api_headers
-            Referrer-Policy            "no-referrer"
-            Content-Security-Policy    "default-src 'none'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
-            Cache-Control              "no-cache, no-store, must-revalidate"
-        }
-        reverse_proxy vectorize:8000
-    }
-
-    handle /docs* {
-        header {
-            import api_headers
-            Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: https://fastapi.tiangolo.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self'; frame-ancestors 'none'"
-        }
-        reverse_proxy vectorize:8000
-    }
-
-    handle /redoc* {
-        header {
-            import api_headers
-            Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://fastapi.tiangolo.com https://cdn.redoc.ly; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self'; worker-src blob:; frame-ancestors 'none'"
-        }
-        reverse_proxy vectorize:8000
-    }
-
-    @cors_preflight_frontend {
-        method OPTIONS
-        path /*
-        header Origin "http://localhost:3000"
-    }
-    handle @cors_preflight_frontend {
-        header {
-            import api_headers
-            Access-Control-Allow-Origin      "http://localhost:3000"
-            Access-Control-Allow-Credentials "true"
-            Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS"
-            Access-Control-Allow-Headers     "Content-Type, Authorization, X-Requested-With"
-            Access-Control-Max-Age           "86400"
-            Vary                             "Origin"
-        }
-        respond "" 204
-    }
-
-    @cors_preflight {
-        method OPTIONS
-        path /*
-    }
-    handle @cors_preflight {
-        header {
-            import api_headers
-            Access-Control-Allow-Origin      "{vars.cors_origin}"
-            Access-Control-Allow-Credentials "true"
-            Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS"
-            Access-Control-Allow-Headers     "Content-Type, Authorization, X-Requested-With"
-            Access-Control-Max-Age           "86400"
-            Vary                             "Origin"
-        }
-        respond "" 204
-    }
-
-    @frontend_origin {
-        header Origin "http://localhost:3000"
-    }
-    handle @frontend_origin {
-        header {
-            import api_headers
-            Access-Control-Allow-Origin      "http://localhost:3000"
-            Access-Control-Allow-Credentials "true"
-            Vary                             "Origin"
-            Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
-        }
-        reverse_proxy vectorize:8000
     }
 
     handle {
         header {
             import api_headers
-            Access-Control-Allow-Origin      "{vars.cors_origin}"
-            Access-Control-Allow-Credentials "true"
-            Vary                             "Origin"
-            Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
         }
-        reverse_proxy vectorize:8000
+        
+        reverse_proxy vectorize_web:3000 {
+            header_up Host              {host}
+            header_up X-Real-IP         {remote_host}
+            header_up X-Forwarded-For   {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
     }
 }

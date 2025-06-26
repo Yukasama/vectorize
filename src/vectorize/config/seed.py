@@ -15,6 +15,8 @@ from vectorize.dataset.classification import Classification
 from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.dataset.models import Dataset
 from vectorize.dataset.task_model import UploadDatasetTask
+from vectorize.evaluation.models import EvaluationTask
+from vectorize.training.models import TrainingTask
 from vectorize.upload.models import UploadTask
 
 __all__ = ["seed_db"]
@@ -257,6 +259,22 @@ async def seed_db(session: AsyncSession) -> None:
             created_at=datetime.now(tz=UTC) - timedelta(hours=3),
             end_date=datetime.now(tz=UTC) - timedelta(hours=2),
             error_msg="Failed to upload dataset due to network error.",
+        ),
+    )
+    session.add(
+        TrainingTask(
+            tag="training_task",
+            task_status=TaskStatus.PENDING,
+            created_at=datetime.now(tz=UTC) - timedelta(minutes=30),
+            trained_model_id=AI_MODEL_LOCALTRAINMODEL_ID,
+        ),
+    )
+    session.add(
+        EvaluationTask(
+            tag="evaluation_task",
+            task_status=TaskStatus.PENDING,
+            created_at=datetime.now(tz=UTC) - timedelta(minutes=30),
+            model_id=AI_MODEL_LOCALTRAINMODEL_ID,
         ),
     )
     await session.commit()

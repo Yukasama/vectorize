@@ -2,6 +2,8 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: vectorize_prometheus
+    environment:
+      TZ: Europe/Berlin
     volumes:
       - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml
     command: "--config.file=/etc/prometheus/prometheus.yaml"
@@ -27,6 +29,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/monitoring"
       GF_SERVER_SERVE_FROM_SUB_PATH: true
+      TZ: Europe/Berlin
     networks: [vectorize-network]
     cap_drop: [ALL]
     restart: unless-stopped
@@ -40,6 +43,8 @@ services:
   alloy:
     image: grafana/alloy:latest
     container_name: vectorize_alloy
+    environment:
+      TZ: Europe/Berlin
     volumes:
       - ./config/config.alloy:/etc/alloy/config.alloy
     command: ["run", "--stability.level=experimental", "/etc/alloy/config.alloy"]
@@ -56,6 +61,8 @@ services:
   loki:
     image: grafana/loki:latest
     container_name: vectorize_loki
+    environment:
+      TZ: Europe/Berlin
     volumes:
       - ./config/loki-config.yaml:/etc/loki/loki-config.yaml
       - loki_data:/loki

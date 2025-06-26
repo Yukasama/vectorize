@@ -279,7 +279,7 @@ Nach erfolgreichem Training kann das trainierte Modell direkt evaluiert werden:
 
 **1. Training starten:**
 ```bash
-POST /v1/training/train
+POST /training/train
 {
   "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
   "train_dataset_ids": ["dataset-uuid"],
@@ -299,7 +299,7 @@ POST /v1/training/train
 
 **3. Trainiertes Modell evaluieren:**
 ```bash
-POST /v1/evaluation/evaluate
+POST /evaluation/evaluate
 {
   "model_tag": "trained_models/models--sentence-transformers--all-MiniLM-L6-v2-finetuned-20250615-213447-7ef54ba0",
   "training_task_id": "7ef54ba0-2d87-4864-8360-81de8035369a",

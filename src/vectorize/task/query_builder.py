@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import ColumnElement, String, cast, func, literal, or_, select
 from sqlmodel import true
 
+from vectorize.ai_model.models import AIModel
 from vectorize.common.task_status import TaskStatus
 
 __all__ = ["build_query"]
@@ -34,6 +35,52 @@ def build_query(  # noqa: ANN201
     Returns:
         SQLAlchemy Select query with standardized columns and filters.
     """
+    if hasattr(model, "trained_model_id"):
+        model_table = model.__table__
+        ai_table = AIModel.__table__  # type: ignore
+
+        join_expr = model_table.outerjoin(
+            ai_table, model_table.c.trained_model_id == ai_table.c.id
+        )
+
+        return (
+            select(
+                model_table.c.id,
+                ai_table.c.model_tag.label("tag"),
+                model_table.c.task_status,
+                model_table.c.created_at,
+                model_table.c.end_date,
+                model_table.c.error_msg,
+                cast(literal(tag), String).label("task_type"),
+            )
+            .select_from(join_expr)
+            .where(_status_filter(model, completed=completed, statuses=statuses))
+            .where(_time_filter(model, hours=hours))
+        )
+
+    if hasattr(model, "evaluation_metrics"):
+        model_table = model.__table__
+        ai_table = AIModel.__table__  # type: ignore
+
+        join_expr = model_table.outerjoin(
+            ai_table, model_table.c.model_id == ai_table.c.id
+        )
+
+        return (
+            select(
+                model_table.c.id,
+                ai_table.c.model_tag.label("tag"),
+                model_table.c.task_status,
+                model_table.c.created_at,
+                model_table.c.end_date,
+                model_table.c.error_msg,
+                cast(literal(tag), String).label("task_type"),
+            )
+            .select_from(join_expr)
+            .where(_status_filter(model, completed=completed, statuses=statuses))
+            .where(_time_filter(model, hours=hours))
+        )
+
     if hasattr(model, "tag"):
         tag_field = model.tag.label("tag")
     else:
