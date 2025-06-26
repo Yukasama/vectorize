@@ -74,7 +74,7 @@ def _load_model(model_tag: str) -> tuple[torch.nn.Module, AutoTokenizer | None]:
             model = AutoModel.from_pretrained(folder, **_COMMON_MODEL_KWARGS)
 
     except OSError:
-        model = _instantiate_from_weights(folder, cfg) # type: ignore
+        model = _instantiate_from_weights(folder, cfg)  # type: ignore
     except Exception as exc:
         raise ModelLoadError(model_tag) from exc
 
