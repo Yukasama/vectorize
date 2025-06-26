@@ -116,7 +116,14 @@ async def upload_dataset_svc(
         )
 
     raw_df = await _convert_file_to_df(file, ext, options.sheet_index if options else 0)
-    escaped_df = _escape_csv_formulas(raw_df)
+    
+    # Only apply CSV formula escaping for formats that may contain CSV-like content
+    # JSONL and JSON files don't need CSV escaping as they have their own format validation
+    if ext.lower() in ['csv', 'xlsx', 'xls']:
+        escaped_df = _escape_csv_formulas(raw_df)
+    else:
+        escaped_df = raw_df
+    
     df, classification = _classify_dataset(escaped_df, column_mapping)
 
     file_path: Path | None = None
