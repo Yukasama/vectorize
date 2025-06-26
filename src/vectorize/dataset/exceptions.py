@@ -121,6 +121,17 @@ class DatasetAlreadyExistsError(AppError):
         super().__init__(f"Dataset with tag {dataset_tag} already exists in database")
 
 
+class DatasetIsAlreadyBeingUploadedError(AppError):
+    """Exception raised when the dataset is already being uploaded."""
+
+    error_code = ErrorCode.DATASET_ALREADY_EXISTS
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def __init__(self, dataset_tag: str) -> None:
+        """Initialize with the dataset tag."""
+        super().__init__(f"Dataset with tag {dataset_tag} is already being uploaded")
+
+
 class HuggingFaceDatasetNotFoundError(AppError):
     """Exception raised when the dataset is not found on Hugging Face Hub."""
 

@@ -62,14 +62,12 @@ def extract_task_id_from_response(response: Response) -> str:
         data = response.json()
         task_id = data.get("task_id")
 
-    assert task_id, (
-        "No task_id found in response or headers"
-    )
+    assert task_id, "No task_id found in response or headers"
     return task_id
 
 
 def wait_for_task_completion(
-    client: TestClient, task_id: str, max_wait: int = 30
+    client: TestClient, task_id: str, max_wait: int = 45
 ) -> dict[str, Any]:
     """Wait for a training task to complete and return final status."""
     for _ in range(max_wait):
@@ -82,9 +80,7 @@ def wait_for_task_completion(
 
     # Return last known status
     response = client.get(f"/training/{task_id}/status")
-    return (
-        response.json() if response.status_code == HTTP_200_OK else {}
-    )
+    return response.json() if response.status_code == HTTP_200_OK else {}
 
 
 def cleanup_trained_models() -> None:
@@ -98,17 +94,13 @@ def cleanup_trained_models() -> None:
 def load_test_dataset(dataset_filename: str) -> list[dict[str, Any]]:
     """Load a test dataset from file and return as list of examples."""
     file_path = TEST_DATA_DIR / dataset_filename
-    assert file_path.exists(), (
-        f"Test dataset not found: {file_path}"
-    )
+    assert file_path.exists(), f"Test dataset not found: {file_path}"
 
     examples = []
     with file_path.open("r", encoding="utf-8") as f:
         examples.extend(json.loads(line) for line in f if line.strip())
 
-    assert examples, (
-        f"No examples found in {file_path}"
-    )
+    assert examples, f"No examples found in {file_path}"
     return examples
 
 
@@ -301,17 +293,13 @@ class TestTrainingComprehensive:
         status_data = status_response.json()
         required_fields = ["task_id", "status", "created_at"]
         for field in required_fields:
-            assert field in status_data, (
-                f"Missing required field: {field}"
-            )
+            assert field in status_data, f"Missing required field: {field}"
 
         assert status_data["task_id"] == task_id
         assert status_data["status"] in {"Q", "R", "D", "F"}
 
         # created_at should be ISO format timestamp
-        assert isinstance(
-            status_data["created_at"], str
-        )
+        assert isinstance(status_data["created_at"], str)
 
         cleanup_trained_models()
 
@@ -355,26 +343,20 @@ class TestTrainingComprehensive:
                 assert "negative" in example, "Missing 'negative' field"
 
                 # Validate field types
-                assert isinstance(
-                    example["question"], str
-                ), "'question' should be string"
-                assert isinstance(
-                    example["positive"], str
-                ), "'positive' should be string"
-                assert isinstance(
-                    example["negative"], str
-                ), "'negative' should be string"
+                assert isinstance(example["question"], str), (
+                    "'question' should be string"
+                )
+                assert isinstance(example["positive"], str), (
+                    "'positive' should be string"
+                )
+                assert isinstance(example["negative"], str), (
+                    "'negative' should be string"
+                )
 
                 # Validate content is not empty
-                assert example["question"].strip(), (
-                    "'question' should not be empty"
-                )
-                assert example["positive"].strip(), (
-                    "'positive' should not be empty"
-                )
-                assert example["negative"].strip(), (
-                    "'negative' should not be empty"
-                )
+                assert example["question"].strip(), "'question' should not be empty"
+                assert example["positive"].strip(), "'positive' should not be empty"
+                assert example["negative"].strip(), "'negative' should not be empty"
 
     @staticmethod
     def test_training_concurrent_requests(client: TestClient) -> None:

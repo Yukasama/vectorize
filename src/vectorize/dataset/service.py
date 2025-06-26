@@ -17,6 +17,7 @@ from .column_mapper import ColumnMapping
 from .dataset_source import DatasetSource
 from .exceptions import (
     DatasetAlreadyExistsError,
+    DatasetIsAlreadyBeingUploadedError,
     DatasetNotFoundError,
     UnsupportedHuggingFaceFormatError,
 )
@@ -27,6 +28,7 @@ from .repository import (
     get_dataset_db,
     get_datasets_db,
     get_upload_dataset_task_db,
+    is_dataset_being_uploaded_db,
     save_upload_dataset_task_db,
     update_dataset_db,
     upload_dataset_db,
@@ -164,6 +166,10 @@ async def upload_hf_dataset_svc(db: AsyncSession, dataset_tag: str) -> UUID:
     dataset_db = await find_dataset_by_name_db(db, dataset_tag)
     if dataset_db is not None:
         raise DatasetAlreadyExistsError(dataset_tag)
+
+    is_being_uploaded = await is_dataset_being_uploaded_db(db, dataset_tag)
+    if is_being_uploaded is True:
+        raise DatasetIsAlreadyBeingUploadedError(dataset_tag)
 
     try:
         dataset_infos = _get_cached_dataset_infos(dataset_tag)
