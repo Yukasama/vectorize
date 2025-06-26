@@ -24,7 +24,8 @@ __all__ = ["load_huggingface_model_and_cache_only_svc"]
 
 
 async def load_huggingface_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
-    model_tag: str, revision: str) -> None:
+    model_tag: str, revision: str
+) -> None:
     """Load a Hugging Face model and cache it locally if not already cached.
 
     Downloads the model and tokenizer from Hugging Face using the given
@@ -68,7 +69,7 @@ async def load_huggingface_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
         tokenizer = AutoTokenizer.from_pretrained(snapshot_path)
         model = AutoModelForSequenceClassification.from_pretrained(snapshot_path)
 
-        _models[key] = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
+        _models[key] = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)  # type: ignore
         logger.info("Model successfully loaded and cached.", modelKey=key)
 
     except EntryNotFoundError as e:
