@@ -1,0 +1,90 @@
+site_name: Vectorize - Text Embedding Service
+site_description: AWP Text Embedding Service for Robert Bosch GmbH
+site_url: https://your-domain.com
+repo_url: https://github.com/your-org/vectorize
+repo_name: vectorize
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_root_heading: true
+            show_symbol_type_heading: true
+            merge_init_into_class: true
+            paths: [src]
+  - kroki:
+      ServerURL: https://kroki.io
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: plantuml
+          class: plantuml
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: installation.md
+      - Configuration: configuration.md
+  - User Guides:
+      - Training: README_TRAINING.md
+      - Evaluation: README_EVALUATION.md
+  - API Reference:
+      - Overview: api.md
+      - Endpoints:
+          - Common/Health: api/common.md
+          - Datasets: api/datasets.md
+          - AI Models: api/ai-models.md
+          - Training: api/training.md
+          - Evaluation: api/evaluation.md
+          - Inference: api/inference.md
+          - Upload: api/upload.md
+          - Synthesis: api/synthesis.md
+          - Tasks: api/tasks.md
+  - Architecture:
+      - API Endpoints Diagram: architecture/api-endpoints.md
+      - Entity Relationship: architecture/entity-relation.md
+      - Use Cases:
+          - Datasets Management: architecture/use-cases-datasets.md
+          - Model Training & Evaluation: architecture/use-cases-processes.md
+          - Model Upload: architecture/use-cases-uploads.md
+          - Embeddings: architecture/use-cases-embeddings.md
+          - Data Generation: architecture/use-cases-generation.md
