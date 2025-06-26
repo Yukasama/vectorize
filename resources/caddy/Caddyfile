@@ -26,18 +26,12 @@ https://localhost {
     @docs path /v1/api/docs*
     handle @docs {
         header {
-            -Content-Security-Policy     
-            Content-Security-Policy "
-                default-src 'self';
-                img-src 'self' data: https://fastapi.tiangolo.com;
-                style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com;
-                script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net;
-                font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;
-                connect-src 'self';
-                frame-ancestors 'none'"
             import api_headers
+            Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://fastapi.tiangolo.com https://cdn.redoc.ly; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self'; worker-src blob:; frame-ancestors 'none'"
         }
-        reverse_proxy vectorize:8000
+        reverse_proxy vectorize:8000 {
+            header_up X-Real-IP         {remote_host}
+        }
     }
 
     @redoc path /v1/api/redoc*
@@ -47,19 +41,13 @@ https://localhost {
             Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; img-src 'self' data: blob: https://fastapi.tiangolo.com https://cdn.redoc.ly; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self'; worker-src blob:; frame-ancestors 'none'"
         }
         reverse_proxy vectorize:8000 {
-            header_up Host              {host}
             header_up X-Real-IP         {remote_host}
-            header_up X-Forwarded-For   {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 
     handle /monitoring/* {
         reverse_proxy grafana:3000 {
-            header_up Host              {host}
             header_up X-Real-IP         {remote_host}
-            header_up X-Forwarded-For   {remote_host}
-            header_up X-Forwarded-Proto {scheme}
             header_up Connection        {header.Connection}
             header_up Upgrade           {header.Upgrade}
         }
@@ -73,10 +61,7 @@ https://localhost {
             }
             handle @docker_only {
                 reverse_proxy vectorize:8000 {
-                    header_up Host              {host}
                     header_up X-Real-IP         {remote_host}
-                    header_up X-Forwarded-For   {remote_host}
-                    header_up X-Forwarded-Proto {scheme}
                 }
             }
             handle {
@@ -93,10 +78,7 @@ https://localhost {
                 Cache-Control              "no-cache, no-store, must-revalidate"
             }
             reverse_proxy vectorize:8000 {
-                header_up Host              {host}
                 header_up X-Real-IP         {remote_host}
-                header_up X-Forwarded-For   {remote_host}
-                header_up X-Forwarded-Proto {scheme}
             }
         }
 
@@ -124,10 +106,7 @@ https://localhost {
             }
             
             reverse_proxy vectorize:8000 {
-                header_up Host              {host}
                 header_up X-Real-IP         {remote_host}
-                header_up X-Forwarded-For   {remote_host}
-                header_up X-Forwarded-Proto {scheme}
             }
         }
     }
@@ -138,10 +117,7 @@ https://localhost {
         }
         
         reverse_proxy vectorize_web:3000 {
-            header_up Host              {host}
             header_up X-Real-IP         {remote_host}
-            header_up X-Forwarded-For   {remote_host}
-            header_up X-Forwarded-Proto {scheme}
         }
     }
 }
