@@ -1,7 +1,6 @@
 """Training router for SBERT triplet training (Hugging Face TRL)."""
 
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 
@@ -26,16 +25,11 @@ from .repository import (
 from .schemas import TrainRequest, TrainingStatusResponse
 from .service import TrainingOrchestrator
 from .tasks import run_training_bg
+from .utils.model_loader import has_model_weights
 
 __all__ = ["router"]
 
 router = APIRouter(tags=["Training"])
-
-
-def has_model_weights(path: str) -> bool:
-    """Check if model directory contains weight files."""
-    model_path = Path(path)
-    return any(model_path.glob("**/*.safetensors")) or any(model_path.glob("**/*.bin"))
 
 
 @router.post("/train")

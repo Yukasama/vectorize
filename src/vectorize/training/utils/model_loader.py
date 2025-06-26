@@ -8,6 +8,21 @@ from transformers.tokenization_utils import PreTrainedTokenizer
 
 from .safetensors_finder import find_safetensors_file
 
+__all__ = ["has_model_weights", "load_and_prepare_model"]
+
+
+def has_model_weights(path: str) -> bool:
+    """Check if model directory contains weight files.
+
+    Args:
+        path: Path to the model directory
+
+    Returns:
+        True if weight files (.safetensors or .bin) are found
+    """
+    model_path = Path(path)
+    return any(model_path.glob("**/*.safetensors")) or any(model_path.glob("**/*.bin"))
+
 
 def load_and_prepare_model(model_path: str) -> SentenceTransformer:
     """Loads a SentenceTransformer model and prepares its tokenizer.
