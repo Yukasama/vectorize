@@ -28,11 +28,13 @@ services:
       TZ: Europe/Berlin
       LOG_LEVEL: INFO
       HF_HOME: /app/data/hf_home
+      GH_HOME: /app/data/gh_cache
     volumes:
       - datasets_data:/app/data/datasets
       - models_data:/app/data/models
       - db_data:/app/db
       - hf_home_data:/app/data/hf_home
+      - gh_home_data:/app/data/gh_cache
     cap_drop: [ALL]
     depends_on:
       redis:

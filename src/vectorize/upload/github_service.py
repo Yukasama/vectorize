@@ -87,9 +87,9 @@ async def load_github_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
             cache_dir_parent.mkdir(parents=True, exist_ok=True)
 
             if cache_dir.exists():
-                logger.info("Model already cached {}", cache_dir)
+                logger.debug("Model already cached {}", cache_dir)
             else:
-                logger.info("Creating cache dir{}", cache_dir)
+                logger.debug("Creating cache dir{}", cache_dir)
                 cache_dir.mkdir()
 
                 for filename, pfad in paths.items():
@@ -116,7 +116,7 @@ async def load_github_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
         raise InvalidModelError(f"Model upload failed: {e}") from e
 
 
-def repo_info(repo_url: str, revision: str | None = None) -> bool:
+async def repo_info(repo_url: str, revision: str | None = None) -> bool:
     """Check whether a GitHub repository and a specific branch / tag exist.
 
     Uses GitHub API endpoint: /repos/{owner}/{repo}/branches/{branch}
@@ -131,12 +131,14 @@ def repo_info(repo_url: str, revision: str | None = None) -> bool:
     Raises:
         ModelNotFoundError: If the repository or the branch / tag cannot be found.
     """
-    api_url = str(repo_url).replace(
-        "https://github.com/", "https://api.github.com/repos/"
-    ).rstrip("/")
+    api_url = repo_url.replace("https://github.com/", "https://api.github.com/repos/").rstrip("/")
     branch = revision or "main"
     check_url = f"{api_url}/branches/{branch}"
-    resp = httpx.get(check_url, timeout=10)
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(check_url)
+
     if resp.status_code != status.HTTP_200_OK:
         raise ModelNotFoundError(check_url)
+
     return True

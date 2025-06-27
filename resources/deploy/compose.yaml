@@ -7,6 +7,7 @@ services:
       - models_data:/app/data/models
       - db_data:/app/db
       - hf_home_data:/app/data/hf_home
+      - gh_home_data:/app/data/gh_cache
     environment:
       ENV: production
       DATABASE_URL: sqlite+aiosqlite:///db/app.db
@@ -17,6 +18,7 @@ services:
       TZ: Europe/Berlin
       LOG_LEVEL: INFO
       HF_HOME: /app/data/hf_home
+      GH_HOME: /app/data/gh_cache
     networks: [vectorize-network]
     restart: unless-stopped
     cap_drop: [ALL]

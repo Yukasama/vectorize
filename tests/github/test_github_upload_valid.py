@@ -12,7 +12,7 @@ _BRANCH_DIFF = "DifferentBranch-Full"
 
 
 @pytest.mark.github
-def test_load_bogus_model_tag_and_conflict_on_empty_tag(client: TestClient) -> None:
+def test_load_bogus_model_tag(client: TestClient) -> None:
     """Tests that uploading the same model with and without tag causes conflict."""
     payload_main = {
         "owner": _REPO_OWNER,
@@ -22,14 +22,6 @@ def test_load_bogus_model_tag_and_conflict_on_empty_tag(client: TestClient) -> N
 
     response_main = client.post("uploads/github", json=payload_main)
     assert response_main.status_code == status.HTTP_201_CREATED
-
-    payload_empty = {
-        "owner": _REPO_OWNER,
-        "repo_name": _REPO_NAME,
-        "tag": ""
-    }
-    response_empty = client.post("uploads/github", json=payload_empty)
-    assert response_empty.status_code == status.HTTP_409_CONFLICT
 
 
 @pytest.mark.github

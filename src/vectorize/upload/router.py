@@ -119,10 +119,11 @@ async def load_model_github(
     Returns:
         Response with 201 status and Location header.
     """
-    key = f"{data.owner}/{data.repo_name}@{data.revision}"
+    branch = data.revision or "main"
+    key = f"{data.owner}/{data.repo_name}@{branch}"
     base_url = f"https://github.com/{data.owner}/{data.repo_name}"
 
-    logger.info("Importing GitHub model {} @ {}", data.repo_name, data.revision)
+    logger.info("Importing GitHub model {} @ {}", data.repo_name, branch)
 
     try:
         await get_ai_model_svc(db, key)
@@ -131,7 +132,7 @@ async def load_model_github(
         pass
 
     try:
-        repo_info(repo_url=base_url, revision=data.repo_name)
+        await repo_info(repo_url=base_url, revision=branch)
     except (RepoModelNotFound, InvalidUrlError):
         raise
     except Exception as e:
@@ -143,7 +144,7 @@ async def load_model_github(
 
     await save_upload_task_db(db, upload_task)
     process_github_model_bg.send(
-        data.owner, data.repo_name, data.revision, str(upload_task.id)
+        data.owner, data.repo_name, branch, str(upload_task.id)
     )
     return Response(
         status_code=status.HTTP_201_CREATED,

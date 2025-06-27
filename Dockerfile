@@ -37,18 +37,19 @@ ENV PYTHONUNBUFFERED=1
 ENV UPLOAD_DIR=/app/data/datasets \
     MODELS_DIR=/app/data/models \
     DB_DIR=/app/db \
-    HF_HOME=/app/data/hf_home
+    HF_HOME=/app/data/hf_home \
+    GH_HOME=/app/data/gh_home
 
 # Install dependencies, create user, and prepare directories in one layer
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates git-core libcurl4 libpcre2-8-0 && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     groupadd --system appuser && useradd --system \
-            --gid appuser \
-            --no-create-home \
-            --shell /usr/sbin/nologin \
-            appuser && \
-    install -d -o appuser -g appuser -m 755 ${MODELS_DIR} ${UPLOAD_DIR} ${DB_DIR} ${HF_HOME}
+    --gid appuser \
+    --no-create-home \
+    --shell /usr/sbin/nologin \
+    appuser && \
+    install -d -o appuser -g appuser -m 755 ${MODELS_DIR} ${UPLOAD_DIR} ${DB_DIR} ${HF_HOME} ${GH_HOME}
 
 # Copy non-writable source code into workdir
 COPY --from=builder --chown=root:root --chmod=0755 /app /app
