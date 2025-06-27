@@ -2,9 +2,7 @@
 
 This diagram shows the use cases for embedding generation and model inference in the Vectorize system.
 
-```plantuml
---8<-- "docs/use-cases-embeddings.plantuml"
-```
+![file](out/use-cases-embeddings.svg)
 
 ## Embedding Generation
 

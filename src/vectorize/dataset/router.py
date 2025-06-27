@@ -248,7 +248,6 @@ async def delete_dataset(
 
     Args:
         dataset_id: The UUID of the dataset to delete
-        request: The HTTP request object
         db: Database session for persistence operations
 
     Returns:

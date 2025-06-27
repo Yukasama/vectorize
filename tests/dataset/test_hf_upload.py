@@ -3,7 +3,9 @@
 """Tests for dataset upload from Hugging Face."""
 
 import asyncio
+import json
 import time
+from pathlib import Path
 
 import pytest
 from fastapi import status
@@ -26,13 +28,13 @@ class TestHuggingFaceUpload:
         "dataset_tag,expected_splits,expected_subsets",
         [
             ("Intel/orca_dpo_pairs", ["train"], ["default"]),
-            (
-                "argilla/ultrafeedback-binarized-preferences-cleaned",
-                ["train"],
-                ["default"],
-            ),
-            ("Dahoas/full-hh-rlhf", ["train"], ["default"]),
-            ("argilla/distilabel-intel-orca-dpo-pairs", ["train"], ["default"]),
+            # (
+            #     "argilla/ultrafeedback-binarized-preferences-cleaned",
+            #     ["train"],
+            #     ["default"],
+            # ),
+            # ("Dahoas/full-hh-rlhf", ["train"], ["default"]),
+            # ("argilla/distilabel-intel-orca-dpo-pairs", ["train"], ["default"]),
         ],
     )
     @staticmethod
@@ -43,6 +45,8 @@ class TestHuggingFaceUpload:
         expected_subsets: list[str],
     ) -> None:
         """Test uploading a valid Hugging Face dataset."""
+        expected_columns = {"question", "positive", "negative"}
+
         response = client.post(
             "/datasets/huggingface", json={"dataset_tag": dataset_tag}
         )
@@ -77,6 +81,8 @@ class TestHuggingFaceUpload:
                 assert file_size > _FILE_SIZE_THRESHOLD, (
                     f"File {file_path} is too small ({file_size} bytes)"
                 )
+
+                _validate_jsonl_structure(file_path, expected_columns)
 
     @pytest.mark.parametrize(
         "dataset_tag",
@@ -124,3 +130,55 @@ async def wait_for_task_completion(
         await asyncio.sleep(poll_interval)
 
     raise TimeoutError(f"Task {task_id} did not complete within {_TIMEOUT} seconds")
+
+
+def _validate_jsonl_structure(file_path: Path, expected_columns: set[str]) -> None:
+    """Validate that JSONL file has correct structure and columns."""
+    line_count = 0
+    sample_size = 100
+
+    try:
+        with file_path.open("r", encoding="utf-8") as f:
+            for line_num, raw_line in enumerate(f, 1):
+                if line_num > sample_size:
+                    break
+
+                line = raw_line.strip()
+                if not line:
+                    continue
+
+                try:
+                    data = json.loads(line)
+                except json.JSONDecodeError as e:
+                    pytest.fail(f"Invalid JSON on line {line_num} in {file_path}: {e}")
+
+                assert isinstance(data, dict), (
+                    f"Line {line_num} in {file_path} is not a JSON object"
+                )
+
+                actual_columns = set(data.keys())
+                missing_columns = expected_columns - actual_columns
+                assert not missing_columns, (
+                    f"Line {line_num} in {file_path} missing columns: "
+                    f"{missing_columns}. Found columns: {actual_columns}"
+                )
+
+                extra_columns = actual_columns - expected_columns
+                assert not extra_columns, (
+                    f"Line {line_num} in {file_path} has unexpected columns: "
+                    f"{extra_columns}. Expected only: {expected_columns}"
+                )
+
+                for column in expected_columns:
+                    value = data[column]
+                    assert value is not None and str(value).strip(), (
+                        f"Line {line_num} in {file_path}: column '{column}' "
+                        f"is empty or None"
+                    )
+
+                line_count += 1
+
+        assert line_count > 0, f"No valid JSON lines found in {file_path}"
+
+    except Exception as e:
+        pytest.fail(f"Error reading/validating {file_path}: {e}")

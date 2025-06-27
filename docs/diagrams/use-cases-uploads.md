@@ -2,9 +2,7 @@
 
 This diagram illustrates the various ways to upload and manage models in the Vectorize system.
 
-```plantuml
---8<-- "docs/use-cases-uploads.plantuml"
-```
+![file](out/use-cases-uploads.svg)
 
 ## Model Upload Sources
 

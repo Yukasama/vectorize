@@ -2,9 +2,7 @@
 
 This diagram illustrates the various use cases for dataset management in the Vectorize system.
 
-```plantuml
---8<-- "docs/use-cases-datasets.plantuml"
-```
+![file](out/use-cases-datasets.svg)
 
 ## Use Case Categories
 

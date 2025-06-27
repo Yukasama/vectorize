@@ -1,4 +1,4 @@
-@startuml Use Cases für Prozesse von Modellen
+@startuml use-cases-processes
 left to right direction
 actor Nutzer
 

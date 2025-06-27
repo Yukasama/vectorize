@@ -55,61 +55,6 @@ class Settings(BaseSettings):
         description="CORS allowed origins for cross-origin requests.",
     )
 
-    # Dataset configuration
-    dataset_upload_dir_config: Path = Field(
-        default=Path(_dataset_config.get("dataset_upload_dir")),
-        description="Base directory for storing uploaded dataset files.",
-        exclude=True,
-    )
-
-    allowed_extensions: frozenset[str] = Field(
-        default=frozenset(_dataset_config.get("allowed_extensions", [])),
-        description="File extensions permitted for dataset uploads.",
-    )
-
-    max_filename_length: int = Field(
-        default=_dataset_config.get("max_filename_length"),
-        description="Maximum allowed length for uploaded filenames.",
-    )
-
-    default_delimiter: str = Field(
-        default=_dataset_config.get("default_delimiter"),
-        description="Default delimiter used for CSV processing.",
-    )
-
-    dataset_max_zip_members: int = Field(
-        default=_dataset_config.get("max_zip_members"),
-        description="Maximum number of files allowed in a zip archive for datasets.",
-    )
-
-    dataset_max_upload_size: int = Field(
-        default=_dataset_config.get("max_upload_size"),
-        description="Maximum allowed file size for dataset uploads in bytes.",
-    )
-
-    dataset_hf_allowed_schemas: list[list[str]] = Field(
-        default=_dataset_config.get("hf_allowed_schemas"),
-        description="List of allowed schema field combinations for dataset validation.",
-    )
-
-    # Model configuration
-    model_upload_dir_config: Path = Field(
-        default=Path(_model_config.get("model_upload_dir")),
-        description="Base directory for storing uploaded model files.",
-        exclude=True,
-    )
-
-    model_max_upload_size: int = Field(
-        default=_model_config.get("max_upload_size"),
-        description="Maximum allowed size for model uploads in bytes.",
-    )
-
-    # Inference configuration
-    inference_device: Literal["cpu", "cuda"] = Field(
-        default=_inference_config.get("device"),
-        description="Device to use for model inference (CPU/GPU).",
-    )
-
     # Database configuration
     db_url: str = Field(
         default="sqlite+aiosqlite:///app.db",
@@ -179,9 +124,64 @@ class Settings(BaseSettings):
         description="Logging level (e.g., DEBUG, INFO, WARNING, ERROR).",
     )
 
-    rotation: str = Field(
+    log_rotation: str = Field(
         default=_log_config.get("rotation"),
         description="Log rotation strategy (time or size-based).",
+    )
+
+    # Dataset configuration
+    dataset_upload_dir_config: Path = Field(
+        default=Path(_dataset_config.get("upload_dir")),
+        description="Base directory for storing uploaded dataset files.",
+        exclude=True,
+    )
+
+    dataset_allowed_extensions: frozenset[str] = Field(
+        default=frozenset(_dataset_config.get("allowed_extensions", [])),
+        description="File extensions permitted for dataset uploads.",
+    )
+
+    dataset_max_filename_length: int = Field(
+        default=_dataset_config.get("max_filename_length"),
+        description="Maximum allowed length for uploaded filenames.",
+    )
+
+    dataset_default_delimiter: str = Field(
+        default=_dataset_config.get("default_delimiter"),
+        description="Default delimiter used for CSV processing.",
+    )
+
+    dataset_max_zip_members: int = Field(
+        default=_dataset_config.get("max_zip_members"),
+        description="Maximum number of files allowed in a zip archive for datasets.",
+    )
+
+    dataset_max_upload_size: int = Field(
+        default=_dataset_config.get("max_upload_size"),
+        description="Maximum allowed file size for dataset uploads in bytes.",
+    )
+
+    dataset_hf_allowed_schemas: list[list[str]] = Field(
+        default=_dataset_config.get("hf_allowed_schemas"),
+        description="List of allowed schema field combinations for dataset validation.",
+    )
+
+    # Model configuration
+    model_upload_dir_config: Path = Field(
+        default=Path(_model_config.get("upload_dir")),
+        description="Base directory for storing uploaded model files.",
+        exclude=True,
+    )
+
+    model_max_upload_size: int = Field(
+        default=_model_config.get("max_upload_size"),
+        description="Maximum allowed size for model uploads in bytes.",
+    )
+
+    # Inference configuration
+    inference_device: Literal["cpu", "cuda"] = Field(
+        default=_inference_config.get("device"),
+        description="Device to use for model inference (CPU/GPU).",
     )
 
     # Evaluation configuration

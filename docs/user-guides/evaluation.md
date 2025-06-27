@@ -17,16 +17,19 @@ The evaluation system computes various metrics to assess how well a trained sent
 ### Core Components
 
 1. **`evaluation.py`**: Main evaluation logic
+
    - `EvaluationMetrics`: Container for computed metrics with baseline comparison
    - `TrainingEvaluator`: Main evaluation orchestrator with model comparison capabilities
 
 2. **`service.py`**: Service layer for FastAPI integration
+
    - Database lookups for models and datasets
    - **NEW: `resolve_evaluation_dataset()`**: Smart dataset resolution (explicit or from training task)
    - Background task evaluation with progress tracking
    - Error handling and validation
 
 3. **`router.py`**: FastAPI endpoints
+
    - RESTful evaluation API with async background processing
    - Status tracking and result retrieval
 
@@ -37,11 +40,13 @@ The evaluation system computes various metrics to assess how well a trained sent
 ### Utility Modules (`utils/`)
 
 1. **`similarity_calculator.py`**: Optimized similarity computation
+
    - Vectorized cosine similarity calculations
    - Spearman correlation computation
    - Performance optimized for large datasets
 
 2. **`dataset_validator.py`**: Dataset validation
+
    - JSONL format validation
    - Required columns checking
    - Null/empty value detection
@@ -57,6 +62,7 @@ The evaluation system computes various metrics to assess how well a trained sent
 The evaluation system supports **two ways** to specify which dataset to use:
 
 #### **Method 1: Training Task ID (`training_task_id`)**
+
 - **Recommended approach** - uses the exact validation dataset from training
 - When you train a model, the system automatically:
   1. **With explicit `val_dataset_id`**: Uses that dataset as validation
@@ -64,6 +70,7 @@ The evaluation system supports **two ways** to specify which dataset to use:
 - The `training_task_id` points to this validation dataset automatically
 
 #### **Method 2: Explicit Dataset ID (`dataset_id`)**
+
 - Uses any specific dataset from the database
 - Useful for evaluating on different datasets than training
 - Must be a valid dataset UUID in the system
@@ -71,6 +78,7 @@ The evaluation system supports **two ways** to specify which dataset to use:
 ### Dataset Splitting in Training
 
 **Scenario 1: Multiple Datasets with Validation**
+
 ```json
 // Training Request
 {
@@ -78,29 +86,35 @@ The evaluation system supports **two ways** to specify which dataset to use:
   "val_dataset_id": "validation-dataset-uuid"
 }
 ```
+
 → **Result**: `validation-dataset-uuid` becomes the validation dataset for evaluation
 
 **Scenario 2: Multiple Datasets without Validation**
+
 ```json
-// Training Request  
+// Training Request
 {
   "train_dataset_ids": ["dataset1-uuid", "dataset2-uuid"]
 }
 ```
+
 → **Result**: System concatenates all datasets, then splits 90% train / 10% validation
 
 **Scenario 3: Single Dataset without Validation**
+
 ```json
 // Training Request
 {
   "train_dataset_ids": ["single-dataset-uuid"]
 }
 ```
+
 → **Result**: Auto-split of `single-dataset-uuid` → 90% train / 10% validation
 
 ### Dataset Path Examples
 
 **Training creates these paths:**
+
 - Explicit validation: `data/datasets/my_validation_dataset.jsonl`
 - Auto-split validation: `data/datasets/my_training_dataset.jsonl#auto-split`
 
@@ -187,6 +201,7 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ### Evaluation Request Options
 
 **Option 1: Using Training Task ID (Recommended)**
+
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -196,6 +211,7 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ```
 
 **Option 2: Using Explicit Dataset ID**
+
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -205,6 +221,7 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ```
 
 **Option 3: With Baseline Comparison (Training Task)**
+
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -215,6 +232,7 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ```
 
 **Option 4: With Baseline Comparison (Explicit Dataset)**
+
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -225,6 +243,7 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ```
 
 **Option 5: Minimal Evaluation**
+
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -235,6 +254,7 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ### Response Format
 
 **Success Response (202 Accepted):**
+
 ```json
 {
   "status_code": 202,
@@ -245,6 +265,7 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ```
 
 **Status Response:**
+
 ```json
 {
   "task_id": "uuid",
@@ -261,14 +282,17 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ### Parameter Rules
 
 **Required:**
+
 - `model_tag`: Tag of the model to evaluate (always required)
 - **Exactly one of:** `training_task_id` OR `dataset_id` (never both!)
 
 **Optional:**
+
 - `baseline_model_tag`: For comparison evaluation
 - `max_samples`: Default is 1000, must be > 0
 
 **Invalid Combinations:**
+
 ```json
 // FAILS: Both training_task_id AND dataset_id
 {
@@ -296,8 +320,9 @@ When using `baseline_model_tag`, you get additional improvement metrics:
 ```
 
 **Interpretation:**
+
 - **`ratio_improvement > 0.2`**: Significant improvement
-- **`ratio_improvement > 0.1`**: Noticeable improvement  
+- **`ratio_improvement > 0.1`**: Noticeable improvement
 - **`ratio_improvement > 0.05`**: Marginal improvement
 - **`ratio_improvement < 0`**: Degradation (worse than baseline)
 
@@ -334,6 +359,7 @@ The module provides comprehensive error handling:
 ### Common Error Scenarios
 
 **422 Unprocessable Content:**
+
 ```json
 {
   "detail": [
@@ -347,6 +373,7 @@ The module provides comprehensive error handling:
 ```
 
 **404 Model Not Found:**
+
 ```json
 {
   "detail": "Model not found: trained_models/nonexistent-model"
@@ -354,6 +381,7 @@ The module provides comprehensive error handling:
 ```
 
 **400 Bad Request (Invalid Combination):**
+
 ```json
 {
   "detail": "Cannot specify both dataset_id and training_task_id. Use dataset_id for explicit dataset or training_task_id to use the validation dataset from that training."
@@ -361,6 +389,7 @@ The module provides comprehensive error handling:
 ```
 
 **404 Training Task Has No Validation Dataset:**
+
 ```json
 {
   "detail": "Training task 7ef54ba0-2d87-4864-8360-81de8035369a has no validation dataset path"
@@ -440,6 +469,7 @@ pytest tests/evaluation/ -m integration -v
 ### Complete Training → Evaluation Pipeline
 
 1. **Train Model**:
+
    ```json
    POST /training/train
    {
@@ -453,6 +483,7 @@ pytest tests/evaluation/ -m integration -v
 2. **Get Training Task ID** from response Location header
 
 3. **Evaluate Trained Model**:
+
    ```json
    POST /evaluation/evaluate
    {
@@ -471,7 +502,7 @@ pytest tests/evaluation/ -m integration -v
 ### Core Dependencies
 
 - **sentence-transformers**: Model loading and inference
-- **scikit-learn**: Cosine similarity computation  
+- **scikit-learn**: Cosine similarity computation
 - **scipy**: Spearman correlation calculations
 - **pandas**: Dataset manipulation and loading
 - **numpy**: Numerical operations and vectorization
@@ -502,10 +533,10 @@ pip install -e ".[all]"
 
 ## Related Documentation
 
-- **[Training Module](README_TRAINING.md)**: SBERT training pipeline
-- **[API Documentation](docs/api-endpoints.plantuml)**: Complete API reference
-- **[Use Cases](docs/use-cases-evaluation.plantuml)**: Evaluation workflow diagrams
-- **[Model Upload](README.md#model-upload)**: How to upload and manage models
+- **[Training Module](training.md)**: SBERT training pipeline
+- **[API Documentation](../diagrams/src/api-endpoints.plantuml)**: Complete API reference
+- **[Use Cases](../diagrams/src/use-cases-evaluation.plantuml)**: Evaluation workflow diagrams
+- **[Model Upload](upload.md)**: How to upload and manage models
 
 ---
 

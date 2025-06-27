@@ -2,9 +2,7 @@
 
 This diagram shows the database schema and relationships between entities in the Vectorize system.
 
-```plantuml
---8<-- "docs/entity-relation.plantuml"
-```
+![file](out/entity-relation.svg)
 
 ## Key Entities
 

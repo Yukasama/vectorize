@@ -29,7 +29,6 @@ async def get_embeddings(
 
     Args:
         data: The embedding request containing input text and model specifications.
-        response: FastAPI response object for setting headers.
         db: Database session for retrieving model information.
 
     Returns:

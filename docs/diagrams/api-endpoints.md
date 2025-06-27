@@ -2,9 +2,7 @@
 
 This diagram shows the overall API endpoint structure and internal processes of the Vectorize service.
 
-```plantuml
---8<-- "docs/api-endpoints.plantuml"
-```
+![file](out/api-endpoints.svg)
 
 ## Endpoint Categories
 

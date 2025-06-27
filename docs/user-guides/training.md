@@ -6,6 +6,7 @@ Dieses Modul enthält die gesamte Logik für das Training von SBERT-Modellen (Se
 ## Übersicht
 
 Das Trainingssystem ist modular aufgebaut und bietet:
+
 - **Datenvalidierung**: Sicherstellung, dass Trainingsdaten korrekt und vollständig sind
 - **Trainingsorchestrierung**: Kapselung des gesamten Trainingsablaufs (Vorbereitung, Training, Speichern, Aufräumen)
 - **Fehlerbehandlung**: Klare Fehlerklassen für alle typischen Fehlerfälle
@@ -21,6 +22,7 @@ Das Trainingssystem ist modular aufgebaut und bietet:
    - Fehlerbehandlung und Status-Updates
 
 2. **`service.py`**: Service-Layer für API-Integration
+
    - Validierung von Requests
    - Aufruf der Training-Tasks
    - Fehler- und Statusmanagement
@@ -88,6 +90,7 @@ curl -X POST "http://localhost:8000/train" \
 ```
 
 Response:
+
 ```json
 {
   "status_code": 202,
@@ -106,6 +109,7 @@ curl "http://localhost:8000/training/{task_id}/status"
 ### Alle verfügbaren Parameter
 
 Die API unterstützt alle wichtigen Sentence-Transformers Parameter:
+
 - `model_tag`: Basis-Modell aus der Datenbank
 - `train_dataset_ids`: Liste von Dataset-IDs (werden zusammengeführt)
 - `val_dataset_id`: Optional, für Validierung
@@ -135,6 +139,7 @@ Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 ### Training Request Beispiele
 
 **Minimal Training Request:**
+
 ```json
 {
   "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
@@ -143,6 +148,7 @@ Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 ```
 
 **Standard Training Request:**
+
 ```json
 {
   "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
@@ -158,6 +164,7 @@ Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 ```
 
 **Vollständige Training Request mit allen Parametern:**
+
 ```json
 {
   "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
@@ -189,6 +196,7 @@ Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 ### Training Response Beispiele
 
 **Training Start Response (202 Accepted):**
+
 ```json
 {
   "status_code": 202,
@@ -199,6 +207,7 @@ Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 ```
 
 **Training Status Response:**
+
 ```json
 {
   "task_id": "7ef54ba0-2d87-4864-8360-81de8035369a",
@@ -213,63 +222,74 @@ Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 ### Datenaufteilung und Validierungslogik
 
 **Szenario 1: Mehrere Datasets mit expliziter Validierung**
+
 ```json
 {
   "train_dataset_ids": ["dataset1-uuid", "dataset2-uuid"],
   "val_dataset_id": "validation-dataset-uuid"
 }
 ```
+
 → **Ergebnis**: `validation-dataset-uuid` wird als Validierungsdatensatz verwendet
 
 **Szenario 2: Mehrere Datasets ohne explizite Validierung**
+
 ```json
 {
   "train_dataset_ids": ["dataset1-uuid", "dataset2-uuid"]
 }
 ```
+
 → **Ergebnis**: System verknüpft alle Datensätze und teilt 90% Training / 10% Validierung
 
 **Szenario 3: Einzelner Datensatz ohne Validierung**
+
 ```json
 {
   "train_dataset_ids": ["single-dataset-uuid"]
 }
 ```
+
 → **Ergebnis**: Auto-Split von `single-dataset-uuid` → 90% Training / 10% Validierung
 
 ### Datenpfad-Beispiele
 
 **Training erstellt diese Pfade:**
+
 - Explizite Validierung: `data/datasets/my_validation_dataset.jsonl`
 - Auto-Split Validierung: `data/datasets/my_training_dataset.jsonl#auto-split`
 
 ### Parameter-Regeln
 
 **Erforderlich:**
+
 - `model_tag`: Immer erforderlich
 - `train_dataset_ids`: Mindestens ein Dataset (Array mit min. 1 Element)
 
 **Optional:**
+
 - `val_dataset_id`: Für explizite Validierungsdaten
 - Alle anderen Parameter haben Standardwerte
 
 ### Ungültige Kombinationen
 
 **Fehlerhafte max_samples:**
+
 ```json
 {
   "model_tag": "...",
   "train_dataset_ids": ["..."],
-  "per_device_train_batch_size": 0  // Fehler: muss > 0 sein
+  "per_device_train_batch_size": 0 // Fehler: muss > 0 sein
 }
 ```
 
 **Fehlerhafte learning_rate:**
+
 ```json
 {
   "model_tag": "...",
   "train_dataset_ids": ["..."],
-  "learning_rate": 0  // Fehler: muss > 0 sein
+  "learning_rate": 0 // Fehler: muss > 0 sein
 }
 ```
 
@@ -278,6 +298,7 @@ Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 Nach erfolgreichem Training kann das trainierte Modell direkt evaluiert werden:
 
 **1. Training starten:**
+
 ```bash
 POST /train
 {
@@ -289,6 +310,7 @@ POST /train
 ```
 
 **2. Training-Task-ID aus Response extrahieren:**
+
 ```json
 {
   "headers": {
@@ -298,6 +320,7 @@ POST /train
 ```
 
 **3. Trainiertes Modell evaluieren:**
+
 ```bash
 POST /evaluation/evaluate
 {
@@ -325,10 +348,11 @@ Sentence-Transformers sind spezialisierte Modelle, die auf BERT, RoBERTa oder ä
 ## Trainingsprinzip & Loss-Funktion
 
 Das Training erfolgt meist mit sogenannten **Triplet- oder Pairwise-Losses**. Im Standardfall werden Triplets bestehend aus:
+
 - **Anchor (Question)**: Ausgangsfrage oder Satz
 - **Positive**: Semantisch ähnliche Antwort
 - **Negative**: Semantisch unähnliche Antwort
-verwendet.
+  verwendet.
 
 ### Typische Loss-Funktionen
 
@@ -337,6 +361,7 @@ verwendet.
 - **TripletLoss**: Klassischer Triplet-Loss, der einen Margin zwischen positiven und negativen Paaren erzwingt.
 
 Beispiel (CosineSimilarityLoss):
+
 ```python
 from sentence_transformers import SentenceTransformer, losses, InputExample
 from torch.utils.data import DataLoader
@@ -357,6 +382,7 @@ model.fit(
 ```
 
 **Ziel:**
+
 - Die Embeddings von Anchor und Positive sollen möglichst ähnlich (hohe Kosinus-Ähnlichkeit) sein.
 - Die Embeddings von Anchor und Negative möglichst unähnlich (niedrige Kosinus-Ähnlichkeit).
 
@@ -395,11 +421,13 @@ Das System erwartet JSONL-Dateien mit folgender Struktur:
 ```
 
 **Erforderliche Spalten:**
+
 - `question`: Die Ausgangsfrage oder der Anchor
 - `positive`: Semantisch ähnliche/korrekte Antwort
 - `negative`: Semantisch unähnliche/falsche Antwort
 
 **Validierung:**
+
 - Alle Spalten müssen vorhanden sein
 - Keine NULL-Werte oder leere Strings
 - Mindestens ein Trainingseintrag erforderlich

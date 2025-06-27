@@ -25,13 +25,3 @@ The inference module provides text embedding generation and model inference capa
 ## Embedding Model
 
 ::: vectorize.inference.embedding_model
-
-## Utilities
-
-### Generator
-
-::: vectorize.inference.utils.generator
-
-### Pool Mean
-
-::: vectorize.inference.utils.pool_mean
