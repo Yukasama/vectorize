@@ -9,7 +9,12 @@ __all__ = ["resolve_model_path"]
 
 def _normalize_model_tag(model_tag: str) -> str:
     """Normalize model tag to filesystem format."""
-    if model_tag.startswith("trained_models/"):
+    # Handle legacy trained models
+    if model_tag.startswith(("trained_models/", "models/")):
+        return model_tag
+
+    # Check if it's a fine-tuned model directory name (contains "finetuned")
+    if "finetuned" in model_tag:
         return model_tag
 
     filesystem_model_tag = model_tag.replace("_", "--")
