@@ -15,39 +15,40 @@ __all__ = ["load_github_model_and_cache_only_svc", "repo_info"]
 _github_models: dict[str, str] = {}
 
 
-def load_github_model_and_cache_only_svc(
+async def load_github_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
     owner: str,
     repo: str,
     branch: str = "main",
 ) -> dict[str, str]:
-    """Lädt ein GitHub Repo und cacht das Modell.
+    """Loads a GitHub repo and caches the model.
 
-    Klont ein GitHub-Repo sucht darin nach genau einer
-    „pytorch_model.bin“, „config.json“
-    und „tokenizer.json“ und cached sie auf der Festplatte sowie im Memory.
+    Clones a GitHub repository, looks for exactly one each of
+    `pytorch_model.bin`, `config.json`, and `tokenizer.json`, then caches
+    them both on disk and in memory.
 
     Args:
-        owner: GitHub-Username oder Organisation (z. B. "domoar")
-        repo:  Repo-Name (z. B. "BogusModel")
-        branch: Branch- oder Tag-Name (default: "main")
+        owner: GitHub username or organization (e.g., "domoar").
+        repo:  Repository name (e.g., "BogusModel").
+        branch: Branch or tag name (default: "main").
 
     Returns:
-        {
+        dict: {
             "owner": owner,
             "repo": repo,
             "branch": branch,
-            "local_path": "<Pfad zur pytorch_model.bin-Datei>",
+            "local_path": "<path to pytorch_model.bin>",
             "key": "owner/repo@branch"
         }
 
     Raises:
-        NoValidModelsFoundError:   Wenn nicht genau je eine Datei gefunden wurde.
-        InvalidModelError:         Für alle anderen Fehler (Clone-Fehler, IO, …).
+        NoValidModelsFoundError: If the repo does not contain exactly one
+            of each required file.
+        InvalidModelError: For any other error (clone failure, I/O issues, etc.).
     """
     key = f"{owner}/{repo}@{branch}"
 
     if key in _github_models:
-        logger.info("GitHub-Model bereits im In-Memory-Cache.", modelKey=key)
+        logger.info("GitHub-Model already cached", modelKey=key)
         return {
             "owner": owner,
             "repo": repo,
@@ -76,19 +77,19 @@ def load_github_model_and_cache_only_svc(
                 matches = list(base.rglob(filename))
                 if len(matches) != 1:
                     raise NoValidModelsFoundError(
-                        f"{len(matches)} {description}(en) gefunden für {filename}"
+                        f"{len(matches)} {description} found for {filename}"
                     )
                 paths[filename] = matches[0]
-                logger.debug("Gefundene {}: {}", description, matches[0])
+                logger.debug("Found {}: {}", description, matches[0])
 
             cache_dir = Path("gh_cache") / f"{owner}_{repo}@{branch}"
             cache_dir_parent = cache_dir.parent
             cache_dir_parent.mkdir(parents=True, exist_ok=True)
 
             if cache_dir.exists():
-                logger.info("Model bereits lokal gecached unter {}", cache_dir)
+                logger.info("Model already cached {}", cache_dir)
             else:
-                logger.info("Cache-Verzeichnis anlegen: {}", cache_dir)
+                logger.info("Creating cache dir{}", cache_dir)
                 cache_dir.mkdir()
 
                 for filename, pfad in paths.items():
@@ -99,7 +100,7 @@ def load_github_model_and_cache_only_svc(
             lokal_pfad = str((cache_dir / "pytorch_model.bin").resolve())
             _github_models[key] = lokal_pfad
 
-        logger.info("GitHub-Model erfolgreich gecached.", modelKey=key)
+        logger.info("Model cached", modelKey=key)
         return {
             "owner": owner,
             "repo": repo,
@@ -111,24 +112,24 @@ def load_github_model_and_cache_only_svc(
     except NoValidModelsFoundError:
         raise
     except Exception as e:
-        logger.exception("Fehler beim Laden des GitHub-Models.", modelKey=key)
-        raise InvalidModelError(f"GitHub-Import fehlgeschlagen: {e}") from e
+        logger.exception("Error loading model", modelKey=key)
+        raise InvalidModelError(f"Model upload failed: {e}") from e
 
 
 def repo_info(repo_url: str, revision: str | None = None) -> bool:
-    """Check if ein GitHub-Repo und Branch/Tag existiert.
+    """Check whether a GitHub repository and a specific branch / tag exist.
 
-    Verwendet GitHub-API: /repos/{owner}/{repo}/branches/{branch}
+    Uses GitHub API endpoint: /repos/{owner}/{repo}/branches/{branch}
 
     Args:
-        repo_url (str): HTTPS-URL des GitHub-Repos (z.B. "https://github.com/user/repo").
-        revision (str | None): Branch- oder Tag-Name. Falls None, default "main".
+        repo_url (str): HTTPS URL of the GitHub repo (e.g., "https://github.com/user/repo").
+        revision (str | None): Branch or tag name. If None, defaults to "main".
 
     Returns:
-        bool: True, wenn Repo + Branch/Tag existieren.
+        bool: True if both the repository and the given branch / tag exist.
 
     Raises:
-        ModelNotFoundError: Wenn Repo oder Branch/Tag nicht gefunden werden.
+        ModelNotFoundError: If the repository or the branch / tag cannot be found.
     """
     api_url = str(repo_url).replace(
         "https://github.com/", "https://api.github.com/repos/"

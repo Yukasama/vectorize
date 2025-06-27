@@ -115,7 +115,7 @@ async def process_github_model_bg(  # noqa: D417
 
     try:
         logger.info("[BG] Starting model upload for task", taskId=task_id)
-        load_github_model_and_cache_only_svc(owner, repo, branch)
+        await load_github_model_and_cache_only_svc(owner, repo, branch)
 
         ai_model = AIModel(
             model_tag=key,
@@ -129,12 +129,6 @@ async def process_github_model_bg(  # noqa: D417
 
     except ModelAlreadyExistsError as e:
         logger.error(f"[BG] Model already exists for task {task_id}: {e}")
-        await db.rollback()
-        await update_upload_task_status_db(
-            db, task_id, TaskStatus.FAILED, error_msg=str(e)
-        )
-    except IntegrityError as e:
-        logger.error(f"[BG] IntegrityError in task {task_id}: {e}")
         await db.rollback()
         await update_upload_task_status_db(
             db, task_id, TaskStatus.FAILED, error_msg=str(e)
