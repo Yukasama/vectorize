@@ -24,7 +24,7 @@ The evaluation system computes various metrics to assess how well a trained sent
 2. **`service.py`**: Service layer for FastAPI integration
 
    - Database lookups for models and datasets
-   - **NEW: `resolve_evaluation_dataset()`**: Smart dataset resolution (explicit or from training task)
+   - `resolve_evaluation_dataset()`: Smart dataset resolution (explicit or from training task)
    - Background task evaluation with progress tracking
    - Error handling and validation
 
@@ -34,7 +34,7 @@ The evaluation system computes various metrics to assess how well a trained sent
    - Status tracking and result retrieval
 
 4. **`schemas.py`**: Pydantic models for API requests/responses
-   - **NEW: `training_task_id`**: Use validation dataset from training tasks
+   - `training_task_id`: Use validation dataset from training tasks
    - Enhanced request validation and response schemas
 
 ### Utility Modules (`utils/`)
@@ -162,7 +162,7 @@ print(f"Baseline ratio: {baseline_metrics.similarity_ratio:.3f}")
 
 ### 3. API Usage - Training Task Integration
 
-Evaluate using training's validation dataset**
+**Evaluate using training's validation dataset**
 
 ```bash
 # Evaluate using training task validation dataset
@@ -200,8 +200,7 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 
 ### Evaluation Request Options
 
-**Option 1: Using Training Task ID (Recommended)**
-
+**Option 1: Using Training Task ID**
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -354,7 +353,7 @@ The module provides comprehensive error handling:
 - **`InvalidDatasetIdError`**: Invalid dataset UUIDs or training task IDs
 - **`TrainingDatasetNotFoundError`**: Dataset files not found or training task has no validation dataset
 - **`EvaluationTaskNotFoundError`**: Evaluation task not found
-- **NEW: `ValueError`**: Invalid parameter combinations (both `dataset_id` and `training_task_id` provided)
+- **`ValueError`**: Invalid parameter combinations (both `dataset_id` and `training_task_id` provided)
 
 ### Common Error Scenarios
 
@@ -396,42 +395,6 @@ The module provides comprehensive error handling:
 }
 ```
 
-## Performance Considerations
-
-### Optimizations
-
-1. **Vectorized Similarity Computation**: Uses numpy operations instead of loops
-2. **Batch Encoding**: Encodes all texts at once for efficiency
-3. **Memory Management**: Handles large datasets efficiently
-4. **Sample Limiting**: Supports limiting evaluation samples for speed
-5. **NEW: Background Processing**: Async evaluation prevents API timeouts
-6. **NEW: Progress Tracking**: Real-time progress updates during evaluation
-
-### Recommended Limits
-
-- **Small models (< 100MB)**: Up to 10,000 samples
-- **Medium models (100MB-500MB)**: 1,000-5,000 samples for reasonable performance
-- **Large models (> 500MB)**: 500-1,000 samples recommended
-- **Production**: Use background evaluation for all large datasets
-
-### Performance Tips
-
-```python
-# For faster evaluation, limit samples
-{
-  "max_samples": 500,  # Instead of default 1000
-  "model_tag": "...",
-  "training_task_id": "..."
-}
-
-# For comprehensive evaluation, use default or higher
-{
-  "max_samples": 2000,  # More thorough but slower
-  "model_tag": "...",
-  "training_task_id": "..."
-}
-```
-
 ## Testing
 
 ### Run Evaluation Tests
@@ -452,7 +415,7 @@ pytest -m evaluation -v
 
 - **Unit tests**: Individual component testing (`TestEvaluationMetrics`, `TestTrainingEvaluator`)
 - **Integration tests**: End-to-end evaluation with database integration (`TestEvaluationIntegration`)
-- **NEW: Service integration tests**: Training-evaluation integration (`test_resolve_dataset_with_training_task_id`)
+- **Service integration tests**: Training-evaluation integration (`test_resolve_dataset_with_training_task_id`)
 - **Validation tests**: Dataset validation edge cases
 
 ### Test Data Requirements
@@ -539,5 +502,3 @@ pip install -e ".[all]"
 - **[Model Upload](upload.md)**: How to upload and manage models
 
 ---
-
-**Ready to evaluate your fine-tuned models with precision and ease!**
