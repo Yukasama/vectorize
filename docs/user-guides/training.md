@@ -273,8 +273,7 @@ Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 
 ### Ungültige Kombinationen
 
-**Fehlerhafte max_samples:**
-
+**Fehlerhafte per_device_train_batch_size:**
 ```json
 {
   "model_tag": "...",
@@ -345,48 +344,16 @@ Sentence-Transformers sind spezialisierte Modelle, die auf BERT, RoBERTa oder ä
 - **Clustering und Klassifikation von Texten**: Gruppierung ähnlicher Inhalte oder automatische Kategorisierung
 - **Ähnlichkeitsmessung**: Erkennung von Duplikaten oder verwandten Inhalten (z.B. Duplicate Detection)
 
-## Trainingsprinzip & Loss-Funktion
+## Trainingsprinzip
 
-Das Training erfolgt meist mit sogenannten **Triplet- oder Pairwise-Losses**. Im Standardfall werden Triplets bestehend aus:
-
+Das Training erfolgt mit **Triplet-Losses** basierend auf Triplets bestehend aus:
 - **Anchor (Question)**: Ausgangsfrage oder Satz
 - **Positive**: Semantisch ähnliche Antwort
 - **Negative**: Semantisch unähnliche Antwort
-  verwendet.
 
-### Typische Loss-Funktionen
+**Ziel:** Die Embeddings von Anchor und Positive sollen möglichst ähnlich (hohe Kosinus-Ähnlichkeit) sein, während die Embeddings von Anchor und Negative möglichst unähnlich (niedrige Kosinus-Ähnlichkeit) werden.
 
-- **CosineSimilarityLoss**: Maximiert die Kosinus-Ähnlichkeit zwischen Anchor und Positive und minimiert sie zwischen Anchor und Negative.
-- **MultipleNegativesRankingLoss**: Effizienter Pairwise-Loss, der für große Batches geeignet ist.
-- **TripletLoss**: Klassischer Triplet-Loss, der einen Margin zwischen positiven und negativen Paaren erzwingt.
-
-Beispiel (CosineSimilarityLoss):
-
-```python
-from sentence_transformers import SentenceTransformer, losses, InputExample
-from torch.utils.data import DataLoader
-
-model = SentenceTransformer('distilbert-base-nli-mean-tokens')
-train_examples = [
-    InputExample(texts=["Frage", "Positive Antwort", "Negative Antwort"]),
-    # ...
-]
-train_dataloader = DataLoader(train_examples, shuffle=True, batch_size=16)
-train_loss = losses.CosineSimilarityLoss(model)
-
-model.fit(
-    train_objectives=[(train_dataloader, train_loss)],
-    epochs=3,
-    warmup_steps=100
-)
-```
-
-**Ziel:**
-
-- Die Embeddings von Anchor und Positive sollen möglichst ähnlich (hohe Kosinus-Ähnlichkeit) sein.
-- Die Embeddings von Anchor und Negative möglichst unähnlich (niedrige Kosinus-Ähnlichkeit).
-
-Weitere Details und Loss-Varianten siehe [SBERT-Dokumentation](https://www.sbert.net/docs/package_reference/losses.html).
+Weitere Details siehe [SBERT-Dokumentation](https://www.sbert.net/docs/package_reference/losses.html).
 
 ## Testen
 
