@@ -2,8 +2,6 @@
 
 Dieses Modul enthält die gesamte Logik für das Training von SBERT-Modellen (Sentence-BERT) inklusive Datenvalidierung, Trainingsorchestrierung, Fehlerbehandlung und Utilities für die Integration in REST-APIs.
 
-## Database
-docker run --rm -p 8080:8080 -v vectorize-stack_db_data:/data --platform linux/amd64 -e SQLITE_DATABASE=/data/app.db ghcr.io/coleifer/sqlite-web
 
 ## Übersicht
 
@@ -17,51 +15,57 @@ Das Trainingssystem ist modular aufgebaut und bietet:
 
 ### Hauptkomponenten
 
-1. **`training_orchestrator.py`**: Zentrale Trainingslogik
-   - Klasse `TrainingOrchestrator` kapselt den gesamten Ablauf
-   - Methoden für Datenvorbereitung, Training, Speichern, Fehlerbehandlung und Aufräumen
+1. **`tasks.py`**: Zentrale Trainingslogik (Background-Tasks)
+   - Training-Tasks für asynchrone Ausführung
+   - Integration mit Dramatiq für Task-Management
+   - Fehlerbehandlung und Status-Updates
 
 2. **`service.py`**: Service-Layer für API-Integration
    - Validierung von Requests
-   - Aufruf des Orchestrators
+   - Aufruf der Training-Tasks
    - Fehler- und Statusmanagement
 
-3. **`utils/`**: Hilfsfunktionen
-   - **`validators.py`**: Validierung von Trainingsdaten und Parametern
+3. **`router.py`**: REST-API Endpunkte
+   - `POST /train`: Training starten
+   - `GET /{task_id}/status`: Status abfragen
+   - HTTP Response-Handling
+
+4. **`repository.py`**: Datenbankoperationen
+   - CRUD-Operationen für Training-Tasks
+   - Datenbankmodell-Management
+
+5. **`utils/`**: Hilfsfunktionen
    - **`input_examples.py`**: Erstellung und Filterung von Trainingsbeispielen
    - **`model_loader.py`**: Laden und Initialisieren von Modellen
    - **`cleanup.py`**: Ressourcenmanagement und Aufräumarbeiten
-   - **`uuid_validator.py`**: UUID-Validierung für Dataset- und Model-IDs
    - **`safetensors_finder.py`**: Auffinden von Modell-Dateien
 
 ## Beispiel: Training per Python
 
 ```python
-from vectorize.training.training_orchestrator import TrainingOrchestrator
+from vectorize.training.service import TrainingOrchestrator
 from vectorize.training.schemas import TrainRequest
 from sqlmodel.ext.asyncio.session import AsyncSession
-from uuid import uuid4
 
 # Training-Request erstellen
 train_request = TrainRequest(
-    model_tag="sentence-transformers/all-MiniLM-L6-v2",
-    train_dataset_ids=["uuid-des-datensatzes"],
+    model_tag="models--sentence-transformers--all-MiniLM-L6-v2",
+    train_dataset_ids=["0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"],
     epochs=3,
     per_device_train_batch_size=16,
     learning_rate=2e-5,
 )
 
-# Training-Orchestrator initialisieren
+# Training-Orchestrator verwenden
 db = AsyncSession()  # Ihre DB-Session
-task_id = uuid4()
 orchestrator = TrainingOrchestrator(db, task_id)
 
 # Training starten (asynchron)
 await orchestrator.run_training(
-    model_path="data/models/base-model",
+    model_path=model_path,
     train_request=train_request,
-    dataset_paths=["data/datasets/train.jsonl"],
-    output_dir="data/models/my-trained-model"
+    dataset_paths=dataset_paths,
+    output_dir=output_dir
 )
 ```
 
@@ -73,8 +77,8 @@ Das Training wird als Background-Task gestartet und liefert eine Task-ID zurück
 curl -X POST "http://localhost:8000/train" \
   -H "Content-Type: application/json" \
   -d '{
-    "model_tag": "sentence-transformers/all-MiniLM-L6-v2",
-    "train_dataset_ids": ["uuid-des-datensatzes"],
+    "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
+    "train_dataset_ids": ["0b30b284-f7fe-4e6c-a270-17cafc5b5bcb"],
     "epochs": 3,
     "per_device_train_batch_size": 16,
     "learning_rate": 2e-5,
@@ -86,16 +90,17 @@ curl -X POST "http://localhost:8000/train" \
 Response:
 ```json
 {
-  "task_id": "uuid-der-training-task",
-  "status": "running",
-  "message": "Training gestartet"
+  "status_code": 202,
+  "headers": {
+    "Location": "/training/7ef54ba0-2d87-4864-8360-81de8035369a/status"
+  }
 }
 ```
 
 ### Status abfragen
 
 ```bash
-curl "http://localhost:8000/train/status/{task_id}"
+curl "http://localhost:8000/training/{task_id}/status"
 ```
 
 ### Alle verfügbaren Parameter
@@ -107,7 +112,9 @@ Die API unterstützt alle wichtigen Sentence-Transformers Parameter:
 - `epochs`, `per_device_train_batch_size`, `learning_rate`
 - `warmup_steps`, `optimizer_name`, `scheduler`
 - `weight_decay`, `max_grad_norm`, `use_amp`
-- `evaluation_steps`, `save_best_model`, `timeout_seconds`
+- `show_progress_bar`, `evaluation_steps`, `output_path`
+- `save_best_model`, `save_each_epoch`, `save_optimizer_state`
+- `dataloader_num_workers`, `device`, `timeout_seconds`
 
 ## Fehlerbehandlung
 
@@ -203,13 +210,6 @@ Alle Fehler werden detailliert geloggt und über die API zurückgegeben.
 }
 ```
 
-**Training Cancellation Response (200 OK):**
-```json
-{
-  "status_code": 200
-}
-```
-
 ### Datenaufteilung und Validierungslogik
 
 **Szenario 1: Mehrere Datasets mit expliziter Validierung**
@@ -279,7 +279,7 @@ Nach erfolgreichem Training kann das trainierte Modell direkt evaluiert werden:
 
 **1. Training starten:**
 ```bash
-POST /training/train
+POST /train
 {
   "model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
   "train_dataset_ids": ["dataset-uuid"],
@@ -309,32 +309,18 @@ POST /evaluation/evaluate
 
 Diese Integration ermöglicht konsistente Evaluierung mit denselben Validierungsdaten, die beim Training verwendet wurden.
 
-## Best Practices
 
-### Datenqualität
-- **Vor dem Training validieren**: Nutze die eingebauten Validatoren
-- **Ausgewogene Daten**: Sorge für gute positive/negative Beispiele
-- **Datenqualität prüfen**: Positive Beispiele sollten semantisch ähnlich sein
+## Leseliteratur
 
-### Modell-Management
-- **Eindeutige Model-Tags verwenden**: Verhindert Überschreibungen
-- **Basis-Modelle aus HuggingFace Hub**: z.B. `sentence-transformers/all-MiniLM-L6-v2`
-- **Validierungsdaten bereitstellen**: Für bessere Trainingsüberwachung
+### Was sind Sentence-Transformers?
 
-### Performance & Ressourcen
-- **Batch-Größe anpassen**: Je nach verfügbarem GPU-Speicher
-- **Warmup-Steps nutzen**: Verbessert Trainingsstabilität
-- **Timeout setzen**: Verhindert hängende Training-Jobs
-- **Ressourcen nach Training freigeben**: Automatisches CUDA-Cleanup
+Sentence-Transformers sind spezialisierte Modelle, die auf BERT, RoBERTa oder ähnlichen Architekturen basieren und darauf trainiert sind, ganze Sätze oder Textabschnitte als dichte Vektoren (Embeddings) im semantischen Raum abzubilden. Dadurch können semantisch ähnliche Sätze durch ähnliche Vektoren repräsentiert werden.
 
-## Was sind Sentence-Transformers?
+**Typische Anwendungsfälle:**
 
-[Sentence-Transformers](https://www.sbert.net/) sind spezialisierte Modelle, die auf BERT, RoBERTa oder ähnlichen Architekturen basieren und darauf trainiert sind, ganze Sätze oder Textabschnitte als dichte Vektoren (Embeddings) im semantischen Raum abzubilden. Dadurch können semantisch ähnliche Sätze durch ähnliche Vektoren repräsentiert werden.
-
-Typische Anwendungsfälle:
-- Semantische Suche (Semantic Search)
-- Clustering und Klassifikation von Texten
-- Ähnlichkeitsmessung (z.B. Duplicate Detection)
+- **Semantische Suche (Semantic Search)**: Finden von relevanten Dokumenten basierend auf der Bedeutung, nicht nur auf exakten Stichwörtern
+- **Clustering und Klassifikation von Texten**: Gruppierung ähnlicher Inhalte oder automatische Kategorisierung
+- **Ähnlichkeitsmessung**: Erkennung von Duplikaten oder verwandten Inhalten (z.B. Duplicate Detection)
 
 ## Trainingsprinzip & Loss-Funktion
 
@@ -397,6 +383,7 @@ pytest tests/training/ -v
 - **sqlmodel**: Datenbankoperationen
 - **fastapi**: REST-API Framework
 - **pydantic**: Datenvalidierung und Serialisierung
+- **dramatiq**: Background Task-Processing für asynchrone Training-Jobs
 
 ## Datenformat
 
