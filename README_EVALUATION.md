@@ -7,11 +7,10 @@ This module provides comprehensive evaluation capabilities for SBERT (Sentence-B
 The evaluation system computes various metrics to assess how well a trained sentence transformer model performs on question-positive-negative triplets:
 
 - **Average Cosine Similarity**: Between questions and positive/negative examples
-- **Similarity Ratio**: Ratio of positive to negative similarities (should be > 1.2 for good training)
+- **Similarity Ratio**: Ratio of positive to negative similarities
 - **Spearman Correlation**: Measures ranking quality between positive and negative examples
-- **Quality Grading**: Automatic quality assessment (Excellent, Good, Fair, Poor)
-- **NEW: Training-Evaluation Integration**: Seamlessly evaluate models using their training validation datasets
 - **Baseline Comparison**: Compare trained models against baseline models with improvement metrics
+- **Training-Evaluation Integration**: Seamlessly evaluate models using their training validation datasets
 
 ## Architecture
 
@@ -122,9 +121,10 @@ metrics = evaluator.evaluate_dataset(
     max_samples=1000
 )
 
-print(f"Training successful: {metrics.is_training_successful()}")
-print(f"Quality grade: {metrics.get_quality_grade()}")
 print(f"Similarity ratio: {metrics.similarity_ratio:.3f}")
+print(f"Spearman correlation: {metrics.spearman_correlation:.3f}")
+print(f"Positive similarity: {metrics.avg_positive_similarity:.3f}")
+print(f"Negative similarity: {metrics.avg_negative_similarity:.3f}")
 ```
 
 ### 2. Model Comparison with Baseline
@@ -148,11 +148,11 @@ print(f"Baseline ratio: {baseline_metrics.similarity_ratio:.3f}")
 
 ### 3. API Usage - Training Task Integration
 
-**NEW: Evaluate using training's validation dataset**
+Evaluate using training's validation dataset**
 
 ```bash
 # Evaluate using training task validation dataset
-curl -X POST "http://localhost:8000/v1/evaluation/evaluate" \
+curl -X POST "http://localhost:8000/evaluate" \
   -H "Content-Type: application/json" \
   -d '{
     "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -166,7 +166,7 @@ curl -X POST "http://localhost:8000/v1/evaluation/evaluate" \
 
 ```bash
 # Evaluate using explicit dataset
-curl -X POST "http://localhost:8000/v1/evaluation/evaluate" \
+curl -X POST "http://localhost:8000/evaluate" \
   -H "Content-Type: application/json" \
   -d '{
     "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -179,7 +179,7 @@ curl -X POST "http://localhost:8000/v1/evaluation/evaluate" \
 
 ```bash
 # Get evaluation status and results
-curl -X GET "http://localhost:8000/v1/evaluation/{task_id}/status"
+curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ```
 
 ## Complete JSON API Reference
@@ -254,7 +254,7 @@ curl -X GET "http://localhost:8000/v1/evaluation/{task_id}/status"
   "error_msg": null,
   "evaluation_metrics": "{...json...}",
   "baseline_metrics": "{...json...}",
-  "evaluation_summary": "Training successful. Similarity ratio improved by 0.523 (1.245 → 1.768)"
+  "evaluation_summary": "Similarity ratio improved by 0.523 (1.245 → 1.768)"
 }
 ```
 
@@ -284,38 +284,6 @@ curl -X GET "http://localhost:8000/v1/evaluation/{task_id}/status"
 }
 ```
 
-## Metrics Interpretation
-
-### Quality Grades
-
-- **Excellent**: Ratio ≥ 2.0 and Correlation ≥ 0.7
-- **Good**: Ratio ≥ 1.5 and Correlation ≥ 0.5  
-- **Fair**: Ratio ≥ 1.2 and Correlation ≥ 0.3
-- **Poor**: Below Fair thresholds
-
-### Training Success Criteria
-
-Training is considered successful if:
-1. **Positive similarities > negative similarities**
-2. **Similarity ratio > 1.2**
-3. **Spearman correlation > 0.3** (for ranking quality)
-
-### Similarity Ratio Interpretation
-
-- **> 2.0**: Excellent discrimination - model clearly distinguishes positive from negative
-- **1.5-2.0**: Good discrimination - solid performance
-- **1.2-1.5**: Acceptable discrimination - meets minimum requirements
-- **< 1.2**: Poor discrimination - training likely unsuccessful
-
-### Spearman Correlation Interpretation
-
-- **> 0.7**: Excellent ranking quality - model ranks examples very well
-- **0.5-0.7**: Good ranking quality - reliable ordering
-- **0.3-0.5**: Fair ranking quality - basic ordering capability
-- **< 0.3**: Poor ranking quality - inconsistent ordering
-
-### NEW: Baseline Comparison Metrics
-
 When using `baseline_model_tag`, you get additional improvement metrics:
 
 ```json
@@ -335,13 +303,12 @@ When using `baseline_model_tag`, you get additional improvement metrics:
 
 ## Configuration
 
-Key constants in `evaluation.py`:
+Key constants are now managed through the central configuration system:
 
 ```python
-TRAINING_SUCCESS_THRESHOLD = 1.2  # Minimum ratio for success
-DEFAULT_MAX_SAMPLES = 1000        # Default sample limit
-DEFAULT_RANDOM_SEED = 42          # For reproducible sampling
-MIN_CORRELATION_THRESHOLD = 0.3   # Minimum correlation for success
+# From vectorize.config import settings
+DEFAULT_MAX_SAMPLES = settings.evaluation_default_max_samples  # Default: 1000
+DEFAULT_RANDOM_SEED = settings.evaluation_default_random_seed  # Default: 42
 ```
 
 ### Environment Variables
@@ -531,39 +498,6 @@ pip install -e ".[evaluation]"
 
 # Or install all dependencies
 pip install -e ".[all]"
-```
-
-## Recent Updates
-
-### Version 2.0 Features
-
-- **Training-Evaluation Integration**: Use `training_task_id` to automatically use validation datasets from training
-- **Enhanced Baseline Comparison**: Detailed improvement metrics and comparison analysis
-- **Background Processing**: Async evaluation with progress tracking
-- **Smart Dataset Resolution**: Automatic dataset path resolution from training tasks
-- **Comprehensive Error Handling**: Detailed error messages and validation
-- **Performance Optimizations**: Better memory management and batch processing
-- **Extended Test Coverage**: Integration tests for training-evaluation workflow
-
-### Migration Guide
-
-**From v1.x to v2.0:**
-
-Old API (still supported):
-```json
-{
-  "model_tag": "my-model",
-  "dataset_id": "uuid-of-dataset"
-}
-```
-
-New API (recommended):
-```json
-{
-  "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
-  "training_task_id": "7ef54ba0-2d87-4864-8360-81de8035369a",
-  "baseline_model_tag": "original-model"
-}
 ```
 
 ## Related Documentation

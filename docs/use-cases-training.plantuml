@@ -1,0 +1,21 @@
+@startuml Use Cases für SBERT Model Training
+left to right direction
+actor Nutzer
+
+package "SBERT Modell trainieren" {
+    usecase "Training starten" as TrainingStarten
+    usecase "Training-Status abfragen" as StatusAbfragen
+    usecase "Training-Parameter konfigurieren" as ParameterKonfigurieren
+}
+
+package "Training-Daten verwalten" {
+    usecase "Triplet-Datensätze auswählen" as DatasetsAuswählen
+    usecase "Validierungs-Dataset festlegen" as ValidationFestlegen
+}
+
+Nutzer --> TrainingStarten
+Nutzer --> StatusAbfragen
+Nutzer --> ParameterKonfigurieren
+Nutzer --> DatasetsAuswählen
+Nutzer --> ValidationFestlegen
+@enduml
