@@ -88,7 +88,7 @@ nav:
       - Endpoints:
           - Common/Health: api/common.md
           - Datasets: api/datasets.md
-          - AI Models: api/ai-models.md
+          - AI Models: api/models.md
           - Training: api/training.md
           - Evaluation: api/evaluation.md
           - Inference: api/inference.md

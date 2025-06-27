@@ -8,7 +8,7 @@ The Vectorize API is organized into several main modules:
 
 - **[Common/Health](api/common.md)**: Health checks and basic utilities
 - **[Datasets](api/datasets.md)**: Dataset upload, management, and Hugging Face integration
-- **[AI Models](api/ai-models.md)**: Model management and CRUD operations
+- **[AI Models](api/models.md)**: Model management and CRUD operations
 - **[Training](api/training.md)**: Model training with background task management
 - **[Evaluation](api/evaluation.md)**: Model evaluation and performance metrics
 - **[Inference](api/inference.md)**: Text embedding generation and inference
