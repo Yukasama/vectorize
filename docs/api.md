@@ -7,13 +7,13 @@ Welcome to the Vectorize API documentation. This section provides comprehensive 
 The Vectorize API is organized into several main modules:
 
 - **[Common/Health](api/common.md)**: Health checks and basic utilities
-- **[Datasets](api/datasets.md)**: Dataset upload, management, and Hugging Face integration
+- **[Datasets](api/datasets.md)**: Dataset upload from HuggingFace and local sources plus CRUD operations
 - **[AI Models](api/models.md)**: Model management and CRUD operations
 - **[Training](api/training.md)**: Model training with background task management
 - **[Evaluation](api/evaluation.md)**: Model evaluation and performance metrics
 - **[Inference](api/inference.md)**: Text embedding generation and inference
-- **[Upload](api/upload.md)**: Model upload from various sources
-- **[Synthesis](api/synthesis.md)**: Synthetic data generation
+- **[Upload](api/upload.md)**: Model upload from HuggingFace, GitHub and local sources
+- **[Synthesis](api/synthesis.md)**: Synthetic data generation from Binary data and datasets
 - **[Tasks](api/tasks.md)**: Background task management and monitoring
 
 ## Quick Reference
@@ -24,6 +24,12 @@ The Vectorize API is organized into several main modules:
 http://localhost:8000
 ```
 
+or when working with Docker:
+
+```
+https://localhost/v1/api
+```
+
 ### Authentication
 
 Currently, the API does not require authentication.
@@ -31,7 +37,7 @@ Currently, the API does not require authentication.
 ### Content Types
 
 - **Request**: `application/json`, `multipart/form-data` (for file uploads)
-- **Response**: `application/json`
+- **Response**: `application/json` or an empty response
 
 ### Common Response Codes
 
@@ -42,5 +48,7 @@ Currently, the API does not require authentication.
 - `400 Bad Request`: Invalid request parameters
 - `404 Not Found`: Resource not found
 - `409 Conflict`: Resource already exists
+- `412 Precondition Failed`: ETag condition not met
 - `422 Unprocessable Entity`: Validation error
+- `428 Precondition Required`: ETag header required
 - `500 Internal Server Error`: Server error
