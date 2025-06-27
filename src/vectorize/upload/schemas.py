@@ -13,7 +13,6 @@ class HuggingFaceModelRequest(BaseModel):
     Attributes:
         model_tag (str): The tag of the model to load.
         revision (Optional[str]): The specific revision or version of the model to load.
-        Defaults to "main".
     """
 
     model_tag: str

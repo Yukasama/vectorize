@@ -49,7 +49,7 @@ def sanitize_filename(
     if not stem_sanitized:
         stem_sanitized = "_"
 
-    if len(stem_sanitized) > settings.max_filename_length:
+    if len(stem_sanitized) > settings.dataset_max_filename_length:
         raise InvalidFileError(ErrorNames.FILENAME_TOO_LONG_ERROR)
 
     return f"{stem_sanitized}.{ext}" if ext else stem_sanitized, ext

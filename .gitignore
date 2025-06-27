@@ -60,6 +60,9 @@ coverage.xml
 # === Notebooks ===
 *.ipynb_checkpoints
 
+# === Documentation ===
+docs/diagrams/out
+
 # === Test output / debugging ===
 tests/__pycache__/
 *.log

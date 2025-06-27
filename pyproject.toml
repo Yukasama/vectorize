@@ -49,7 +49,6 @@ dependencies = [
     "uvicorn>=0.34.0",
     "python-multipart>=0.0.20",
     "loguru>=0.7.3",
-    "hypercorn>=0.17.3",
     "aiofiles>=24.1.0",
     "lxml>=5.3.2",
     "sqlmodel>=0.0.24",
@@ -57,8 +56,6 @@ dependencies = [
     "hf-xet>=1.0.3",
     "huggingface-hub>=0.30.2",
     "transformers>=4.51.3",
-    "torchvision>=0.21.0",
-    "torchaudio>=2.6.0",
     "torch>=2.6.0",
     "defusedxml>=0.7.1",
     "openpyxl>=3.1.5",
@@ -74,7 +71,6 @@ dependencies = [
     "datasets>=3.6.0",
     "dramatiq>=1.18.0",
     "redis>=6.2.0",
-    "testcontainers[redis]>=4.10.0",
     "sentence-transformers>=4.1.0",
     "accelerate>=1.7.0",
 ]
@@ -105,7 +101,7 @@ dev = [
     "pytest-cov>=6.1.1",
     "mkdocs-material>=9.6.14",
     "mkdocstrings[python]>=0.29.1",
-    "mkdocs-kroki-plugin>=0.9.0",
+    "testcontainers[redis]>=4.10.0",
 ]
 
 [tool.hatch.build.targets.sdist]

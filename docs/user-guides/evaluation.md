@@ -7,42 +7,46 @@ This module provides comprehensive evaluation capabilities for SBERT (Sentence-B
 The evaluation system computes various metrics to assess how well a trained sentence transformer model performs on question-positive-negative triplets:
 
 - **Average Cosine Similarity**: Between questions and positive/negative examples
-- **Similarity Ratio**: Ratio of positive to negative similarities (should be > 1.2 for good training)
+- **Similarity Ratio**: Ratio of positive to negative similarities
 - **Spearman Correlation**: Measures ranking quality between positive and negative examples
-- **Quality Grading**: Automatic quality assessment (Excellent, Good, Fair, Poor)
-- **NEW: Training-Evaluation Integration**: Seamlessly evaluate models using their training validation datasets
 - **Baseline Comparison**: Compare trained models against baseline models with improvement metrics
+- **Training-Evaluation Integration**: Seamlessly evaluate models using their training validation datasets
 
 ## Architecture
 
 ### Core Components
 
 1. **`evaluation.py`**: Main evaluation logic
+
    - `EvaluationMetrics`: Container for computed metrics with baseline comparison
    - `TrainingEvaluator`: Main evaluation orchestrator with model comparison capabilities
 
 2. **`service.py`**: Service layer for FastAPI integration
+
    - Database lookups for models and datasets
-   - **NEW: `resolve_evaluation_dataset()`**: Smart dataset resolution (explicit or from training task)
+   - `resolve_evaluation_dataset()`: Smart dataset resolution (explicit or from training task)
    - Background task evaluation with progress tracking
    - Error handling and validation
 
 3. **`router.py`**: FastAPI endpoints
+
    - RESTful evaluation API with async background processing
    - Status tracking and result retrieval
 
 4. **`schemas.py`**: Pydantic models for API requests/responses
-   - **NEW: `training_task_id`**: Use validation dataset from training tasks
+   - `training_task_id`: Use validation dataset from training tasks
    - Enhanced request validation and response schemas
 
 ### Utility Modules (`utils/`)
 
 1. **`similarity_calculator.py`**: Optimized similarity computation
+
    - Vectorized cosine similarity calculations
    - Spearman correlation computation
    - Performance optimized for large datasets
 
 2. **`dataset_validator.py`**: Dataset validation
+
    - JSONL format validation
    - Required columns checking
    - Null/empty value detection
@@ -51,20 +55,22 @@ The evaluation system computes various metrics to assess how well a trained sent
    - Handles HuggingFace cache structure
    - Recursive model file discovery
 
-## Dataset Resolution & Splitting Logic
-
-### How Dataset Resolution Works
+## Dataset Resolution
 
 The evaluation system supports **two ways** to specify which dataset to use:
 
-#### **Method 1: Training Task ID (`training_task_id`)**
-- **Recommended approach** - uses the exact validation dataset from training
-- When you train a model, the system automatically:
-  1. **With explicit `val_dataset_id`**: Uses that dataset as validation
-  2. **Without `val_dataset_id`**: Auto-splits the first training dataset (90% train, 10% validation)
-- The `training_task_id` points to this validation dataset automatically
+### Method 1: Training Task ID (`training_task_id`)
 
-#### **Method 2: Explicit Dataset ID (`dataset_id`)**
+**Recommended approach** - uses the exact validation dataset from training
+
+When you train a model, the system automatically:
+1. **With explicit `val_dataset_id`**: Uses that dataset as validation
+2. **Without `val_dataset_id`**: Auto-splits the first training dataset (90% train, 10% validation)
+
+The `training_task_id` points to this validation dataset automatically.
+
+### Method 2: Explicit Dataset ID (`dataset_id`)
+
 - Uses any specific dataset from the database
 - Useful for evaluating on different datasets than training
 - Must be a valid dataset UUID in the system
@@ -73,7 +79,6 @@ The evaluation system supports **two ways** to specify which dataset to use:
 
 **Scenario 1: Multiple Datasets with Validation**
 ```json
-// Training Request
 {
   "train_dataset_ids": ["dataset1-uuid", "dataset2-uuid"],
   "val_dataset_id": "validation-dataset-uuid"
@@ -83,7 +88,6 @@ The evaluation system supports **two ways** to specify which dataset to use:
 
 **Scenario 2: Multiple Datasets without Validation**
 ```json
-// Training Request  
 {
   "train_dataset_ids": ["dataset1-uuid", "dataset2-uuid"]
 }
@@ -92,7 +96,6 @@ The evaluation system supports **two ways** to specify which dataset to use:
 
 **Scenario 3: Single Dataset without Validation**
 ```json
-// Training Request
 {
   "train_dataset_ids": ["single-dataset-uuid"]
 }
@@ -122,9 +125,10 @@ metrics = evaluator.evaluate_dataset(
     max_samples=1000
 )
 
-print(f"Training successful: {metrics.is_training_successful()}")
-print(f"Quality grade: {metrics.get_quality_grade()}")
 print(f"Similarity ratio: {metrics.similarity_ratio:.3f}")
+print(f"Spearman correlation: {metrics.spearman_correlation:.3f}")
+print(f"Positive similarity: {metrics.avg_positive_similarity:.3f}")
+print(f"Negative similarity: {metrics.avg_negative_similarity:.3f}")
 ```
 
 ### 2. Model Comparison with Baseline
@@ -148,11 +152,11 @@ print(f"Baseline ratio: {baseline_metrics.similarity_ratio:.3f}")
 
 ### 3. API Usage - Training Task Integration
 
-**NEW: Evaluate using training's validation dataset**
+**Evaluate using training's validation dataset:**
 
 ```bash
 # Evaluate using training task validation dataset
-curl -X POST "http://localhost:8000/v1/evaluation/evaluate" \
+curl -X POST "http://localhost:8000/evaluate" \
   -H "Content-Type: application/json" \
   -d '{
     "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -166,7 +170,7 @@ curl -X POST "http://localhost:8000/v1/evaluation/evaluate" \
 
 ```bash
 # Evaluate using explicit dataset
-curl -X POST "http://localhost:8000/v1/evaluation/evaluate" \
+curl -X POST "http://localhost:8000/evaluate" \
   -H "Content-Type: application/json" \
   -d '{
     "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -179,14 +183,14 @@ curl -X POST "http://localhost:8000/v1/evaluation/evaluate" \
 
 ```bash
 # Get evaluation status and results
-curl -X GET "http://localhost:8000/v1/evaluation/{task_id}/status"
+curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ```
 
-## Complete JSON API Reference
+## JSON API Reference
 
 ### Evaluation Request Options
 
-**Option 1: Using Training Task ID (Recommended)**
+**Using Training Task ID (Recommended):**
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -195,7 +199,7 @@ curl -X GET "http://localhost:8000/v1/evaluation/{task_id}/status"
 }
 ```
 
-**Option 2: Using Explicit Dataset ID**
+**Using Explicit Dataset:**
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -204,31 +208,13 @@ curl -X GET "http://localhost:8000/v1/evaluation/{task_id}/status"
 }
 ```
 
-**Option 3: With Baseline Comparison (Training Task)**
+**With Baseline Comparison:**
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
   "training_task_id": "7ef54ba0-2d87-4864-8360-81de8035369a",
   "baseline_model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
   "max_samples": 1000
-}
-```
-
-**Option 4: With Baseline Comparison (Explicit Dataset)**
-```json
-{
-  "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
-  "dataset_id": "0a9d5e87-e497-4737-9829-2070780d10df",
-  "baseline_model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
-  "max_samples": 1000
-}
-```
-
-**Option 5: Minimal Evaluation**
-```json
-{
-  "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
-  "training_task_id": "7ef54ba0-2d87-4864-8360-81de8035369a"
 }
 ```
 
@@ -254,7 +240,7 @@ curl -X GET "http://localhost:8000/v1/evaluation/{task_id}/status"
   "error_msg": null,
   "evaluation_metrics": "{...json...}",
   "baseline_metrics": "{...json...}",
-  "evaluation_summary": "Training successful. Similarity ratio improved by 0.523 (1.245 → 1.768)"
+  "evaluation_summary": "Similarity ratio improved by 0.523 (1.245 → 1.768)"
 }
 ```
 
@@ -269,6 +255,7 @@ curl -X GET "http://localhost:8000/v1/evaluation/{task_id}/status"
 - `max_samples`: Default is 1000, must be > 0
 
 **Invalid Combinations:**
+
 ```json
 // FAILS: Both training_task_id AND dataset_id
 {
@@ -284,37 +271,7 @@ curl -X GET "http://localhost:8000/v1/evaluation/{task_id}/status"
 }
 ```
 
-## Metrics Interpretation
-
-### Quality Grades
-
-- **Excellent**: Ratio ≥ 2.0 and Correlation ≥ 0.7
-- **Good**: Ratio ≥ 1.5 and Correlation ≥ 0.5  
-- **Fair**: Ratio ≥ 1.2 and Correlation ≥ 0.3
-- **Poor**: Below Fair thresholds
-
-### Training Success Criteria
-
-Training is considered successful if:
-1. **Positive similarities > negative similarities**
-2. **Similarity ratio > 1.2**
-3. **Spearman correlation > 0.3** (for ranking quality)
-
-### Similarity Ratio Interpretation
-
-- **> 2.0**: Excellent discrimination - model clearly distinguishes positive from negative
-- **1.5-2.0**: Good discrimination - solid performance
-- **1.2-1.5**: Acceptable discrimination - meets minimum requirements
-- **< 1.2**: Poor discrimination - training likely unsuccessful
-
-### Spearman Correlation Interpretation
-
-- **> 0.7**: Excellent ranking quality - model ranks examples very well
-- **0.5-0.7**: Good ranking quality - reliable ordering
-- **0.3-0.5**: Fair ranking quality - basic ordering capability
-- **< 0.3**: Poor ranking quality - inconsistent ordering
-
-### NEW: Baseline Comparison Metrics
+### Baseline Comparison Metrics
 
 When using `baseline_model_tag`, you get additional improvement metrics:
 
@@ -327,21 +284,14 @@ When using `baseline_model_tag`, you get additional improvement metrics:
 }
 ```
 
-**Interpretation:**
-- **`ratio_improvement > 0.2`**: Significant improvement
-- **`ratio_improvement > 0.1`**: Noticeable improvement  
-- **`ratio_improvement > 0.05`**: Marginal improvement
-- **`ratio_improvement < 0`**: Degradation (worse than baseline)
-
 ## Configuration
 
-Key constants in `evaluation.py`:
+Key constants are now managed through the central configuration system:
 
 ```python
-TRAINING_SUCCESS_THRESHOLD = 1.2  # Minimum ratio for success
-DEFAULT_MAX_SAMPLES = 1000        # Default sample limit
-DEFAULT_RANDOM_SEED = 42          # For reproducible sampling
-MIN_CORRELATION_THRESHOLD = 0.3   # Minimum correlation for success
+# From vectorize.config import settings
+DEFAULT_MAX_SAMPLES = settings.evaluation_default_max_samples  # Default: 1000
+DEFAULT_RANDOM_SEED = settings.evaluation_default_random_seed  # Default: 42
 ```
 
 ### Environment Variables
@@ -362,7 +312,7 @@ The module provides comprehensive error handling:
 - **`InvalidDatasetIdError`**: Invalid dataset UUIDs or training task IDs
 - **`TrainingDatasetNotFoundError`**: Dataset files not found or training task has no validation dataset
 - **`EvaluationTaskNotFoundError`**: Evaluation task not found
-- **NEW: `ValueError`**: Invalid parameter combinations (both `dataset_id` and `training_task_id` provided)
+- **`ValueError`**: Invalid parameter combinations (both `dataset_id` and `training_task_id` provided)
 
 ### Common Error Scenarios
 
@@ -400,42 +350,6 @@ The module provides comprehensive error handling:
 }
 ```
 
-## Performance Considerations
-
-### Optimizations
-
-1. **Vectorized Similarity Computation**: Uses numpy operations instead of loops
-2. **Batch Encoding**: Encodes all texts at once for efficiency
-3. **Memory Management**: Handles large datasets efficiently
-4. **Sample Limiting**: Supports limiting evaluation samples for speed
-5. **NEW: Background Processing**: Async evaluation prevents API timeouts
-6. **NEW: Progress Tracking**: Real-time progress updates during evaluation
-
-### Recommended Limits
-
-- **Small models (< 100MB)**: Up to 10,000 samples
-- **Medium models (100MB-500MB)**: 1,000-5,000 samples for reasonable performance
-- **Large models (> 500MB)**: 500-1,000 samples recommended
-- **Production**: Use background evaluation for all large datasets
-
-### Performance Tips
-
-```python
-# For faster evaluation, limit samples
-{
-  "max_samples": 500,  # Instead of default 1000
-  "model_tag": "...",
-  "training_task_id": "..."
-}
-
-# For comprehensive evaluation, use default or higher
-{
-  "max_samples": 2000,  # More thorough but slower
-  "model_tag": "...",
-  "training_task_id": "..."
-}
-```
-
 ## Testing
 
 ### Run Evaluation Tests
@@ -456,7 +370,7 @@ pytest -m evaluation -v
 
 - **Unit tests**: Individual component testing (`TestEvaluationMetrics`, `TestTrainingEvaluator`)
 - **Integration tests**: End-to-end evaluation with database integration (`TestEvaluationIntegration`)
-- **NEW: Service integration tests**: Training-evaluation integration (`test_resolve_dataset_with_training_task_id`)
+- **Service integration tests**: Training-evaluation integration (`test_resolve_dataset_with_training_task_id`)
 - **Validation tests**: Dataset validation edge cases
 
 ### Test Data Requirements
@@ -472,7 +386,7 @@ pytest tests/evaluation/ -m integration -v
 
 ### Complete Training → Evaluation Pipeline
 
-1. **Train Model**:
+1. **Train Model:**
    ```json
    POST /training/train
    {
@@ -485,7 +399,7 @@ pytest tests/evaluation/ -m integration -v
 
 2. **Get Training Task ID** from response Location header
 
-3. **Evaluate Trained Model**:
+3. **Evaluate Trained Model:**
    ```json
    POST /evaluation/evaluate
    {
@@ -495,16 +409,16 @@ pytest tests/evaluation/ -m integration -v
    }
    ```
 
-4. **Monitor Progress**: `GET /evaluation/{task_id}/status`
+4. **Monitor Progress:** `GET /evaluation/{task_id}/status`
 
-5. **Analyze Results**: Review metrics and baseline comparison
+5. **Analyze Results:** Review metrics and baseline comparison
 
 ## Dependencies
 
 ### Core Dependencies
 
 - **sentence-transformers**: Model loading and inference
-- **scikit-learn**: Cosine similarity computation  
+- **scikit-learn**: Cosine similarity computation
 - **scipy**: Spearman correlation calculations
 - **pandas**: Dataset manipulation and loading
 - **numpy**: Numerical operations and vectorization
@@ -533,46 +447,9 @@ pip install -e ".[evaluation]"
 pip install -e ".[all]"
 ```
 
-## Recent Updates
-
-### Version 2.0 Features
-
-- **Training-Evaluation Integration**: Use `training_task_id` to automatically use validation datasets from training
-- **Enhanced Baseline Comparison**: Detailed improvement metrics and comparison analysis
-- **Background Processing**: Async evaluation with progress tracking
-- **Smart Dataset Resolution**: Automatic dataset path resolution from training tasks
-- **Comprehensive Error Handling**: Detailed error messages and validation
-- **Performance Optimizations**: Better memory management and batch processing
-- **Extended Test Coverage**: Integration tests for training-evaluation workflow
-
-### Migration Guide
-
-**From v1.x to v2.0:**
-
-Old API (still supported):
-```json
-{
-  "model_tag": "my-model",
-  "dataset_id": "uuid-of-dataset"
-}
-```
-
-New API (recommended):
-```json
-{
-  "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
-  "training_task_id": "7ef54ba0-2d87-4864-8360-81de8035369a",
-  "baseline_model_tag": "original-model"
-}
-```
-
 ## Related Documentation
 
-- **[Training Module](README_TRAINING.md)**: SBERT training pipeline
-- **[API Documentation](docs/api-endpoints.plantuml)**: Complete API reference
-- **[Use Cases](docs/use-cases-evaluation.plantuml)**: Evaluation workflow diagrams
-- **[Model Upload](README.md#model-upload)**: How to upload and manage models
-
----
-
-**Ready to evaluate your fine-tuned models with precision and ease!**
+- **[Training Module](training.md)**: SBERT training pipeline
+- **[API Documentation](../diagrams/src/api-endpoints.plantuml)**: Complete API reference
+- **[Use Cases](../diagrams/src/use-cases-evaluation.plantuml)**: Evaluation workflow diagrams
+- **[Model Upload](upload.md)**: How to upload and manage models
