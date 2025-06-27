@@ -4,12 +4,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .repository import get_tasks_db
 from .schemas import TaskFilters
-from .tasks_model import TasksModel
+from .tasks_model import TaskModel
 
 __all__ = ["get_tasks_svc"]
 
 
-async def get_tasks_svc(db: AsyncSession, params: TaskFilters) -> list[TasksModel]:
+async def get_tasks_svc(db: AsyncSession, params: TaskFilters) -> list[TaskModel]:
     """Retrieve and validate tasks from the database.
 
     This service function acts as an intermediary between the API router and the
@@ -28,4 +28,4 @@ async def get_tasks_svc(db: AsyncSession, params: TaskFilters) -> list[TasksMode
         timestamps, and task type.
     """
     rows = await get_tasks_db(db, params)
-    return [TasksModel.model_validate(r, from_attributes=True) for r in rows]
+    return [TaskModel.model_validate(r, from_attributes=True) for r in rows]

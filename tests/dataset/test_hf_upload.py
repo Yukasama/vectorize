@@ -26,13 +26,13 @@ class TestHuggingFaceUpload:
         "dataset_tag,expected_splits,expected_subsets",
         [
             ("Intel/orca_dpo_pairs", ["train"], ["default"]),
-            # (
-            #     "argilla/ultrafeedback-binarized-preferences-cleaned",
-            #     ["train"],
-            #     ["default"],
-            # ),
-            # ("Dahoas/full-hh-rlhf", ["train"], ["default"]),
-            # ("argilla/distilabel-intel-orca-dpo-pairs", ["train"], ["default"]),
+            (
+                "argilla/ultrafeedback-binarized-preferences-cleaned",
+                ["train"],
+                ["default"],
+            ),
+            ("Dahoas/full-hh-rlhf", ["train"], ["default"]),
+            ("argilla/distilabel-intel-orca-dpo-pairs", ["train"], ["default"]),
         ],
     )
     @staticmethod
