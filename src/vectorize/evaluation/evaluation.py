@@ -15,12 +15,10 @@ import numpy as np
 from loguru import logger
 from sentence_transformers import SentenceTransformer
 
+from ..config import settings
 from .utils import DatasetValidator, SimilarityCalculator
 
 __all__ = ["EvaluationMetrics", "TrainingEvaluator"]
-
-DEFAULT_MAX_SAMPLES = 1000
-DEFAULT_RANDOM_SEED = 42
 
 
 class EvaluationMetrics:
@@ -213,7 +211,9 @@ class TrainingEvaluator:
         df = DatasetValidator.validate_dataset(dataset_path)
 
         if max_samples and len(df) > max_samples:
-            df = df.sample(n=max_samples, random_state=DEFAULT_RANDOM_SEED)
+            df = df.sample(
+                n=max_samples, random_state=settings.evaluation_default_random_seed
+            )
             logger.debug("Limited evaluation to max samples", max_samples=max_samples)
 
         model = self._load_model()
