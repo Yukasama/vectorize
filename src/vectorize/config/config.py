@@ -19,6 +19,7 @@ with Path.open(_app_config_path, "rb") as f:
     _dataset_config = _app_config.get("dataset", {})
     _model_config = _app_config.get("model", {})
     _inference_config = _app_config.get("inference", {})
+    _evaluation_config = _app_config.get("evaluation", {})
     _db_config = _app_config.get("db", {})
     _log_config = _app_config.get("logging", {})
 
@@ -181,6 +182,17 @@ class Settings(BaseSettings):
     rotation: str = Field(
         default=_log_config.get("rotation"),
         description="Log rotation strategy (time or size-based).",
+    )
+
+    # Evaluation configuration
+    evaluation_default_max_samples: int = Field(
+        default=_evaluation_config.get("default_max_samples", 1000),
+        description="Default maximum number of samples used for evaluation.",
+    )
+
+    evaluation_default_random_seed: int = Field(
+        default=_evaluation_config.get("default_random_seed", 42),
+        description="Default random seed for reproducible evaluation sampling.",
     )
 
     @computed_field
