@@ -55,21 +55,21 @@ The evaluation system computes various metrics to assess how well a trained sent
    - Handles HuggingFace cache structure
    - Recursive model file discovery
 
-## Dataset Resolution & Splitting Logic
-
-### How Dataset Resolution Works
+## Dataset Resolution
 
 The evaluation system supports **two ways** to specify which dataset to use:
 
-#### **Method 1: Training Task ID (`training_task_id`)**
+### Method 1: Training Task ID (`training_task_id`)
 
-- **Recommended approach** - uses the exact validation dataset from training
-- When you train a model, the system automatically:
-  1. **With explicit `val_dataset_id`**: Uses that dataset as validation
-  2. **Without `val_dataset_id`**: Auto-splits the first training dataset (90% train, 10% validation)
-- The `training_task_id` points to this validation dataset automatically
+**Recommended approach** - uses the exact validation dataset from training
 
-#### **Method 2: Explicit Dataset ID (`dataset_id`)**
+When you train a model, the system automatically:
+1. **With explicit `val_dataset_id`**: Uses that dataset as validation
+2. **Without `val_dataset_id`**: Auto-splits the first training dataset (90% train, 10% validation)
+
+The `training_task_id` points to this validation dataset automatically.
+
+### Method 2: Explicit Dataset ID (`dataset_id`)
 
 - Uses any specific dataset from the database
 - Useful for evaluating on different datasets than training
@@ -78,43 +78,33 @@ The evaluation system supports **two ways** to specify which dataset to use:
 ### Dataset Splitting in Training
 
 **Scenario 1: Multiple Datasets with Validation**
-
 ```json
-// Training Request
 {
   "train_dataset_ids": ["dataset1-uuid", "dataset2-uuid"],
   "val_dataset_id": "validation-dataset-uuid"
 }
 ```
-
 → **Result**: `validation-dataset-uuid` becomes the validation dataset for evaluation
 
 **Scenario 2: Multiple Datasets without Validation**
-
 ```json
-// Training Request
 {
   "train_dataset_ids": ["dataset1-uuid", "dataset2-uuid"]
 }
 ```
-
 → **Result**: System concatenates all datasets, then splits 90% train / 10% validation
 
 **Scenario 3: Single Dataset without Validation**
-
 ```json
-// Training Request
 {
   "train_dataset_ids": ["single-dataset-uuid"]
 }
 ```
-
 → **Result**: Auto-split of `single-dataset-uuid` → 90% train / 10% validation
 
 ### Dataset Path Examples
 
 **Training creates these paths:**
-
 - Explicit validation: `data/datasets/my_validation_dataset.jsonl`
 - Auto-split validation: `data/datasets/my_training_dataset.jsonl#auto-split`
 
@@ -162,7 +152,7 @@ print(f"Baseline ratio: {baseline_metrics.similarity_ratio:.3f}")
 
 ### 3. API Usage - Training Task Integration
 
-**Evaluate using training's validation dataset**
+**Evaluate using training's validation dataset:**
 
 ```bash
 # Evaluate using training task validation dataset
@@ -196,11 +186,11 @@ curl -X POST "http://localhost:8000/evaluate" \
 curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ```
 
-## Complete JSON API Reference
+## JSON API Reference
 
 ### Evaluation Request Options
 
-**Option 1: Using Training Task ID**
+**Using Training Task ID (Recommended):**
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -209,8 +199,7 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 }
 ```
 
-**Option 2: Using Explicit Dataset ID**
-
+**Using Explicit Dataset:**
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
@@ -219,41 +208,19 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 }
 ```
 
-**Option 3: With Baseline Comparison (Training Task)**
-
+**With Baseline Comparison:**
 ```json
 {
   "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
   "training_task_id": "7ef54ba0-2d87-4864-8360-81de8035369a",
   "baseline_model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
   "max_samples": 1000
-}
-```
-
-**Option 4: With Baseline Comparison (Explicit Dataset)**
-
-```json
-{
-  "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
-  "dataset_id": "0a9d5e87-e497-4737-9829-2070780d10df",
-  "baseline_model_tag": "models--sentence-transformers--all-MiniLM-L6-v2",
-  "max_samples": 1000
-}
-```
-
-**Option 5: Minimal Evaluation**
-
-```json
-{
-  "model_tag": "trained_models/my-model-finetuned-20250615-213447-7ef54ba0",
-  "training_task_id": "7ef54ba0-2d87-4864-8360-81de8035369a"
 }
 ```
 
 ### Response Format
 
 **Success Response (202 Accepted):**
-
 ```json
 {
   "status_code": 202,
@@ -264,7 +231,6 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ```
 
 **Status Response:**
-
 ```json
 {
   "task_id": "uuid",
@@ -281,12 +247,10 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
 ### Parameter Rules
 
 **Required:**
-
 - `model_tag`: Tag of the model to evaluate (always required)
 - **Exactly one of:** `training_task_id` OR `dataset_id` (never both!)
 
 **Optional:**
-
 - `baseline_model_tag`: For comparison evaluation
 - `max_samples`: Default is 1000, must be > 0
 
@@ -306,6 +270,8 @@ curl -X GET "http://localhost:8000/evaluation/{task_id}/status"
   "baseline_model_tag": "..."
 }
 ```
+
+### Baseline Comparison Metrics
 
 When using `baseline_model_tag`, you get additional improvement metrics:
 
@@ -351,7 +317,6 @@ The module provides comprehensive error handling:
 ### Common Error Scenarios
 
 **422 Unprocessable Content:**
-
 ```json
 {
   "detail": [
@@ -365,7 +330,6 @@ The module provides comprehensive error handling:
 ```
 
 **404 Model Not Found:**
-
 ```json
 {
   "detail": "Model not found: trained_models/nonexistent-model"
@@ -373,7 +337,6 @@ The module provides comprehensive error handling:
 ```
 
 **400 Bad Request (Invalid Combination):**
-
 ```json
 {
   "detail": "Cannot specify both dataset_id and training_task_id. Use dataset_id for explicit dataset or training_task_id to use the validation dataset from that training."
@@ -381,7 +344,6 @@ The module provides comprehensive error handling:
 ```
 
 **404 Training Task Has No Validation Dataset:**
-
 ```json
 {
   "detail": "Training task 7ef54ba0-2d87-4864-8360-81de8035369a has no validation dataset path"
@@ -424,8 +386,7 @@ pytest tests/evaluation/ -m integration -v
 
 ### Complete Training → Evaluation Pipeline
 
-1. **Train Model**:
-
+1. **Train Model:**
    ```json
    POST /training/train
    {
@@ -438,8 +399,7 @@ pytest tests/evaluation/ -m integration -v
 
 2. **Get Training Task ID** from response Location header
 
-3. **Evaluate Trained Model**:
-
+3. **Evaluate Trained Model:**
    ```json
    POST /evaluation/evaluate
    {
@@ -449,9 +409,9 @@ pytest tests/evaluation/ -m integration -v
    }
    ```
 
-4. **Monitor Progress**: `GET /evaluation/{task_id}/status`
+4. **Monitor Progress:** `GET /evaluation/{task_id}/status`
 
-5. **Analyze Results**: Review metrics and baseline comparison
+5. **Analyze Results:** Review metrics and baseline comparison
 
 ## Dependencies
 
@@ -493,5 +453,3 @@ pip install -e ".[all]"
 - **[API Documentation](../diagrams/src/api-endpoints.plantuml)**: Complete API reference
 - **[Use Cases](../diagrams/src/use-cases-evaluation.plantuml)**: Evaluation workflow diagrams
 - **[Model Upload](upload.md)**: How to upload and manage models
-
----
