@@ -108,8 +108,7 @@ async def process_github_model_bg(  # noqa: D417
         task_id (UUID): The unique identifier of the upload task.
 
     Raises:
-        Exception: If an error occurs during model processing or database
-        operations.
+        Exception: If an error occurs during model processing or database operations.
     """
     key = f"{owner}/{repo}@{branch}"
 

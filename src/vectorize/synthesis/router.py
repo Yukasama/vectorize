@@ -6,8 +6,6 @@ from uuid import UUID
 from fastapi import (
     APIRouter,
     Depends,
-    File,
-    Form,
     HTTPException,
     Query,
     Request,
@@ -38,11 +36,9 @@ router = APIRouter(tags=["Synthesis"])
 
 
 @router.post("/media", status_code=status.HTTP_202_ACCEPTED)
-async def upload_media_for_synthesis(
+async def upload_media_for_synthesis(  # noqa: PLR0912
     request: Request,
     db: Annotated[AsyncSession, Depends(get_session)],
-    dataset_id: Annotated[UUID | None, Form()] = None,
-    files: Annotated[list[UploadFile] | None, File()] = None,
 ) -> dict[str, str | UUID | int]:
     """Upload media files to extract text and create synthetic datasets.
 
@@ -51,12 +47,40 @@ async def upload_media_for_synthesis(
     Args:
         request: HTTP request object
         db: Database session
-        dataset_id: Optional existing dataset ID to use for synthesis
-        files: List of media files (images or PDFs) to process
 
     Returns:
         Dictionary with task information and status URL
     """
+    form = await request.form()
+
+    dataset_id = None
+    if "dataset_id" in form:
+        dataset_id_value = form["dataset_id"]
+        if isinstance(dataset_id_value, str):
+            try:
+                dataset_id = UUID(dataset_id_value)
+            except (ValueError, TypeError) as e:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Invalid dataset_id format. Must be a valid UUID.",
+                ) from e
+        else:
+            raise HTTPException(
+                status_code=422,
+                detail="dataset_id must be a string value, not a file.",
+            )
+
+    files = []
+    for key, value in form.multi_items():
+        if (
+            key == "files"
+            and isinstance(value, UploadFile)
+            and value.filename
+            and value.size
+            and value.size > 0
+        ):
+            files.append(value)
+
     if not files and dataset_id is None:
         raise HTTPException(
             status_code=422,
@@ -65,7 +89,7 @@ async def upload_media_for_synthesis(
 
     task = await save_synthesis_task(db, SynthesisTask())
 
-    if dataset_id:
+    if dataset_id and not files:
         dataset_db = await get_dataset_db(db, dataset_id)
         process_existing_dataset_background_bg.send(str(task.id), str(dataset_db.id))
 
@@ -90,11 +114,10 @@ async def upload_media_for_synthesis(
     file_contents = []
     if files:
         for file in files:
-            if not file.filename:
-                continue
             try:
                 content = await file.read()
-                file_contents.append((file.filename, content))
+                if content:
+                    file_contents.append((file.filename, content))
             except Exception as e:
                 logger.error(f"Error reading file {file.filename}: {e}")
             finally:
@@ -106,7 +129,7 @@ async def upload_media_for_synthesis(
             detail="No valid files provided or all files were empty.",
         )
 
-    process_file_contents_background_bg.send(str(task.id), file_contents, None)
+    process_file_contents_background_bg.send(str(task.id), file_contents)
 
     logger.info(
         "Synthesis task created, starting background processing.",

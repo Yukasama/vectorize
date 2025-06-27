@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from vectorize.common.task_status import TaskStatus
+from vectorize.task.task_type import TaskType
 
 __all__ = ["TaskFilters"]
 
@@ -14,7 +15,10 @@ class TaskFilters(BaseModel):
         None, ge=1, le=100, description="Maximum number of records to return"
     )
     offset: int | None = Field(None, ge=0, description="Number of records to skip")
-    completed: bool | None = Field(None, description="Filter by completion status")
+    tag: str | None = Field(None, description="Filter tasks by specific tag")
+    task_types: list[TaskType] | None = Field(
+        None, description="Filter tasks by specific type (e.g., upload, synthesis)"
+    )
     statuses: list[TaskStatus] | None = Field(
         None, description="Filter by specific task statuses"
     )

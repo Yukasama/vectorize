@@ -5,11 +5,11 @@ from .repository import get_tasks_db
 from .router import router
 from .schemas import TaskFilters
 from .service import get_tasks_svc
-from .tasks_model import TasksModel
+from .tasks_model import TaskModel
 
 __all__ = [
     "TaskFilters",
-    "TasksModel",
+    "TaskModel",
     "build_query",
     "get_tasks_db",
     "get_tasks_svc",

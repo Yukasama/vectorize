@@ -1,4 +1,4 @@
-"""Model loader for saved AI-Models."""
+"""Model loader for saved AI Models."""
 
 from functools import lru_cache
 from pathlib import Path

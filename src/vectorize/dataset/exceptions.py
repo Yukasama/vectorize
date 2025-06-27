@@ -21,7 +21,7 @@ __all__ = [
 ]
 
 
-_ALLOWED_EXTENSIONS = ", ".join(settings.allowed_extensions)
+_ALLOWED_EXTENSIONS = ", ".join(settings.dataset_allowed_extensions)
 
 
 class FileTooLargeError(AppError):

@@ -1,14 +1,17 @@
 """Tasks repository."""
 
 from collections.abc import Sequence
+from typing import Any
 
 from loguru import logger
+from sqlalchemy import select, union_all
 from sqlmodel import text
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.dataset.task_model import UploadDatasetTask
 from vectorize.evaluation.models import EvaluationTask
 from vectorize.synthesis.models import SynthesisTask
+from vectorize.task.task_type import TaskType
 from vectorize.training.models import TrainingTask
 from vectorize.upload.models import UploadTask
 
@@ -35,49 +38,84 @@ async def get_tasks_db(db: AsyncSession, params: TaskFilters) -> Sequence:
     """
     status_set = set(params.statuses or [])
 
-    upload_q = build_query(
-        UploadTask,
-        "model_upload",
-        completed=params.completed,
-        statuses=status_set,
-        hours=params.within_hours,
-    )
-    synth_q = build_query(
-        SynthesisTask,
-        "synthesis",
-        completed=params.completed,
-        statuses=status_set,
-        hours=params.within_hours,
-    )
-    dataset_q = build_query(
-        UploadDatasetTask,
-        "dataset_upload",
-        completed=params.completed,
-        statuses=status_set,
-        hours=params.within_hours,
-    )
-    training_q = build_query(
-        TrainingTask,
-        "training",
-        completed=params.completed,
-        statuses=status_set,
-        hours=params.within_hours,
-    )
-    evaluation_q = build_query(
-        EvaluationTask,
-        "evaluation",
-        completed=params.completed,
-        statuses=status_set,
-        hours=params.within_hours,
-    )
+    task_types: list[TaskType] = params.task_types or [
+        TaskType.MODEL_UPLOAD,
+        TaskType.SYNTHESIS,
+        TaskType.DATASET_UPLOAD,
+        TaskType.TRAINING,
+        TaskType.EVALUATION,
+    ]
+
+    queries = []
+    for tt in task_types:
+        if tt == TaskType.MODEL_UPLOAD:
+            queries.append(
+                build_query(
+                    UploadTask,
+                    "model_upload",
+                    statuses=status_set,
+                    hours=params.within_hours,
+                )
+            )
+        elif tt == TaskType.SYNTHESIS:
+            queries.append(
+                build_query(
+                    SynthesisTask,
+                    "synthesis",
+                    statuses=status_set,
+                    hours=params.within_hours,
+                )
+            )
+        elif tt == TaskType.DATASET_UPLOAD:
+            queries.append(
+                build_query(
+                    UploadDatasetTask,
+                    "dataset_upload",
+                    statuses=status_set,
+                    hours=params.within_hours,
+                )
+            )
+        elif tt == TaskType.TRAINING:
+            queries.append(
+                build_query(
+                    TrainingTask,
+                    "training",
+                    statuses=status_set,
+                    hours=params.within_hours,
+                )
+            )
+        elif tt == TaskType.EVALUATION:
+            queries.append(
+                build_query(
+                    EvaluationTask,
+                    "evaluation",
+                    statuses=status_set,
+                    hours=params.within_hours,
+                )
+            )
+
+    if not queries:
+        return []
+
+    combined = queries[0] if len(queries) == 1 else union_all(*queries)
+    tasks_sq = combined.subquery("tasks_sq")
+    stmt = select(tasks_sq)
+
+    bind_params: dict[str, Any] = {}
+    if params.tag:
+        stmt = stmt.where(tasks_sq.c.tag == text(":tag"))
+        bind_params["tag"] = params.tag
 
     stmt = (
-        upload_q.union_all(synth_q, dataset_q, training_q, evaluation_q)
-        .order_by(text("created_at DESC"))
+        stmt.order_by(tasks_sq.c.created_at.desc())
         .limit(params.limit)
         .offset(params.offset or 0)
     )
-    result = await db.exec(stmt)  # type: ignore
+
+    if bind_params:
+        result = await db.exec(stmt, params=bind_params)  # type: ignore[arg-type]
+    else:
+        result = await db.exec(stmt)  # type: ignore[arg-type]
 
     rows = result.all()
     logger.debug("Tasks fetched from DB", count=len(rows), params=str(params))

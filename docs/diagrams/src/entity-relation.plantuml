@@ -1,4 +1,4 @@
-@startuml ER-Diagram für die SQLite Datenbank
+@startuml entity-relation
 
 enum TaskStatus {
   queued
