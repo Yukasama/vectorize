@@ -318,13 +318,6 @@ When using `baseline_model_tag`, you get additional improvement metrics:
 }
 ```
 
-**Interpretation:**
-
-- **`ratio_improvement > 0.2`**: Significant improvement
-- **`ratio_improvement > 0.1`**: Noticeable improvement
-- **`ratio_improvement > 0.05`**: Marginal improvement
-- **`ratio_improvement < 0`**: Degradation (worse than baseline)
-
 ## Configuration
 
 Key constants are now managed through the central configuration system:
