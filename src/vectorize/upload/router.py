@@ -103,7 +103,6 @@ async def load_model_huggingface(
 async def load_model_github(
     data: GitHubModelRequest,
     request: Request,
-    background_tasks: BackgroundTasks,
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
     """Upload a Github model by url.

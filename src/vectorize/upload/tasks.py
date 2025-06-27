@@ -90,6 +90,7 @@ async def process_huggingface_model_bg(
                 db, task_uid, TaskStatus.FAILED, error_msg=str(e)
             )
 
+
 @dramatiq.actor(max_retries=3)
 async def process_github_model_bg(  # noqa: D417
     owner: str, repo: str, branch: str, task_id: str
