@@ -1,6 +1,6 @@
 [app.server]
 # host_binding = "0.0.0.0"
-# port = 8000
+port = 8000
 version = "0.1.0"
 reload = true
 
@@ -14,8 +14,13 @@ pool_pre_ping = true
 pool_recycle = 300
 pool_timeout = 30
 
+[app.logging]
+rotation = "10 MB"
+log_dir = "log"
+log_file = "app.log"
+
 [app.dataset]
-dataset_upload_dir = "data/datasets"
+upload_dir = "data/datasets"
 allowed_extensions = ["csv", "json", "jsonl", "xml", "xlsx", "xls"]
 max_upload_size = 53687091200 # 50 GB
 max_filename_length = 255
@@ -67,16 +72,11 @@ hf_allowed_schemas = [
 ]
 
 [app.model]
-model_upload_dir = "data/models"
-max_upload_size = 53687091200    # 50 GB
+upload_dir = "data/models"
+max_upload_size = 53687091200 # 50 GB
 
 [app.inference]
 device = "cpu"
-
-[app.logging]
-rotation = "10 MB"
-log_dir = "log"
-log_file = "app.log"
 
 [app.evaluation]
 default_max_samples = 1000

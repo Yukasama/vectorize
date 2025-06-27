@@ -1,4 +1,4 @@
-@startuml endpoint-diagram
+@startuml api-endpoints
 actor User
 
 rectangle "Backend (FastAPI)" {

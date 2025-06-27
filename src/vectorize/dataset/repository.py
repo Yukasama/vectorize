@@ -180,7 +180,6 @@ async def update_upload_task_status(
         db: The asynchronous database session.
         task_id: The unique identifier of the upload task.
         status: The new status to set for the task.
-        dataset_id: An optional UUID of the dataset associated with the task.
         error_msg: An optional error message if the task failed.
     """
     result = await db.exec(

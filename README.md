@@ -90,6 +90,9 @@ docker compose up vectorize dramatiq_worker redis caddy
 
 # Use if the Docker image is not up to date
 docker compose up vectorize dramatiq_worker redis caddy --build
+
+# Use if you also want to start the Frontend
+docker compose up vectorize dramatiq_worker redis caddy vectorize_web
 ```
 
 ### Run linter

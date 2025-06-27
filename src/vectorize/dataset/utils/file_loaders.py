@@ -183,7 +183,7 @@ def _detect_delimiter(path: Path) -> str:
     with path.open(newline="", encoding="utf-8", errors="ignore") as csvfile:
         sample: Final = csvfile.read(1024)
         if not sample:
-            return settings.default_delimiter
+            return settings.dataset_default_delimiter
 
         delimiter_counts = {d: sample.count(d) for d in _DELIMITERS}
         most_common = max(delimiter_counts, key=lambda d: delimiter_counts[d])
@@ -195,7 +195,7 @@ def _detect_delimiter(path: Path) -> str:
             dialect = Sniffer().sniff(sample)
             return dialect.delimiter
         except Exception:
-            return settings.default_delimiter
+            return settings.dataset_default_delimiter
 
 
 def _detect_encoding(path: Path) -> str:

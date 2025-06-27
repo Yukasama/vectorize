@@ -1,4 +1,4 @@
-@startuml Use Cases für das Abfragen von Embeddings
+@startuml use-cases-embeddings
 left to right direction
 actor Nutzer
 

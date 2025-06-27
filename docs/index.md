@@ -4,7 +4,7 @@ Welcome to the Vectorize documentation! This is an AWP Text Embedding Service de
 
 ## Quick Start
 
-To get started with Vectorize, check out our [Installation Guide](setup/installation.md).
+To get started with Vectorize, check out our [Installation Guide](installation.md).
 
 ## Features
 

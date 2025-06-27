@@ -2,9 +2,7 @@
 
 This diagram shows the use cases for model training and evaluation processes in the Vectorize system.
 
-```plantuml
---8<-- "docs/use-cases-processes.plantuml"
-```
+![file](out/use-cases-processes.svg)
 
 ## Training Management
 

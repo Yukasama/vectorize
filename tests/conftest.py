@@ -94,7 +94,7 @@ def dramatiq_worker(redis_container: RedisContainer) -> Generator[None]:  # noqa
 
 
 @pytest.fixture(scope="session")
-async def session(cleanup_test_db: Generator[None]) -> AsyncGenerator[AsyncSession]:  # noqa: ARG001
+async def session() -> AsyncGenerator[AsyncSession]:
     """Create a test database engine.
 
     Returns:

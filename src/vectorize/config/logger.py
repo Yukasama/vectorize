@@ -34,7 +34,7 @@ def config_logger() -> None:
     if not is_production:
         logger.add(
             settings.log_path,
-            rotation=settings.rotation,
+            rotation=settings.log_rotation,
             format=_development_format,
             enqueue=True,
             backtrace=False,

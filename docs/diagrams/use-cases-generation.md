@@ -2,9 +2,7 @@
 
 This diagram illustrates the synthetic data generation capabilities in the Vectorize system.
 
-```plantuml
---8<-- "docs/use-cases-generation.plantuml"
-```
+![file](out/use-cases-generation.svg)
 
 ## Synthetic Data Generation
 

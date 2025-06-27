@@ -1,4 +1,4 @@
-@startuml Use Cases für die Generierung von synthetischen Daten
+@startuml use-cases-generation
 left to right direction
 actor Nutzer
 
