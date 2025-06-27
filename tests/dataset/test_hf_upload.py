@@ -2,16 +2,14 @@
 
 """Tests for dataset upload from Hugging Face."""
 
-import asyncio
 import json
-import time
 from pathlib import Path
 
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from vectorize.common.task_status import TaskStatus
+from tests.wait_for_task import wait_for_task
 from vectorize.config.config import settings
 
 _TIMEOUT = 45  # seconds
@@ -53,7 +51,9 @@ class TestHuggingFaceUpload:
         assert response.status_code == status.HTTP_201_CREATED
 
         task_id = response.headers["Location"].split("/")[-1]
-        task_data = await wait_for_task_completion(client, task_id)
+        task_data = await wait_for_task(
+            client, task_id, f"/datasets/huggingface/status/{task_id}"
+        )
 
         assert task_data is not None, f"Task {task_id} did not complete"
         assert task_data["id"] == task_id
@@ -111,25 +111,6 @@ class TestHuggingFaceUpload:
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "Location" not in response.headers
-
-
-async def wait_for_task_completion(
-    client: TestClient, task_id: str, poll_interval: float = 1.0
-) -> dict | None:
-    """Poll task status until completion or timeout."""
-    start_time = time.time()
-
-    while time.time() - start_time < _TIMEOUT:
-        status_response = client.get(f"/datasets/huggingface/status/{task_id}")
-
-        if status_response.status_code == status.HTTP_200_OK:
-            data = status_response.json()
-            if data["task_status"] in {TaskStatus.DONE, TaskStatus.FAILED}:
-                return data
-
-        await asyncio.sleep(poll_interval)
-
-    raise TimeoutError(f"Task {task_id} did not complete within {_TIMEOUT} seconds")
 
 
 def _validate_jsonl_structure(file_path: Path, expected_columns: set[str]) -> None:

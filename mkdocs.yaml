@@ -100,7 +100,6 @@ nav:
       - Entity Relationship: diagrams/entity-relation.md
   - Use Cases:
       - Datasets Management: diagrams/use-cases-datasets.md
-      - Model Training & Evaluation: diagrams/use-cases-processes.md
       - Model Upload: diagrams/use-cases-uploads.md
       - Embeddings: diagrams/use-cases-embeddings.md
       - Data Generation: diagrams/use-cases-generation.md
