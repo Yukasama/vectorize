@@ -478,7 +478,8 @@ class TrainingOrchestrator:
         """
         parent_model = await get_ai_model_db(self.db, train_request.model_tag)
         tag_time = Path(output_dir).name
-        new_model_tag = str(Path(output_dir).relative_to("data/models"))
+        # Use just the directory name as tag, consistent with API URL structure
+        new_model_tag = Path(output_dir).name
 
         new_model = AIModel(
             name=f"Fine-tuned: {parent_model.name} {tag_time}",

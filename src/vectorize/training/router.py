@@ -47,7 +47,10 @@ async def train_model(
     if not model:
         raise ModelNotFoundError(train_request.model_tag)
 
-    if model.model_tag.startswith("trained_models/"):
+    if (
+        model.model_tag.startswith(("trained_models/", "models/"))
+        or "finetuned" in model.model_tag
+    ):
         filesystem_model_tag = model.model_tag
     else:
         filesystem_model_tag = model.model_tag.replace("_", "--")
@@ -66,8 +69,9 @@ async def train_model(
     )
     tag_time = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     task = TrainingTask(id=uuid4())
+    clean_model_name = model.model_tag.replace("models--", "").replace("--", "-")
     output_dir = (
-        f"data/models/trained_models/{model.model_tag}-finetuned-"
+        f"data/models/{clean_model_name}-finetuned-"
         f"{tag_time}-{str(task.id)[:8]}"
     )
     logger.debug(
