@@ -1,4 +1,4 @@
-@startuml Use Cases für SBERT Model Training
+@startuml use-cases-training
 left to right direction
 actor Nutzer
 
