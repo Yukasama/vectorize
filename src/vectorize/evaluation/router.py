@@ -40,7 +40,6 @@ async def evaluate_model(
     Returns:
         202 Accepted with Location header pointing to task status
     """
-    # Validate dataset_id if provided
     if evaluation_request.dataset_id:
         try:
             UUID(evaluation_request.dataset_id)
@@ -50,7 +49,6 @@ async def evaluate_model(
     task = EvaluationTask(id=uuid4())
     await save_evaluation_task(db, task)
 
-    # Start evaluation task using Dramatiq
     run_evaluation_bg.send(
         evaluation_request.model_dump(),
         str(task.id),
