@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from vectorize.common.task_status import TaskStatus
+from vectorize.task.task_status import TaskStatus
 
 __all__ = ["TaskModel"]
 

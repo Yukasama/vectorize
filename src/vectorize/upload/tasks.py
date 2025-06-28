@@ -14,8 +14,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.ai_model import AIModel
 from vectorize.ai_model.models import ModelSource
 from vectorize.ai_model.repository import save_ai_model_db
-from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import engine
+from vectorize.task.task_status import TaskStatus
 
 from .exceptions import ModelAlreadyExistsError
 from .github_service import load_github_model_and_cache_only_svc

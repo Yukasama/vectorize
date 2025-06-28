@@ -8,8 +8,9 @@ from loguru import logger
 from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.common.exceptions import TaskNotFoundError, VersionMismatchError
-from vectorize.common.task_status import TaskStatus
+from vectorize.common.exceptions import VersionMismatchError
+from vectorize.task.exceptions import TaskNotFoundError
+from vectorize.task.task_status import TaskStatus
 
 from .dataset_source import DatasetSource
 from .exceptions import DatasetNotFoundError
@@ -17,9 +18,15 @@ from .models import Dataset, DatasetUpdate
 from .task_model import UploadDatasetTask
 
 __all__ = [
+    "delete_dataset_db",
+    "find_dataset_by_name_db",
     "get_dataset_db",
     "get_datasets_db",
+    "get_upload_dataset_task_db",
+    "is_dataset_being_uploaded_db",
+    "save_upload_dataset_task_db",
     "update_dataset_db",
+    "update_upload_task_status",
     "upload_dataset_db",
 ]
 

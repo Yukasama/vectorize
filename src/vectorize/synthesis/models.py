@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
-from vectorize.common.task_status import TaskStatus
+from vectorize.task.task_status import TaskStatus
 
 if TYPE_CHECKING:
     from vectorize.dataset.models import Dataset

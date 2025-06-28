@@ -1,231 +1,203 @@
 # Vectorize - Text Embedding Service
 
-Welcome to the Vectorize documentation! This is an AWP Text Embedding Service developed for Robert Bosch GmbH.
+Welcome to **Vectorize**, an enterprise-grade AWP Text Embedding Service developed for Robert Bosch GmbH. This comprehensive platform enables organizations to manage the complete lifecycle of text embedding workflows with production-ready reliability and scalability.
 
-## Quick Start
+## 🚀 What is Vectorize?
 
-To get started with Vectorize, check out our [Installation Guide](installation.md).
+**Vectorize** is a self-hosted text embedding service that simplifies the process of building, training, and deploying custom embedding models. From corpus upload to model evaluation, Vectorize provides a unified platform for NLP experimentation and production deployment.
 
-## Introduction
+### Core Capabilities
 
-**vectorize** is a self-hosted text embedding service that makes it easy to upload your own corpora, train and evaluate embedding models, and generate synthetic datasets from existing data. Built on FastAPI and PyTorch with SQLModel for persistence, it exposes RESTful endpoints to manage the full lifecycle of text embedding workflows.
+- **📊 Dataset Management**: Upload, validate, and process training datasets from multiple sources
+- **🤖 Model Training**: Train custom embedding models tailored to your specific domain
+- **📈 Evaluation Framework**: Comprehensive model evaluation with industry-standard metrics
+- **🔄 Synthetic Data Generation**: Generate high-quality synthetic datasets for model improvement
+- **⚡ Background Processing**: Async task execution with real-time monitoring and status tracking
+- **🔌 RESTful API**: Complete API for seamless integration with existing workflows
+- **🐳 Production Ready**: Docker containerization with enterprise deployment support
 
-The project uses the `uv` tool for seamless dependency management and environment isolation, combined with GitHub Actions for CI and Locust-based load testing to ensure reliability at scale. Packaged in Docker and configured via `.env`, vectorize is designed for both rapid prototyping and production deployment, offering a unified, extensible platform for NLP experimentation and integration.
+### Key Components
 
-## Setup
+- **🌐 API Layer**: FastAPI-based REST endpoints with automatic OpenAPI documentation
+- **⚙️ Service Layer**: Business logic orchestration and workflow management
+- **🗄️ Repository Layer**: Data access patterns with SQLModel ORM
+- **📋 Task System**: Asynchronous background processing with Dramatiq
+- **🔧 Configuration**: Environment-based configuration with validation
+- **🛠️ Utilities**: Shared components and helper functions
 
-### Dependency management
+## 🚀 Quick Start
 
-#### Installation
+Get up and running with Vectorize in just a few steps:
 
-```sh
-# Install uv for command line (MacOS/Linux)
-curl -LsSf https://astral.sh/uv/install.sh
+1. **🔧 [Setup Environment](installation.md)** - Install dependencies and configure your development environment
+2. **⚙️ [Configure Settings](configuration.md)** - Set up your `.env` file with required configurations
+3. **▶️ [Start the Server](installation.md#running-vectorize)** - Launch Vectorize locally or with Docker
+4. **📖 [Explore the API](api.md)** - Discover available endpoints and capabilities
 
-# Install uv for command line (Windows)
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-```sh
-# Install dependencies and generate lock file
-uv sync
-
-## Update dependencies
-uv sync --upgrade
-
-# Add dependencies
-uv add <package>
-
-# Remove dependencies
-uv remove <package>
-```
-
-##### Copy .env.example file and rename it to .env
-
-```sh
-# .env
-DATABASE_URL=sqlite+aiosqlite:///app.db
-SONAR_TOKEN=your-sonar-token
-CLEAR_DB_ON_RESTART=1
-LOG_LEVEL=DEBUG
-TZ=Europe/Berlin
-REDIS_URL=redis://localhost:56379
-```
-
-Note: Do **not** remove the `.env.example`-File.
-
-#### Fix lock file
-
-Error: Failed to parse `uv.lock`
-
-1. Delete `uv.lock` file
-2. Run `uv sync` or `uv lock`
-
-Note: Do **not** edit the `uv.lock`-File yourself.
-
-### Start server
-
-```sh
-uv run app
-
-# If external tasks (dynamic) are needed, you have to start the service in Docker
-docker compose up vectorize dramatiq_worker redis caddy
-
-# Use if the Docker image is not up to date
-docker compose up vectorize dramatiq_worker redis caddy --build
-
-# Use if you also want to start the Frontend
-docker compose up vectorize dramatiq_worker redis caddy vectorize_web
-```
-
-### Run linter
-
-```sh
-# Run ruff over everything
-ruff check .
-
-# Run ruff over specific folder
-ruff check src/vectorize/datasets
-
-# Run pyright (Pylance)
-pyright
-```
-
-#### Run SonarQube
+### Quick Commands
 
 ```bash
-# 0. Install sonar-scanner
-brew install sonar-scanner # (for Mac/Linux)
-https://docs.sonarsource.com/sonarqube/latest/analyzing-source-code/scanners/sonarscanner # (for Windows)
+# Clone and setup
+git clone https://github.com/yukasama/vectorize.git
+cd vectorize
+uv sync
+cp .env.example .env
 
-# 1. Run docker container
-cd resources/sonarqube
+# Start development server
+uv run app
+
+# Or with Docker
 docker compose up
-
-# Only once: Get token from SonarQube
-# 1. Go to http://localhost:9000
-# 2. Account > Settings
-# 3. Generate Global Token with 'No expiration'
-# 4. Copy into .env under SONAR_TOKEN
-
-# 2. Run sonar scan
-uv run scripts/sonar_scan.py
 ```
 
-### Run tests
+## 🏢 Project Structure
 
-```sh
-# Run all tests
-uv run pytest
-
-# Run loadtest with locust
-# It's recommended to put LOG_LEVEL=INFO in your .env
-uvx locust -f scripts/locust.py
-
-# Run headless locust
-# -u for users, -r for rate of spawning users until max
-uvx locust -f scripts/locust.py --host=https://localhost --headless -u 1 -r 1
+```
+vectorize/
+├── 📁 src/vectorize/         # Core application code
+│   ├── 🤖 ai_model/          # AI model management and operations
+│   ├── 🔧 common/            # Shared utilities and error handling
+│   ├── ⚙️ config/            # Configuration management system
+│   ├── 📊 dataset/           # Dataset upload and processing
+│   ├── 📈 evaluation/        # Model evaluation framework
+│   ├── 🔮 inference/         # Model inference endpoints
+│   ├── 🔄 synthesis/         # Synthetic data generation
+│   ├── 📋 task/              # Background task orchestration
+│   ├── 🎯 training/          # Model training workflows
+│   ├── 📤 upload/            # Multi-source upload handling
+│   └── 🛠️ utils/             # Shared utility functions
+├── 🧪 tests/                 # Comprehensive test suite
+├── 📚 docs/                  # Documentation and guides
+├── 🔨 scripts/               # Development and deployment scripts
+└── 📋 resources/             # Configuration files and assets
 ```
 
-### Build Docker Image
+## 📚 Documentation Guide
 
-```sh
-# Build Docker image
-docker build -t vectorize:1.0.0-prod .
-```
+### 🏁 Getting Started
 
-### Run Grafana
+| Guide                                         | Description                                         |
+| --------------------------------------------- | --------------------------------------------------- |
+| [📦 Installation](installation.md)            | Complete setup guide for development and production |
+| [⚙️ Configuration](configuration.md)          | Environment variables and settings management       |
+| [🚀 Quick Start](installation.md#quick-start) | Get running in 5 minutes                            |
 
-```sh
-# --build flag so that newest image is used. If you already have the newest, you can remove the flag.
-docker compose up --build
-```
+### 👥 User Guides
 
-## Workflow
+| Feature | Guide                                         | Description                                      |
+| ------- | --------------------------------------------- | ------------------------------------------------ |
+| 📊      | [Dataset Management](user-guides/datasets.md) | Upload, validate, and manage training datasets   |
+| 🤖      | [AI Models](user-guides/models.md)            | Work with embedding models from multiple sources |
+| 🎯      | [Model Training](user-guides/training.md)     | Train custom embedding models                    |
+| 📈      | [Model Evaluation](user-guides/evaluation.md) | Evaluate and benchmark model performance         |
+| 🔄      | [Synthetic Data](user-guides/synthesis.md)    | Generate synthetic datasets                      |
+| 📋      | [Background Tasks](user-guides/tasks.md)      | Monitor and manage async operations              |
 
-### Run CI locally
+### 🔧 Developer Resources
 
-#### Install act
+| Resource                           | Description                          |
+| ---------------------------------- | ------------------------------------ |
+| [🔌 API Reference](api.md)         | Complete REST API documentation      |
+| [🤝 Contributing](contributing.md) | How to contribute to the project     |
+| [🎭 Local CI with Act](act.md)     | Run GitHub Actions workflows locally |
 
-```sh
-# Install uv for command line (MacOS/Linux)
-brew install act
+## 🌟 Key Features in Detail
 
-# Install uv for command line (Windows)
-scoop install act
-```
+### 🔄 Multi-Source Model Upload
 
-#### Run act
+- **Hugging Face Hub**: Direct integration with HF model repository
+- **GitHub Repositories**: Load models from public/private GitHub repos
+- **Local Files**: Upload models from your local filesystem
+- **ZIP Archives**: Support for compressed model bundles
 
-```sh
-# Run all CI workflows locally
-act
+### 📊 Advanced Dataset Management
 
-# Or run one specified CI
-act -W '.github/workflows/main.yaml'
-```
+- **Format Support**: CSV, JSON, JSONL, XML, Excel files
+- **Schema Validation**: HuggingFace dataset compatibility checking
+- **Batch Processing**: Handle large datasets efficiently
+- **Data Quality**: Automatic validation and cleaning
 
-Note: If a CI relies on `GITHUB_TOKEN`, you need to run:
+### 🎯 Flexible Training Pipeline
 
-```sh
-# You need to have the GitHub CLI installed
-act -s GITHUB_TOKEN="$(gh auth token)"
-# Plus other arguments
-```
+- **Custom Models**: Train embedding models on your specific data
+- **Hyperparameter Tuning**: Configurable training parameters
+- **Progress Monitoring**: Real-time training progress tracking
+- **Checkpoint Management**: Save and restore training states
 
-Note 2: If a CI uploads or downloads artifacts, you need this flag:
+### 📈 Comprehensive Evaluation
 
-```sh
-# This will create the artifacts on your file system
-act --artifact-server-path $PWD/.artifacts.
-# Plus other arguments
-```
+- **Multiple Metrics**: Precision, recall, F1-score, and more
+- **Benchmark Datasets**: Test against standard evaluation sets
+- **Comparative Analysis**: Compare multiple models side-by-side
+- **Detailed Reports**: Generate comprehensive evaluation reports
 
-```sh
-# This is an example showing how to run the Main CI
-act -s GITHUB_TOKEN="$(gh auth token)" --artifact-server-path $PWD/.artifacts. -W '.github/workflows/main.yaml'
-```
+## 🤝 Contributing
 
-#### Analyze server start with startup.prof
+We welcome contributions from the community! Here's how to get involved:
 
-```sh
-# Create startup.prof file
-python -m cProfile -o startup.prof src/vectorize/app.py
+1. **🍴 Fork the Repository** - Create your own fork to work on
+2. **🌿 Create a Feature Branch** - Keep your changes organized
+3. **✅ Add Tests** - Ensure your code is well-tested
+4. **📝 Update Documentation** - Help others understand your changes
+5. **🔄 Submit a Pull Request** - Share your improvements with the community
 
-# Start a snakeviz server and look into it
-uv run snakeviz startup.prof
-```
+See our [Contributing Guide](contributing.md) for detailed instructions.
 
-## Project structure
+## 👥 Contributors
 
-## Usage examples
+We're grateful to all the talented individuals who have contributed to Vectorize:
 
-## Contributors
+<table>
+<tr>
+  <td align="center">
+    <a href="https://github.com/Dosto1ewski">
+      <img src="https://avatars.githubusercontent.com/Dosto1ewski" width="80" style="border-radius: 50%;" alt="Anselm Böhm"/>
+      <br />
+      <sub><b>Anselm Böhm</b></sub>
+    </a>
+  </td>
+  <td align="center">
+    <a href="https://github.com/BtnCbn">
+      <img src="https://avatars.githubusercontent.com/BtnCbn" width="80" style="border-radius: 50%;" alt="Botan Coban"/>
+      <br />
+      <sub><b>Botan Coban</b></sub>
+    </a>
+  </td>
+  <td align="center">
+    <a href="https://github.com/yukasama">
+      <img src="https://avatars.githubusercontent.com/yukasama" width="80" style="border-radius: 50%;" alt="Yukasama"/>
+      <br />
+      <sub><b>Yukasama</b></sub>
+    </a>
+  </td>
+  <td align="center">
+    <a href="https://github.com/domoar">
+      <img src="https://avatars.githubusercontent.com/domoar" width="80" style="border-radius: 50%;" alt="Manuel Dausmann"/>
+      <br />
+      <sub><b>Manuel Dausmann</b></sub>
+    </a>
+  </td>
+  <td align="center">
+    <a href="https://github.com/Yannjc">
+      <img src="https://avatars.githubusercontent.com/Yannjc" width="80" style="border-radius: 50%;" alt="Yannic Jahnke"/>
+      <br />
+      <sub><b>Yannic Jahnke</b></sub>
+    </a>
+  </td>
+</tr>
+</table>
 
-Thanks to everyone who’s helped this project!
+## 📄 License
 
-<!-- markdownlint-disable MD033 MD045 -->
+This project is licensed under the **Apache License, Version 2.0** - a permissive open-source license that:
 
-| Contributor                                    | GitHub                                                                     |
-| ---------------------------------------------- | -------------------------------------------------------------------------- |
-| [@Anselm Böhm](https://github.com/Dosto1ewski) | <img src="https://avatars.githubusercontent.com/Dosto1ewski" width="32" /> |
-| [@Botan Coban](https://github.com/BtnCbn)      | <img src="https://avatars.githubusercontent.com/BtnCbn" width="32" />      |
-| [@Yukasama](https://github.com/yukasama)       | <img src="https://avatars.githubusercontent.com/yukasama" width="32" />    |
-| [@Manuel Dausmann](https://github.com/domoar)  | <img src="https://avatars.githubusercontent.com/domoar" width="32" />      |
-| [@Yannic Jahnke](https://github.com/Yannjc)    | <img src="https://avatars.githubusercontent.com/Yannjc" width="32" />      |
+- ✅ Allows commercial use
+- ✅ Permits modification and distribution
+- ✅ Provides patent protection
+- ✅ Requires proper attribution
 
-<!-- markdownlint-enable MD033 MD045 -->
+For complete terms and conditions, see the [full license text](https://www.apache.org/licenses/LICENSE-2.0).
 
-## License
+---
 
-This project is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
-The Apache License 2.0 is a permissive open‐source license maintained by the Apache Software Foundation. It allows you to freely use, modify, distribute, and sublicense the software, whether in open-source or proprietary projects. Unlike more restrictive copyleft licenses, it does not require derivative works to be distributed under the same license, making it a popular choice for both individual developers and commercial organizations.
-
-Key features of the Apache License 2.0 include:
-
-- **Patent Grant:** Contributors to the project grant you a perpetual, worldwide, royalty‐free license under their patent rights that cover their contributions.
-- **Attribution and NOTICE:** You must include a copy of the license and preserve any existing NOTICE file in distributions, ensuring proper attribution to the original authors.
-- **No Trademark Rights:** The license does not grant rights to use the project’s trademarks, logos, or branding.
-
-By choosing the Apache License 2.0, we ensure maximum freedom for users and downstream projects, while offering strong legal protections around patents and contributions. Please refer to the full text of the license at the link above for complete terms and conditions.
+**Ready to get started?** Check out our [Installation Guide](installation.md) or dive into the [API Documentation](api.md)!

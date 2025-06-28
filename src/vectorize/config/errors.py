@@ -6,7 +6,7 @@ __all__ = ["ErrorCode", "ErrorNames"]
 
 
 class ErrorCode(StrEnum):
-    """Error codes for standardized error handling."""
+    """Error codes for standardized error handling and Frontend categorizers."""
 
     # General errors
     SERVER_ERROR = "SERVER_ERROR"
@@ -33,7 +33,7 @@ class ErrorCode(StrEnum):
 
 
 class ErrorNames(StrEnum):
-    """Error names for standardized error handling."""
+    """Error names for standardized error messages."""
 
     INTERNAL_SERVER_ERROR = "Internal server error"
 

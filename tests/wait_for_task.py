@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from vectorize.common.task_status import TaskStatus
+from vectorize.task.task_status import TaskStatus
 
 __all__ = ["wait_for_task"]
 

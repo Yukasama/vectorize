@@ -6,7 +6,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from vectorize.common.task_status import TaskStatus
+from vectorize.task.task_status import TaskStatus
 
 _TASK_TYPE_OPTIONS = {
     "model_upload",

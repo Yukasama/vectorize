@@ -9,6 +9,7 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config import settings
+from vectorize.dataset.utils.dataset_classifier import _classify_dataset
 from vectorize.tasks import upload_hf_dataset_bg
 from vectorize.utils.etag_parser import parse_etag
 from vectorize.utils.file_sanitizer import sanitize_filename
@@ -36,17 +37,19 @@ from .repository import (
 from .schemas import DatasetUploadOptions
 from .task_model import UploadDatasetTask
 from .utils.cache_dataset_infos import _get_cached_dataset_infos
-from .utils.check_hf_schema import match_schema
 from .utils.csv_escaper import _escape_csv_formulas
-from .utils.dataset_classifier import _classify_dataset
 from .utils.dataset_fs import _delete_dataset_from_fs, _save_dataframe_to_fs
 from .utils.file_df_converter import _convert_file_to_df
+from .utils.match_hf_schema import match_schema
 
 __all__ = [
+    "delete_dataset_svc",
     "get_dataset_svc",
     "get_datasets_svc",
+    "get_hf_upload_status_svc",
     "update_dataset_svc",
     "upload_dataset_svc",
+    "upload_hf_dataset_svc",
 ]
 
 

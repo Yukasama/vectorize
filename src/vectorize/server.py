@@ -19,5 +19,5 @@ def run() -> None:
         reload_dirs=["src/vectorize"],
         server_header=False,
         log_config=None if is_production else LOGGING_CONFIG,
-        log_level=None if is_production else "info",
+        log_level=None if is_production else settings.log_level.lower(),
     )

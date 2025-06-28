@@ -3,6 +3,8 @@ site_description: AWP Text Embedding Service for Robert Bosch GmbH
 repo_url: https://github.com/Yukasama/vectorize
 repo_name: vectorize
 
+dev_addr: "localhost:8001"
+
 theme:
   name: material
   favicon: logo/AlgoForge.png
@@ -73,7 +75,9 @@ nav:
   - Vectorize: index.md
   - Getting Started:
       - Installation: installation.md
+      - Contributing: contributing.md
       - Configuration: configuration.md
+      - Run local CI with Act: act.md
   - User Guides:
       - Datasets: user-guides/datasets.md
       - AI Models: user-guides/models.md
@@ -96,10 +100,15 @@ nav:
           - Synthesis: api/synthesis.md
           - Tasks: api/tasks.md
   - Architecture:
-      - API Endpoints Diagram: diagrams/api-endpoints.md
+      - API Endpoints: diagrams/api-endpoints.md
       - Entity Relationship: diagrams/entity-relation.md
   - Use Cases:
-      - Datasets Management: diagrams/use-cases-datasets.md
-      - Model Upload: diagrams/use-cases-uploads.md
+      - Datasets: diagrams/use-cases-datasets.md
+      - Model Upload: diagrams/use-cases-upload.md
       - Embeddings: diagrams/use-cases-embeddings.md
-      - Data Generation: diagrams/use-cases-generation.md
+      - Synthetic Generation: diagrams/use-cases-generation.md
+      - Training: diagrams/use-cases-training.md
+      - Evaluation: diagrams/use-cases-evaluation.md
+      - Tasks: diagrams/use-cases-tasks.md
+  - About:
+      - Contributors: contributors.md

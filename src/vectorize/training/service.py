@@ -17,10 +17,10 @@ from torch.utils.data import DataLoader
 from vectorize.ai_model.model_source import ModelSource
 from vectorize.ai_model.models import AIModel
 from vectorize.ai_model.repository import get_ai_model_db, save_ai_model_db
-from vectorize.common.task_status import TaskStatus
 from vectorize.config.config import settings
 from vectorize.dataset.repository import get_dataset_db
 from vectorize.evaluation.utils.dataset_validator import DatasetValidator
+from vectorize.task.task_status import TaskStatus
 
 from .exceptions import (
     DatasetValidationError,
