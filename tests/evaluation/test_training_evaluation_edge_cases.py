@@ -515,7 +515,8 @@ class TestDatasetSchemaEdgeCases:
                 f"Missing '{field}' in {filename} example {example_index}"
             )
             assert isinstance(example[field], str), (
-                f"Field '{field}' should be string in {filename} example {example_index}"
+                f"Field '{field}' should be string in {filename} "
+                f"example {example_index}"
             )
             assert example[field].strip(), (
                 f"Field '{field}' should not be empty in {filename} "

@@ -81,26 +81,21 @@ class TrainingOrchestrator:
         )
 
         try:
-            # Load the model
             self.model = load_and_prepare_model(model_path)
 
-            # Prepare training data using the utility class
             train_dataloader, validation_dataset_path = (
                 TrainingDataPreparer.prepare_training_data(
                     dataset_paths, train_request.per_device_train_batch_size
                 )
             )
 
-            # Update validation dataset in database
             await self.db_manager.update_validation_dataset(validation_dataset_path)
 
-            # Train using the training engine
             training_engine = SBERTTrainingEngine(self.model)
             training_metrics = training_engine.train_model(
                 train_dataloader, train_request, output_dir
             )
 
-            # Save results to database
             await self.db_manager.save_training_metrics(training_metrics)
             await self.db_manager.save_trained_model(train_request, output_dir)
             await self.db_manager.mark_training_complete()
