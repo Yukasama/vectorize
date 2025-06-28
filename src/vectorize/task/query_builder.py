@@ -11,7 +11,6 @@ from vectorize.common.task_status import TaskStatus
 __all__ = ["build_query"]
 
 
-_COMPLETED = {TaskStatus.DONE, TaskStatus.FAILED}
 _UNFINISHED = {TaskStatus.QUEUED, TaskStatus.RUNNING}
 
 
@@ -19,18 +18,18 @@ def build_query(  # noqa: ANN201
     model,  # noqa: ANN001
     tag: str,
     *,
-    completed: bool | None,
     statuses: set[TaskStatus],
     hours: int,
+    tag_filter: str | None = None,
 ):
     """Build base SQL query for a task model with filters applied.
 
     Args:
         model: SQLModel table class to query.
         tag: String identifier for task type.
-        completed: Task completion filter.
         statuses: Set of task statuses to include.
         hours: Time window for filtering.
+        tag_filter: Optional tag value to filter by.
 
     Returns:
         SQLAlchemy Select query with standardized columns and filters.
@@ -43,7 +42,7 @@ def build_query(  # noqa: ANN201
             ai_table, model_table.c.trained_model_id == ai_table.c.id
         )
 
-        return (
+        query = (
             select(
                 model_table.c.id,
                 ai_table.c.model_tag.label("tag"),
@@ -54,9 +53,14 @@ def build_query(  # noqa: ANN201
                 cast(literal(tag), String).label("task_type"),
             )
             .select_from(join_expr)
-            .where(_status_filter(model, completed=completed, statuses=statuses))
+            .where(_status_filter(model, statuses=statuses))
             .where(_time_filter(model, hours=hours))
         )
+
+        if tag_filter:
+            query = query.where(ai_table.c.model_tag == tag_filter)
+
+        return query
 
     if hasattr(model, "evaluation_metrics"):
         model_table = model.__table__
@@ -66,7 +70,7 @@ def build_query(  # noqa: ANN201
             ai_table, model_table.c.model_id == ai_table.c.id
         )
 
-        return (
+        query = (
             select(
                 model_table.c.id,
                 ai_table.c.model_tag.label("tag"),
@@ -77,16 +81,21 @@ def build_query(  # noqa: ANN201
                 cast(literal(tag), String).label("task_type"),
             )
             .select_from(join_expr)
-            .where(_status_filter(model, completed=completed, statuses=statuses))
+            .where(_status_filter(model, statuses=statuses))
             .where(_time_filter(model, hours=hours))
         )
+
+        if tag_filter:
+            query = query.where(ai_table.c.model_tag == tag_filter)
+
+        return query
 
     if hasattr(model, "tag"):
         tag_field = model.tag.label("tag")
     else:
         tag_field = literal(None).label("tag")
 
-    return (
+    query = (
         select(
             model.id,
             tag_field.label("tag"),
@@ -96,22 +105,25 @@ def build_query(  # noqa: ANN201
             model.error_msg,
             cast(literal(tag), String).label("task_type"),
         )
-        .where(_status_filter(model, completed=completed, statuses=statuses))
+        .where(_status_filter(model, statuses=statuses))
         .where(_time_filter(model, hours=hours))
     )
+
+    if tag_filter and hasattr(model, "tag"):
+        query = query.where(model.tag == tag_filter)
+
+    return query
 
 
 def _status_filter(
     model,  # noqa: ANN001
     *,
-    completed: bool | None,
     statuses: set[TaskStatus],
 ) -> ColumnElement[bool]:
     """Build SQL filter for task completion and status criteria.
 
     Args:
         model: SQLModel table class to filter.
-        completed: Filter by completion status (True/False/None).
         statuses: Set of specific TaskStatus values to include.
 
     Returns:
@@ -119,11 +131,6 @@ def _status_filter(
     """
     if statuses:
         return model.task_status.in_(statuses)
-
-    if completed is True:
-        return model.task_status.in_(_COMPLETED)
-    if completed is False:
-        return model.task_status.in_(_UNFINISHED)
 
     return true()
 

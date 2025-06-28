@@ -8,10 +8,10 @@ from pydantic import BaseModel
 
 from vectorize.common.task_status import TaskStatus
 
-__all__ = ["TasksModel"]
+__all__ = ["TaskModel"]
 
 
-class TasksModel(BaseModel):
+class TaskModel(BaseModel):
     """Pydantic model for action responses."""
 
     id: UUID

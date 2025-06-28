@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from vectorize.common.task_status import TaskStatus
+from vectorize.config import settings
 
 from .models import EvaluationTask
 
@@ -21,7 +22,7 @@ class EvaluationRequest(BaseModel):
         default=None, description="ID of the dataset to use for evaluation"
     )
     max_samples: int | None = Field(
-        default=1000,
+        default=settings.evaluation_default_max_samples,
         description="Maximum number of samples to evaluate (default: 1000)",
         gt=0,
     )

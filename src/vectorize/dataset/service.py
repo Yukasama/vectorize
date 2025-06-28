@@ -100,14 +100,13 @@ async def upload_dataset_svc(
         UUID of the created dataset record.
 
     Raises:
-        InvalidFileError: If file, filename is missing or the upload exceeds size
-        limits.
+        InvalidFileError: If file or filename is missing or the upload exceeds size.
         UnsupportedFormatError: When the file extension is not supported.
         EmptyFileError: If the parsed DataFrame contains no rows.
         InvalidCSVFormatError: If the DataFrame lacks required columns.
         FileTooLargeError: If the uploaded file exceeds the maximum size limit.
     """
-    safe_name, ext = sanitize_filename(file, list(settings.allowed_extensions))
+    safe_name, ext = sanitize_filename(file, list(settings.dataset_allowed_extensions))
 
     column_mapping: ColumnMapping | None = None
     if options:
@@ -157,7 +156,6 @@ async def upload_hf_dataset_svc(db: AsyncSession, dataset_tag: str) -> UUID:
 
     Args:
         db: Database session for persistence operations
-        background_tasks: FastAPI background task manager
         dataset_tag: Tag identifier for the Hugging Face dataset
 
     Returns:

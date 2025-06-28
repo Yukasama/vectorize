@@ -1,4 +1,4 @@
-@startuml Use Cases für das Hochladen und Verwalten von Datensätzen
+@startuml use-cases-datasets
 left to right direction
 actor Nutzer
 

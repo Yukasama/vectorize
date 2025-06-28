@@ -1,4 +1,4 @@
-@startuml Use Cases für das Hochladen und Verwalten von Modellen
+@startuml use-cases-uploads
 left to right direction
 actor Nutzer
 

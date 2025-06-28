@@ -2,14 +2,14 @@
 
 """Tests for dataset upload from Hugging Face."""
 
-import asyncio
-import time
+import json
+from pathlib import Path
 
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from vectorize.common.task_status import TaskStatus
+from tests.wait_for_task import wait_for_task
 from vectorize.config.config import settings
 
 _TIMEOUT = 45  # seconds
@@ -43,13 +43,17 @@ class TestHuggingFaceUpload:
         expected_subsets: list[str],
     ) -> None:
         """Test uploading a valid Hugging Face dataset."""
+        expected_columns = {"question", "positive", "negative"}
+
         response = client.post(
             "/datasets/huggingface", json={"dataset_tag": dataset_tag}
         )
         assert response.status_code == status.HTTP_201_CREATED
 
         task_id = response.headers["Location"].split("/")[-1]
-        task_data = await wait_for_task_completion(client, task_id)
+        task_data = await wait_for_task(
+            client, task_id, f"/datasets/huggingface/status/{task_id}"
+        )
 
         assert task_data is not None, f"Task {task_id} did not complete"
         assert task_data["id"] == task_id
@@ -77,6 +81,8 @@ class TestHuggingFaceUpload:
                 assert file_size > _FILE_SIZE_THRESHOLD, (
                     f"File {file_path} is too small ({file_size} bytes)"
                 )
+
+                _validate_jsonl_structure(file_path, expected_columns)
 
     @pytest.mark.parametrize(
         "dataset_tag",
@@ -107,20 +113,53 @@ class TestHuggingFaceUpload:
         assert "Location" not in response.headers
 
 
-async def wait_for_task_completion(
-    client: TestClient, task_id: str, poll_interval: float = 1.0
-) -> dict | None:
-    """Poll task status until completion or timeout."""
-    start_time = time.time()
+def _validate_jsonl_structure(file_path: Path, expected_columns: set[str]) -> None:
+    """Validate that JSONL file has correct structure and columns."""
+    line_count = 0
+    sample_size = 100
 
-    while time.time() - start_time < _TIMEOUT:
-        status_response = client.get(f"/datasets/huggingface/status/{task_id}")
+    try:
+        with file_path.open("r", encoding="utf-8") as f:
+            for line_num, raw_line in enumerate(f, 1):
+                if line_num > sample_size:
+                    break
 
-        if status_response.status_code == status.HTTP_200_OK:
-            data = status_response.json()
-            if data["task_status"] in {TaskStatus.DONE, TaskStatus.FAILED}:
-                return data
+                line = raw_line.strip()
+                if not line:
+                    continue
 
-        await asyncio.sleep(poll_interval)
+                try:
+                    data = json.loads(line)
+                except json.JSONDecodeError as e:
+                    pytest.fail(f"Invalid JSON on line {line_num} in {file_path}: {e}")
 
-    raise TimeoutError(f"Task {task_id} did not complete within {_TIMEOUT} seconds")
+                assert isinstance(data, dict), (
+                    f"Line {line_num} in {file_path} is not a JSON object"
+                )
+
+                actual_columns = set(data.keys())
+                missing_columns = expected_columns - actual_columns
+                assert not missing_columns, (
+                    f"Line {line_num} in {file_path} missing columns: "
+                    f"{missing_columns}. Found columns: {actual_columns}"
+                )
+
+                extra_columns = actual_columns - expected_columns
+                assert not extra_columns, (
+                    f"Line {line_num} in {file_path} has unexpected columns: "
+                    f"{extra_columns}. Expected only: {expected_columns}"
+                )
+
+                for column in expected_columns:
+                    value = data[column]
+                    assert value is not None and str(value).strip(), (
+                        f"Line {line_num} in {file_path}: column '{column}' "
+                        f"is empty or None"
+                    )
+
+                line_count += 1
+
+        assert line_count > 0, f"No valid JSON lines found in {file_path}"
+
+    except Exception as e:
+        pytest.fail(f"Error reading/validating {file_path}: {e}")
