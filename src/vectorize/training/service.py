@@ -4,6 +4,7 @@ import ast
 import builtins
 import time
 import uuid
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -378,6 +379,36 @@ class TrainingOrchestrator:
 
         original_print = builtins.print
 
+        custom_print = TrainingOrchestrator._create_metrics_capture_function(
+            captured_metrics, original_print
+        )
+
+        builtins.print = custom_print
+
+        try:
+            self._execute_model_training(
+                train_dataloader, train_request, output_dir, loss
+            )
+        finally:
+            builtins.print = original_print
+
+        end_time = time.time()
+        train_runtime = end_time - start_time
+
+        training_metrics = TrainingOrchestrator._calculate_training_metrics(
+            captured_metrics, train_runtime, train_dataloader, train_request
+        )
+
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        self.model.save(str(output_dir))
+
+        return training_metrics
+
+    @staticmethod
+    def _create_metrics_capture_function(
+        captured_metrics: dict, original_print: Callable
+    ) -> Callable:
+        """Create a custom print function that captures training metrics."""
         def custom_print(*args: Any, **kwargs: Any) -> None:  # noqa: ANN401
             """Custom print that captures training metrics."""
             text = " ".join(str(arg) for arg in args)
@@ -407,27 +438,40 @@ class TrainingOrchestrator:
                     )
             original_print(*args, **kwargs)
 
-        builtins.print = custom_print
+        return custom_print
 
-        try:
-            checkpoint_dir = Path(output_dir) / "checkpoints"
-            checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    def _execute_model_training(
+        self,
+        train_dataloader: DataLoader,
+        train_request: TrainRequest,
+        output_dir: str,
+        loss: losses.CosineSimilarityLoss,
+    ) -> None:
+        """Execute the actual model training."""
+        if self.model is None:
+            raise RuntimeError("Model not loaded")
 
-            self.model.fit(
-                train_objectives=[(train_dataloader, loss)],
-                epochs=train_request.epochs,
-                warmup_steps=train_request.warmup_steps or 0,
-                show_progress_bar=False,
-                output_path=str(Path(output_dir)),
-                checkpoint_path=str(checkpoint_dir),
-                checkpoint_save_steps=0,
-            )
-        finally:
-            builtins.print = original_print
+        checkpoint_dir = Path(output_dir) / "checkpoints"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-        end_time = time.time()
-        train_runtime = end_time - start_time
+        self.model.fit(
+            train_objectives=[(train_dataloader, loss)],
+            epochs=train_request.epochs,
+            warmup_steps=train_request.warmup_steps or 0,
+            show_progress_bar=False,
+            output_path=str(Path(output_dir)),
+            checkpoint_path=str(checkpoint_dir),
+            checkpoint_save_steps=0,
+        )
 
+    @staticmethod
+    def _calculate_training_metrics(
+        captured_metrics: dict,
+        train_runtime: float,
+        train_dataloader: DataLoader,
+        train_request: TrainRequest,
+    ) -> dict:
+        """Calculate and return training metrics."""
         try:
             total_samples = len(train_dataloader.dataset)  # type: ignore
         except (TypeError, AttributeError):
@@ -452,18 +496,12 @@ class TrainingOrchestrator:
         }
 
         if captured_metrics:
-            logger.info(
-                "Using captured training metrics",
-                **captured_metrics,
-            )
+            logger.info("Using captured training metrics", **captured_metrics)
         else:
             logger.debug(
                 "No metrics captured, using calculated values",
                 calculated_runtime=train_runtime,
             )
-
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
-        self.model.save(str(output_dir))
 
         return training_metrics
 
@@ -478,7 +516,6 @@ class TrainingOrchestrator:
         """
         parent_model = await get_ai_model_db(self.db, train_request.model_tag)
         tag_time = Path(output_dir).name
-        # Use just the directory name as tag, consistent with API URL structure
         new_model_tag = Path(output_dir).name
 
         new_model = AIModel(
