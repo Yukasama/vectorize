@@ -4,6 +4,7 @@ from typing import Annotated
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Response, status
+from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -14,6 +15,7 @@ from .exceptions import EvaluationTaskNotFoundError
 from .models import EvaluationTask
 from .repository import get_evaluation_task_by_id, save_evaluation_task
 from .schemas import EvaluationRequest, EvaluationStatusResponse
+from .service import EvaluationService
 from .tasks import run_evaluation_bg
 
 __all__ = ["router"]
@@ -80,3 +82,34 @@ async def get_evaluation_status(
     if not task:
         raise EvaluationTaskNotFoundError(str(task_id))
     return EvaluationStatusResponse.from_task(task)
+
+
+SELECTED_MTEB_TASKS = ["STSBenchmark", "BIOSSES", "SICK-R"]
+CACHE_BASE_DIR = "/app/data/models"
+
+
+@router.get("/mteb/{model_tag}", summary="Run MTEB benchmark on a cached model by UUID")
+async def get_evaluation_results(
+    model_tag: str,
+    db: Annotated[AsyncSession, Depends(get_session)],
+) -> JSONResponse:
+    """Run selected MTEB benchmark tasks on a locally cached model identified by tag.
+
+    Args:
+        model_tag: The tag or UUID identifying the model in the database.
+        db: Injected asynchronous DB session.
+
+    Returns:
+        JSONResponse containing benchmark results or error details.
+    """
+    try:
+        results = await EvaluationService(db).run_benchmark(model_tag)
+        return JSONResponse(content=results)
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Benchmark execution failed",
+                "details": str(e),
+            },
+        )
