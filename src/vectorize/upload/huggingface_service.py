@@ -4,6 +4,7 @@ This module loads models from Hugging Face, caches them locally, and stores them
 in the database if they are not already present.
 """
 
+import shutil
 from pathlib import Path
 
 from huggingface_hub import snapshot_download
@@ -20,7 +21,8 @@ from .exceptions import (
 _models = {}
 
 
-__all__ = ["load_huggingface_model_and_cache_only_svc"]
+__all__ = ["load_huggingface_model_and_cache_only_svc",
+    "remove_huggingface_model_from_memory_svc"]
 
 
 async def load_huggingface_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
@@ -87,3 +89,19 @@ async def load_huggingface_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
     except Exception as e:
         logger.exception("Error loading model.", modelKey=key)
         raise InvalidModelError from e
+
+
+async def remove_huggingface_model_from_memory_svc(model_tag: str) -> None:  # noqa: RUF029 NOSONAR
+    """Remove a Hugging Face model from the disk.
+
+    Args:
+        model_tag (str): The tag of the Hugging Face model repository.
+    """
+    base_path = Path("/app/data/models")
+    model_folder = base_path / model_tag
+
+    if model_folder.exists() and model_folder.is_dir():
+        shutil.rmtree(model_folder)
+        logger.warning(f"Deleted model folder from disk: {model_folder}")
+    else:
+        logger.warning(f"Model folder not found on disk: {model_folder}")

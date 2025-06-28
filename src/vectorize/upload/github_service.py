@@ -1,5 +1,6 @@
 """Service for importing GitHub models."""
 
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -10,7 +11,9 @@ from loguru import logger
 
 from .exceptions import InvalidModelError, ModelNotFoundError, NoValidModelsFoundError
 
-__all__ = ["load_github_model_and_cache_only_svc", "repo_info"]
+__all__ = ["load_github_model_and_cache_only_svc",
+    "remove_github_model_from_memory_svc",
+    "repo_info"]
 
 _github_models: dict[str, str] = {}
 
@@ -37,7 +40,7 @@ async def load_github_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
             "repo": repo,
             "branch": branch,
             "local_path": "<path to pytorch_model.bin>",
-            "key": "owner/repo@branch"
+            "normalized_key": "owner_repo@branch"
         }
 
     Raises:
@@ -46,15 +49,16 @@ async def load_github_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
         InvalidModelError: For any other error (clone failure, I/O issues, etc.).
     """
     key = f"{owner}/{repo}@{branch}"
+    normalized_key = key.replace("/", "_")
 
     if key in _github_models:
-        logger.info("GitHub-Model already cached", modelKey=key)
+        logger.info("GitHub-Model already cached", modelKey=normalized_key)
         return {
             "owner": owner,
             "repo": repo,
             "branch": branch,
-            "local_path": _github_models[key],
-            "key": key,
+            "local_path": _github_models[normalized_key],
+            "key": normalized_key,
         }
 
     try:
@@ -66,13 +70,13 @@ async def load_github_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
 
             base = Path(tmpdir)
 
-            checks: list[tuple[str, str]] = [
+            checks = [
                 ("pytorch_model.bin", "Model-Datei"),
                 ("config.json", "Config-Datei"),
                 ("tokenizer.json", "Tokenizer-Datei"),
             ]
 
-            paths: dict[str, Path] = {}
+            paths = {}
             for filename, description in checks:
                 matches = list(base.rglob(filename))
                 if len(matches) != 1:
@@ -82,37 +86,36 @@ async def load_github_model_and_cache_only_svc(  # noqa: RUF029 NOSONAR
                 paths[filename] = matches[0]
                 logger.debug("Found {}: {}", description, matches[0])
 
-            cache_dir = Path("gh_cache") / f"{owner}_{repo}@{branch}"
-            cache_dir_parent = cache_dir.parent
-            cache_dir_parent.mkdir(parents=True, exist_ok=True)
+            cache_dir = Path("/app/data/models") / normalized_key
+            cache_dir.mkdir(parents=True, exist_ok=True)
 
-            if cache_dir.exists():
+            if cache_dir.exists() and any(cache_dir.iterdir()):
                 logger.debug("Model already cached {}", cache_dir)
             else:
-                logger.debug("Creating cache dir{}", cache_dir)
-                cache_dir.mkdir()
-
+                logger.debug("Creating cache dir {}", cache_dir)
                 for filename, pfad in paths.items():
                     dest = cache_dir / filename
-                    pfad.replace(dest)
+                    # Statt replace: kopieren + löschen
+                    shutil.copy2(pfad, dest)
+                    pfad.unlink()
                     paths[filename] = dest
 
             lokal_pfad = str((cache_dir / "pytorch_model.bin").resolve())
-            _github_models[key] = lokal_pfad
+            _github_models[normalized_key] = lokal_pfad
 
-        logger.info("Model cached", modelKey=key)
+        logger.info("Model cached", modelKey=normalized_key)
         return {
             "owner": owner,
             "repo": repo,
             "branch": branch,
             "local_path": lokal_pfad,
-            "key": key,
+            "key": normalized_key,
         }
 
     except NoValidModelsFoundError:
         raise
     except Exception as e:
-        logger.exception("Error loading model", modelKey=key)
+        logger.exception("Error loading model", modelKey=normalized_key)
         raise InvalidModelError(f"Model upload failed: {e}") from e
 
 
@@ -142,3 +145,19 @@ async def repo_info(repo_url: str, revision: str | None = None) -> bool:
         raise ModelNotFoundError(check_url)
 
     return True
+
+
+async def remove_github_model_from_memory_svc(model_tag: str) -> None:  # noqa: RUF029 NOSONAR
+    """Remove a GitHub model from the in-memory cache.
+
+    Args:
+        model_tag (str): The GitHub model tag
+    """
+    base_path = Path("/app/data/models")
+    model_folder = base_path / model_tag
+
+    if model_folder.exists() and model_folder.is_dir():
+        shutil.rmtree(model_folder)
+        logger.warning(f"Deleted model folder from disk: {model_folder}")
+    else:
+        logger.warning(f"Model folder not found on disk: {model_folder}")

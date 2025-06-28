@@ -9,8 +9,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.common.exceptions import VersionMismatchError
 
+# from vectorize.upload import (
+#     remove_github_model_from_memory_svc,
+#     remove_huggingface_model_from_memory_svc,
+# )
 from .exceptions import ModelNotFoundError, NoModelFoundError
-from .models import AIModel, AIModelUpdate
+from .models import AIModel, AIModelUpdate, ModelSource
 
 __all__ = ["get_ai_model_db", "save_ai_model_db", "update_ai_model_db"]
 
@@ -150,3 +154,10 @@ async def delete_model_db(db: AsyncSession, model_id: UUID) -> None:
     await db.delete(model)
     await db.commit()
     logger.debug("Model deleted", model=model)
+    if model.source == ModelSource.HUGGINGFACE:
+        from vectorize.upload import remove_huggingface_model_from_memory_svc
+        await remove_huggingface_model_from_memory_svc(model.model_tag)
+
+    if model.source == ModelSource.GITHUB:
+        from vectorize.upload import remove_github_model_from_memory_svc
+        await remove_github_model_from_memory_svc(model.model_tag)

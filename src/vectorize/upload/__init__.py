@@ -11,10 +11,12 @@ from vectorize.upload.exceptions import (
 )
 from vectorize.upload.github_service import (
     load_github_model_and_cache_only_svc,
+    remove_github_model_from_memory_svc,
     repo_info,
 )
 from vectorize.upload.huggingface_service import (
     load_huggingface_model_and_cache_only_svc,
+    remove_huggingface_model_from_memory_svc,
 )
 from vectorize.upload.local_service import upload_zip_model
 from vectorize.upload.models import UploadTask
@@ -49,9 +51,11 @@ __all__ = [
     "load_huggingface_model_and_cache_only_svc",
     "process_github_model_bg",
     "process_huggingface_model_bg",
+    "remove_github_model_from_memory_svc",
+    "remove_huggingface_model_from_memory_svc",
     "repo_info",
     "router",
     "save_upload_task_db",
     "update_upload_task_status_db",
-    "upload_zip_model",
+    "upload_zip_model"
 ]
