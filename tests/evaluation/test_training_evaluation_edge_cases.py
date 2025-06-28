@@ -490,6 +490,63 @@ class TestDatasetSchemaEdgeCases:
     """Edge case tests related to dataset schema handling."""
 
     @staticmethod
+    def _load_dataset_examples(file_path: Path) -> list[dict]:
+        """Load and parse examples from a dataset file."""
+        examples = []
+        with file_path.open("r", encoding="utf-8") as f:
+            for line_num, line in enumerate(f, 1):
+                if line.strip():
+                    try:
+                        example = json.loads(line)
+                        examples.append(example)
+                    except json.JSONDecodeError:
+                        pytest.fail(
+                            f"Invalid JSON in {file_path.name} line {line_num}: {line}"
+                        )
+        return examples
+
+    @staticmethod
+    def _validate_example_schema(
+        example: dict, filename: str, example_index: int
+    ) -> None:
+        """Validate the schema of a single dataset example."""
+        required_fields = ["question", "positive", "negative"]
+
+        for field in required_fields:
+            assert field in example, (
+                f"Missing '{field}' in {filename} example {example_index}"
+            )
+            assert isinstance(
+                example[field], str
+            ), f"Field '{field}' should be string in {filename} example {example_index}"
+            assert example[field].strip(), (
+                f"Field '{field}' should not be empty in {filename} "
+                f"example {example_index}"
+            )
+
+        # Check for unexpected fields
+        unexpected_fields = set(example.keys()) - set(required_fields)
+        if unexpected_fields:
+            # Use pytest.warns or logging if needed, but no print
+            pass
+
+    @staticmethod
+    def _validate_dataset_file(filename: str) -> None:
+        """Validate a single dataset file."""
+        file_path = TEST_DATA_DIR / filename
+        if not file_path.exists():
+            pytest.skip(f"Test dataset not found: {filename}")
+
+        examples = TestDatasetSchemaEdgeCases._load_dataset_examples(file_path)
+        assert len(examples) > 0, f"No examples found in {filename}"
+
+        # Validate schema for each example
+        for i, example in enumerate(examples):
+            TestDatasetSchemaEdgeCases._validate_example_schema(
+                example, filename, i
+            )
+
+    @staticmethod
     def test_dataset_content_validation() -> None:
         """Test that datasets with our test schema are properly validated."""
         # Load and validate test dataset content
@@ -499,42 +556,7 @@ class TestDatasetSchemaEdgeCases:
         ]
 
         for filename in test_files:
-            file_path = TEST_DATA_DIR / filename
-            if not file_path.exists():
-                pytest.skip(f"Test dataset not found: {filename}")
-
-            examples = []
-            with file_path.open("r", encoding="utf-8") as f:
-                for line_num, line in enumerate(f, 1):
-                    if line.strip():
-                        try:
-                            example = json.loads(line)
-                            examples.append(example)
-                        except json.JSONDecodeError:
-                            pytest.fail(
-                                f"Invalid JSON in {filename} line {line_num}: {line}"
-                            )
-
-            assert len(examples) > 0, f"No examples found in {filename}"
-
-            # Validate schema for each example
-            for i, example in enumerate(examples):
-                required_fields = ["question", "positive", "negative"]
-                for field in required_fields:
-                    assert field in example, (
-                        f"Missing '{field}' in {filename} example {i}"
-                    )
-                    assert isinstance(
-                        example[field], str
-                    ), f"Field '{field}' should be string in {filename} example {i}"
-                    assert example[field].strip(), (
-                        f"Field '{field}' should not be empty in {filename} example {i}"
-                    )
-                # Check for unexpected fields
-                unexpected_fields = set(example.keys()) - set(required_fields)
-                if unexpected_fields:
-                    # Use pytest.warns or logging if needed, but no print
-                    pass
+            TestDatasetSchemaEdgeCases._validate_dataset_file(filename)
 
     @staticmethod
     def test_empty_dataset_handling(client: TestClient) -> None:
