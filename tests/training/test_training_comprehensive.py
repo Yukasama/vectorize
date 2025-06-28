@@ -202,7 +202,7 @@ class TestTrainingComprehensive:
         """Test training with multiple training datasets."""
         payload = create_base_payload(
             train_dataset_ids=[DATASET_ID_1, DATASET_ID_2],
-            per_device_train_batch_size=4
+            per_device_train_batch_size=4,
         )
         run_training_test_with_payload(client, payload)
 
@@ -219,9 +219,9 @@ class TestTrainingComprehensive:
         ]
 
         for invalid_param in invalid_params:
-            payload = create_base_payload(
-                **{k: v for k, v in invalid_param.items() if k != "expected_msg"}
-            )
+            payload = create_base_payload(**{
+                k: v for k, v in invalid_param.items() if k != "expected_msg"
+            })
             response = client.post("/training/train", json=payload)
             assert_error_response(response, HTTP_422_UNPROCESSABLE_ENTITY)
 
@@ -240,7 +240,9 @@ class TestTrainingComprehensive:
         payload = create_base_payload(train_dataset_ids=[str(uuid.uuid4())])
         response = client.post("/training/train", json=payload)
         assert response.status_code in {
-            HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND, HTTP_202_ACCEPTED
+            HTTP_400_BAD_REQUEST,
+            HTTP_404_NOT_FOUND,
+            HTTP_202_ACCEPTED,
         }
 
     @staticmethod
@@ -254,7 +256,8 @@ class TestTrainingComprehensive:
         # Test with invalid UUID format
         response = client.get("/training/invalid-uuid/status")
         assert response.status_code in {
-            HTTP_400_BAD_REQUEST, HTTP_422_UNPROCESSABLE_ENTITY
+            HTTP_400_BAD_REQUEST,
+            HTTP_422_UNPROCESSABLE_ENTITY,
         }
 
     @staticmethod
@@ -285,9 +288,7 @@ class TestTrainingComprehensive:
     def test_training_with_extreme_parameters(client: TestClient) -> None:
         """Test training with extreme but valid parameters."""
         payload = create_base_payload(
-            epochs=1,
-            learning_rate=1e-6,
-            per_device_train_batch_size=1
+            epochs=1, learning_rate=1e-6, per_device_train_batch_size=1
         )
         run_training_test_with_payload(client, payload)
 
@@ -296,7 +297,7 @@ class TestTrainingComprehensive:
         """Test that training works with our test data schema."""
         dataset_files = [
             f"__rm_-rf__2F_{DATASET_ID_2}.jsonl",
-            f"__rm_-rf__2F_{DATASET_ID_1}.jsonl"
+            f"__rm_-rf__2F_{DATASET_ID_1}.jsonl",
         ]
 
         for dataset_file in dataset_files:

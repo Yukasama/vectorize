@@ -145,9 +145,10 @@ class TestTrainingEdgeCases:
 
         for test_case in boundary_tests:
             response = client.post("/training/train", json=test_case["payload"])
-            assert response.status_code == test_case["expected_status"], \
-                f"Expected {test_case['expected_status']} for {test_case['name']}, " \
+            assert response.status_code == test_case["expected_status"], (
+                f"Expected {test_case['expected_status']} for {test_case['name']}, "
                 f"got {response.status_code}"
+            )
 
     @staticmethod
     def test_training_malformed_requests(client: TestClient) -> None:
@@ -207,8 +208,9 @@ class TestTrainingEdgeCases:
 
         for test_case in malformed_requests:
             response = client.post("/training/train", json=test_case["payload"])
-            assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY, \
+            assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY, (
                 f"Expected 422 for {test_case['name']}, got {response.status_code}"
+            )
 
     @staticmethod
     def test_training_duplicate_dataset_ids(client: TestClient) -> None:
@@ -286,9 +288,7 @@ class TestTrainingEdgeCases:
                 HTTP_404_NOT_FOUND,
                 HTTP_400_BAD_REQUEST,
                 HTTP_422_UNPROCESSABLE_ENTITY,
-            }, (
-                f"Unexpected status for tag '{tag}': {response.status_code}"
-            )
+            }, f"Unexpected status for tag '{tag}': {response.status_code}"
 
 
 @pytest.mark.edge_cases
@@ -377,9 +377,7 @@ class TestEvaluationEdgeCases:
                 HTTP_202_ACCEPTED,
                 HTTP_400_BAD_REQUEST,
                 HTTP_422_UNPROCESSABLE_ENTITY,
-            }, (
-                f"Unexpected status for tag '{tag}': {response.status_code}"
-            )
+            }, f"Unexpected status for tag '{tag}': {response.status_code}"
 
     @staticmethod
     def test_evaluation_very_long_identifiers(client: TestClient) -> None:
@@ -516,9 +514,9 @@ class TestDatasetSchemaEdgeCases:
             assert field in example, (
                 f"Missing '{field}' in {filename} example {example_index}"
             )
-            assert isinstance(
-                example[field], str
-            ), f"Field '{field}' should be string in {filename} example {example_index}"
+            assert isinstance(example[field], str), (
+                f"Field '{field}' should be string in {filename} example {example_index}"
+            )
             assert example[field].strip(), (
                 f"Field '{field}' should not be empty in {filename} "
                 f"example {example_index}"
@@ -542,9 +540,7 @@ class TestDatasetSchemaEdgeCases:
 
         # Validate schema for each example
         for i, example in enumerate(examples):
-            TestDatasetSchemaEdgeCases._validate_example_schema(
-                example, filename, i
-            )
+            TestDatasetSchemaEdgeCases._validate_example_schema(example, filename, i)
 
     @staticmethod
     def test_dataset_content_validation() -> None:
@@ -632,9 +628,8 @@ class TestConcurrencyAndStress:
                 response = client.post("/evaluation/evaluate", json=payload)
                 endpoint = "evaluation"
 
-            if (
-                response.status_code == HTTP_202_ACCEPTED
-                and response.headers.get("Location")
+            if response.status_code == HTTP_202_ACCEPTED and response.headers.get(
+                "Location"
             ):
                 match = re.search(
                     rf"/{endpoint}/([a-f0-9\-]+)/status",

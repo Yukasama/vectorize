@@ -128,9 +128,7 @@ async def _setup_evaluation_task(
     evaluation_request: EvaluationRequest,
 ) -> tuple[Path, str]:
     """Set up evaluation task and return dataset path and model path."""
-    await update_evaluation_task_status(
-        db, task_uuid, TaskStatus.RUNNING, progress=0.1
-    )
+    await update_evaluation_task_status(db, task_uuid, TaskStatus.RUNNING, progress=0.1)
 
     model = await get_ai_model_db(db, evaluation_request.model_tag)
     if not model:
@@ -138,9 +136,7 @@ async def _setup_evaluation_task(
 
     model_path = resolve_model_path(model.model_tag)
 
-    await update_evaluation_task_status(
-        db, task_uuid, TaskStatus.RUNNING, progress=0.2
-    )
+    await update_evaluation_task_status(db, task_uuid, TaskStatus.RUNNING, progress=0.2)
 
     dataset_path = await resolve_evaluation_dataset(db, evaluation_request)
     dataset_info = await _get_dataset_info(db, evaluation_request)
@@ -153,9 +149,7 @@ async def _setup_evaluation_task(
         baseline_model_tag=evaluation_request.baseline_model_tag,
     )
 
-    await update_evaluation_task_status(
-        db, task_uuid, TaskStatus.RUNNING, progress=0.3
-    )
+    await update_evaluation_task_status(db, task_uuid, TaskStatus.RUNNING, progress=0.3)
 
     return dataset_path, model_path
 
@@ -177,9 +171,7 @@ async def _run_baseline_evaluation(
 
     baseline_model_path = resolve_model_path(baseline_model.model_tag)
 
-    await update_evaluation_task_status(
-        db, task_uuid, TaskStatus.RUNNING, progress=0.5
-    )
+    await update_evaluation_task_status(db, task_uuid, TaskStatus.RUNNING, progress=0.5)
 
     comparison_results = evaluator.compare_models(
         baseline_model_path=baseline_model_path,
@@ -197,9 +189,7 @@ async def _run_baseline_evaluation(
         f"{trained_metrics.similarity_ratio:.3f})"
     )
 
-    await update_evaluation_task_status(
-        db, task_uuid, TaskStatus.RUNNING, progress=0.9
-    )
+    await update_evaluation_task_status(db, task_uuid, TaskStatus.RUNNING, progress=0.9)
 
     await update_evaluation_task_results(
         db,
@@ -220,9 +210,7 @@ async def _run_simple_evaluation(
     dataset_path = config["dataset_path"]
     max_samples = config["max_samples"]
 
-    await update_evaluation_task_status(
-        db, task_uuid, TaskStatus.RUNNING, progress=0.5
-    )
+    await update_evaluation_task_status(db, task_uuid, TaskStatus.RUNNING, progress=0.5)
 
     metrics = evaluator.evaluate_dataset(dataset_path, max_samples)
 
@@ -232,9 +220,7 @@ async def _run_simple_evaluation(
         f"Ratio: {metrics.similarity_ratio:.3f}"
     )
 
-    await update_evaluation_task_status(
-        db, task_uuid, TaskStatus.RUNNING, progress=0.9
-    )
+    await update_evaluation_task_status(db, task_uuid, TaskStatus.RUNNING, progress=0.9)
 
     await update_evaluation_task_results(
         db,
@@ -323,7 +309,5 @@ async def run_evaluation_bg(
                     db, UUID(task_id), TaskStatus.FAILED, progress=0.0
                 )
             except Exception:
-                logger.error(
-                    "Failed to update task status to FAILED", task_id=task_id
-                )
+                logger.error("Failed to update task status to FAILED", task_id=task_id)
             raise

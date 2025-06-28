@@ -77,10 +77,7 @@ class TestEvaluationIntegration:
     ) -> None:
         """Test resolving dataset using training_task_id."""
         # Create test training task
-        task = TrainingTask(
-            id=uuid4(),
-            model_tag="test-model"
-        )
+        task = TrainingTask(id=uuid4(), model_tag="test-model")
         await save_training_task(session, task)
 
         # Create validation dataset file
@@ -98,9 +95,7 @@ class TestEvaluationIntegration:
         try:
             # Test request with training_task_id
             request = EvaluationRequest(
-                model_tag="test-model",
-                training_task_id=str(task.id),
-                max_samples=100
+                model_tag="test-model", training_task_id=str(task.id), max_samples=100
             )
 
             result_path = await resolve_evaluation_dataset(session, request)
@@ -120,7 +115,7 @@ class TestEvaluationIntegration:
             model_tag="test-model",
             dataset_id=str(uuid4()),
             training_task_id=str(uuid4()),
-            max_samples=100
+            max_samples=100,
         )
 
         with pytest.raises(ValueError, match="Cannot specify both"):
@@ -131,10 +126,7 @@ class TestEvaluationIntegration:
         self, session: AsyncSession
     ) -> None:
         """Test that providing neither dataset_id nor training_task_id fails."""
-        request = EvaluationRequest(
-            model_tag="test-model",
-            max_samples=100
-        )
+        request = EvaluationRequest(model_tag="test-model", max_samples=100)
 
         with pytest.raises(ValueError, match="Must specify either"):
             await resolve_evaluation_dataset(session, request)
@@ -142,7 +134,8 @@ class TestEvaluationIntegration:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_evaluation_metadata_integration(
-        self, client: TestClient, session: AsyncSession) -> None:
+        self, client: TestClient, session: AsyncSession
+    ) -> None:
         """Test end-to-end integration of evaluation metadata functionality."""
         ensure_test_model_available()
 
@@ -151,9 +144,7 @@ class TestEvaluationIntegration:
         dataset_path = settings.dataset_upload_dir / f"{dataset_id}.jsonl"
         dataset_path.parent.mkdir(parents=True, exist_ok=True)
 
-        test_data = [
-            {"question": "test", "positive": "pos", "negative": "neg"}
-        ]
+        test_data = [{"question": "test", "positive": "pos", "negative": "neg"}]
 
         with dataset_path.open("w", encoding="utf-8") as f:
             for item in test_data:
@@ -175,7 +166,7 @@ class TestEvaluationIntegration:
             evaluation_payload = {
                 "model_tag": MINILM_MODEL_TAG,
                 "dataset_id": str(dataset_id),
-                "max_samples": 1
+                "max_samples": 1,
             }
 
             response = client.post("/evaluation/evaluate", json=evaluation_payload)
@@ -205,7 +196,8 @@ class TestEvaluationIntegration:
     @pytest.mark.integration
     @pytest.mark.asyncio
     async def test_evaluation_service_integration(
-        self, client: TestClient, session: AsyncSession) -> None:
+        self, client: TestClient, session: AsyncSession
+    ) -> None:
         """Test end-to-end integration of the evaluation service."""
         ensure_test_model_available()
 
@@ -214,9 +206,7 @@ class TestEvaluationIntegration:
         dataset_path = settings.dataset_upload_dir / f"{dataset_id}.jsonl"
         dataset_path.parent.mkdir(parents=True, exist_ok=True)
 
-        test_data = [
-            {"question": "test", "positive": "pos", "negative": "neg"}
-        ]
+        test_data = [{"question": "test", "positive": "pos", "negative": "neg"}]
 
         with dataset_path.open("w", encoding="utf-8") as f:
             for item in test_data:
@@ -238,7 +228,7 @@ class TestEvaluationIntegration:
             evaluation_payload = {
                 "model_tag": MINILM_MODEL_TAG,
                 "dataset_id": str(dataset_id),
-                "max_samples": 1
+                "max_samples": 1,
             }
 
             response = client.post("/evaluation/evaluate", json=evaluation_payload)
@@ -286,12 +276,12 @@ class TestEvaluationMetadataIntegration:
                 {
                     "question": "What is AI?",
                     "positive": "AI is artificial intelligence",
-                    "negative": "AI is not real"
+                    "negative": "AI is not real",
                 },
                 {
                     "question": "What is ML?",
                     "positive": "ML is machine learning",
-                    "negative": "ML is not learning"
+                    "negative": "ML is not learning",
                 },
             ]
 
@@ -317,7 +307,7 @@ class TestEvaluationMetadataIntegration:
                     "dataset_id": str(dataset_id),
                     # Use same model as baseline for test
                     "baseline_model_tag": MINILM_MODEL_TAG,
-                    "max_samples": 2
+                    "max_samples": 2,
                 }
 
                 response = client.post("/evaluation/evaluate", json=evaluation_payload)
@@ -370,7 +360,7 @@ class TestEvaluationMetadataIntegration:
                 {
                     "question": "Test question",
                     "positive": "Positive answer",
-                    "negative": "Negative answer"
+                    "negative": "Negative answer",
                 }
             ]
 
@@ -394,7 +384,7 @@ class TestEvaluationMetadataIntegration:
                 evaluation_payload = {
                     "model_tag": MINILM_MODEL_TAG,
                     "dataset_id": str(dataset_id),
-                    "max_samples": 1
+                    "max_samples": 1,
                 }
 
                 response = client.post("/evaluation/evaluate", json=evaluation_payload)
@@ -413,7 +403,11 @@ class TestEvaluationMetadataIntegration:
 
                 # Verify required fields are present
                 required_fields = [
-                    "task_id", "status", "created_at", "updated_at", "progress"
+                    "task_id",
+                    "status",
+                    "created_at",
+                    "updated_at",
+                    "progress",
                 ]
                 for field in required_fields:
                     assert field in status_data, f"Missing required field: {field}"
@@ -451,7 +445,7 @@ class TestEvaluationMetadataIntegration:
                 {
                     "question": "Concurrent test",
                     "positive": "Good answer",
-                    "negative": "Bad answer"
+                    "negative": "Bad answer",
                 }
             ]
 
@@ -482,7 +476,7 @@ class TestEvaluationMetadataIntegration:
                     evaluation_payload = {
                         "model_tag": MINILM_MODEL_TAG,
                         "dataset_id": str(dataset_id),
-                        "max_samples": 1
+                        "max_samples": 1,
                     }
 
                     response = client.post(

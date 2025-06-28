@@ -71,8 +71,7 @@ async def train_model(
     task = TrainingTask(id=uuid4())
     clean_model_name = model.model_tag.replace("models--", "").replace("--", "-")
     output_dir = (
-        f"data/models/{clean_model_name}-finetuned-"
-        f"{tag_time}-{str(task.id)[:8]}"
+        f"data/models/{clean_model_name}-finetuned-{tag_time}-{str(task.id)[:8]}"
     )
     logger.debug(
         "SBERT-Triplet-Training requested."

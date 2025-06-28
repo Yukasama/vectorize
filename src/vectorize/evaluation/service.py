@@ -164,7 +164,7 @@ async def _resolve_explicit_dataset(db: AsyncSession, dataset_id: str) -> Path:
     logger.info(
         "Using explicit dataset for evaluation",
         dataset_id=dataset_id,
-        dataset_path=str(dataset_path)
+        dataset_path=str(dataset_path),
     )
     return dataset_path
 
@@ -198,6 +198,6 @@ async def _resolve_training_validation_dataset(
     logger.info(
         "Using validation dataset from training task",
         training_task_id=training_task_id,
-        validation_dataset_path=str(dataset_path)
+        validation_dataset_path=str(dataset_path),
     )
     return dataset_path

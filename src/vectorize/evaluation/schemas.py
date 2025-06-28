@@ -31,7 +31,7 @@ class EvaluationRequest(BaseModel):
     )
     training_task_id: str | None = Field(
         default=None,
-        description="Optional training task ID to use its validation dataset"
+        description="Optional training task ID to use its validation dataset",
     )
 
 
