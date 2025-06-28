@@ -38,3 +38,26 @@ def test_load_bogus_model_branch_tag(client: TestClient) -> None:
     }
     response = client.post("uploads/github", json=payload)
     assert response.status_code == status.HTTP_201_CREATED
+
+
+@pytest.mark.github
+def test_load_bogus_model_without_tag(client: TestClient) -> None:
+    """Tests that a model can be uploaded without specifying a tag."""
+    payload = {
+        "owner": _REPO_OWNER,
+        "repo_name": _REPO_NAME
+    }
+    response = client.post("/uploads/github", json=payload)
+    assert response.status_code == status.HTTP_201_CREATED
+
+
+@pytest.mark.github
+def test_load_bogus_model_empty_tag(client: TestClient) -> None:
+    """Tests that an empty tag string is treated like 'main'."""
+    payload = {
+        "owner": _REPO_OWNER,
+        "repo_name": _REPO_NAME,
+        "tag": ""
+    }
+    response = client.post("/uploads/github", json=payload)
+    assert response.status_code == status.HTTP_201_CREATED

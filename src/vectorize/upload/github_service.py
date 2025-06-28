@@ -11,9 +11,7 @@ from loguru import logger
 
 from .exceptions import InvalidModelError, ModelNotFoundError, NoValidModelsFoundError
 
-__all__ = ["load_github_model_and_cache_only_svc",
-    "remove_github_model_from_memory_svc",
-    "repo_info"]
+__all__ = ["load_github_model_and_cache_only_svc", "repo_info"]
 
 _github_models: dict[str, str] = {}
 
@@ -145,19 +143,3 @@ async def repo_info(repo_url: str, revision: str | None = None) -> bool:
         raise ModelNotFoundError(check_url)
 
     return True
-
-
-async def remove_github_model_from_memory_svc(model_tag: str) -> None:  # noqa: RUF029 NOSONAR
-    """Remove a GitHub model from the in-memory cache.
-
-    Args:
-        model_tag (str): The GitHub model tag
-    """
-    base_path = Path("/app/data/models")
-    model_folder = base_path / model_tag
-
-    if model_folder.exists() and model_folder.is_dir():
-        shutil.rmtree(model_folder)
-        logger.warning(f"Deleted model folder from disk: {model_folder}")
-    else:
-        logger.warning(f"Model folder not found on disk: {model_folder}")
