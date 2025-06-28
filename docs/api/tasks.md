@@ -22,9 +22,9 @@ The task module provides task filtering and management capabilities across all b
 
 ::: vectorize.task.schemas
 
-## Task Model
+## Models
 
-::: vectorize.task.tasks_model
+::: vectorize.task.models
 
 ## Task Status
 

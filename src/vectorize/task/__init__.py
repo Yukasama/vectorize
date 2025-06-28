@@ -17,9 +17,18 @@ providing a consistent interface for task management across dataset uploads,
 model training, evaluation processes, and data synthesis workflows.
 """
 
+from .exceptions import TaskNotFoundError
+from .models import TaskModel
+from .query_builder import build_query
 from .schemas import TaskFilters
 from .task_status import TaskStatus
 from .task_type import TaskType
-from .tasks_model import TaskModel
 
-__all__ = ["TaskFilters", "TaskModel", "TaskStatus", "TaskType"]
+__all__ = [
+    "TaskFilters",
+    "TaskModel",
+    "TaskNotFoundError",
+    "TaskStatus",
+    "TaskType",
+    "build_query",
+]

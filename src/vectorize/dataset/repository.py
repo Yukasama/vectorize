@@ -18,9 +18,15 @@ from .models import Dataset, DatasetUpdate
 from .task_model import UploadDatasetTask
 
 __all__ = [
+    "delete_dataset_db",
+    "find_dataset_by_name_db",
     "get_dataset_db",
     "get_datasets_db",
+    "get_upload_dataset_task_db",
+    "is_dataset_being_uploaded_db",
+    "save_upload_dataset_task_db",
     "update_dataset_db",
+    "update_upload_task_status",
     "upload_dataset_db",
 ]
 

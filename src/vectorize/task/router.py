@@ -12,7 +12,7 @@ from vectorize.task.task_status import TaskStatus
 from vectorize.task.task_type import TaskType
 
 from .service import get_tasks_svc
-from .tasks_model import TaskModel
+from .models import TaskModel
 
 __all__ = ["router"]
 

@@ -33,7 +33,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
             await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
 
-    if settings.app_env != "production" and not settings.seed_db_on_start:
+    if settings.app_env != "production" and settings.seed_db_on_start:
         async with AsyncSession(engine) as session:
             await seed_db(session)
 
