@@ -12,6 +12,7 @@ from .models import EvaluationTask
 __all__ = [
     "get_evaluation_task_by_id",
     "save_evaluation_task",
+    "update_evaluation_task_metadata",
     "update_evaluation_task_results",
     "update_evaluation_task_status",
 ]
@@ -101,6 +102,31 @@ async def update_evaluation_task_results(
         evaluation_metrics=evaluation_metrics,
         baseline_metrics=baseline_metrics,
         evaluation_summary=evaluation_summary,
+    )
+
+
+async def update_evaluation_task_metadata(
+    db: AsyncSession,
+    task_id: UUID,
+    model_tag: str | None = None,
+    dataset_info: str | None = None,
+    baseline_model_tag: str | None = None,
+) -> None:
+    """Update evaluation task metadata (model, dataset, baseline info).
+
+    Args:
+        db: Database session
+        task_id: UUID of the evaluation task
+        model_tag: Tag of the evaluated model
+        dataset_info: Information about the dataset used
+        baseline_model_tag: Tag of the baseline model (if comparison performed)
+    """
+    await _update_evaluation_task_fields(
+        db,
+        task_id,
+        model_tag=model_tag,
+        dataset_info=dataset_info,
+        baseline_model_tag=baseline_model_tag,
     )
 
 

@@ -20,7 +20,11 @@ from vectorize.training.exceptions import (
 from vectorize.training.repository import get_train_task_by_id
 
 from .evaluation import TrainingEvaluator
-from .repository import update_evaluation_task_results, update_evaluation_task_status
+from .repository import (
+    update_evaluation_task_metadata,
+    update_evaluation_task_results,
+    update_evaluation_task_status,
+)
 from .schemas import EvaluationRequest
 from .utils import resolve_model_path
 
@@ -135,6 +139,23 @@ async def run_evaluation_bg(
 
             # Resolve dataset using either dataset_id or training_task_id
             dataset_path = await resolve_evaluation_dataset(db, evaluation_request)
+
+            # Determine dataset info for display
+            dataset_info = None
+            if evaluation_request.dataset_id:
+                dataset = await get_dataset_db(db, UUID(evaluation_request.dataset_id))
+                dataset_info = f"Dataset: {dataset.file_name}" if dataset else f"Dataset ID: {evaluation_request.dataset_id}"
+            elif evaluation_request.training_task_id:
+                dataset_info = f"Training validation set: {evaluation_request.training_task_id}"
+
+            # Store metadata in the task
+            await update_evaluation_task_metadata(
+                db,
+                task_uuid,
+                model_tag=evaluation_request.model_tag,
+                dataset_info=dataset_info,
+                baseline_model_tag=evaluation_request.baseline_model_tag,
+            )
 
             await update_evaluation_task_status(
                 db, task_uuid, TaskStatus.RUNNING, progress=0.3
