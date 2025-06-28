@@ -11,8 +11,8 @@ from vectorize.task.schemas import TaskFilters
 from vectorize.task.task_status import TaskStatus
 from vectorize.task.task_type import TaskType
 
-from .service import get_tasks_svc
 from .models import TaskModel
+from .service import get_tasks_svc
 
 __all__ = ["router"]
 
