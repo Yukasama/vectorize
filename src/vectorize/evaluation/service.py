@@ -307,7 +307,7 @@ def resolve_cache_path(model: AIModel) -> Path:
     """
     source_map = {
         ModelSource.HUGGINGFACE: "hf_home",
-        ModelSource.GITHUB: "gh_cache",
+        ModelSource.GITHUB: "gh_home",
         ModelSource.LOCAL: "local_cache",
     }
 

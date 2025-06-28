@@ -106,10 +106,10 @@ async def get_evaluation_results(
         results = await EvaluationService(db).run_benchmark(model_tag)
         return JSONResponse(content=results)
     except Exception as e:
+        logger.warning("Benchmark failed : {}", e)
         return JSONResponse(
             status_code=500,
             content={
-                "error": "Benchmark execution failed",
-                "details": str(e),
+                "error": "Benchmark execution failed"
             },
         )
