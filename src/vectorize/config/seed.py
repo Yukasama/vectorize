@@ -9,13 +9,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.ai_model.model_source import ModelSource, RemoteModelSource
 from vectorize.ai_model.models import AIModel
-from vectorize.common.task_status import TaskStatus
 from vectorize.config.config import settings
 from vectorize.dataset.classification import Classification
 from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.dataset.models import Dataset
 from vectorize.dataset.task_model import UploadDatasetTask
 from vectorize.evaluation.models import EvaluationTask
+from vectorize.task.task_status import TaskStatus
 from vectorize.training.models import TrainingTask
 from vectorize.upload.models import UploadTask
 

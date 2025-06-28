@@ -8,8 +8,9 @@ from loguru import logger
 from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.common.exceptions import TaskNotFoundError, VersionMismatchError
-from vectorize.common.task_status import TaskStatus
+from vectorize.common.exceptions import VersionMismatchError
+from vectorize.task.exceptions import TaskNotFoundError
+from vectorize.task.task_status import TaskStatus
 
 from .dataset_source import DatasetSource
 from .exceptions import DatasetNotFoundError

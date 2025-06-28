@@ -8,7 +8,6 @@ import dramatiq
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.common.task_status import TaskStatus
 from vectorize.config import settings
 from vectorize.config.db import engine
 from vectorize.dataset.classification import Classification
@@ -18,6 +17,7 @@ from vectorize.dataset.models import Dataset
 from vectorize.dataset.repository import get_dataset_db, upload_dataset_db
 from vectorize.dataset.schemas import DatasetUploadOptions
 from vectorize.dataset.utils.dataset_fs import _save_dataframe_to_fs
+from vectorize.task.task_status import TaskStatus
 
 from .repository import update_synthesis_task_status
 from .text_extractor import extract_text_from_media

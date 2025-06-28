@@ -6,8 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from vectorize.common.task_status import TaskStatus
 from vectorize.config import settings
+from vectorize.task.task_status import TaskStatus
 
 from .models import EvaluationTask
 

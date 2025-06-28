@@ -2,6 +2,9 @@
 
 from fastapi import APIRouter, Response
 
+__all__ = ["router"]
+
+
 router = APIRouter(tags=["Common", "Health"])
 
 

@@ -1,0 +1,21 @@
+@startuml use-cases-tasks
+left to right direction
+actor User
+
+package "Task Monitoring" {
+    usecase "Get All Tasks\nwith Filters" as GetTasks
+    usecase "Filter by Task Type\n(upload, training, evaluation)" as FilterByType
+    usecase "Filter by Status\n(running, done, failed)" as FilterByStatus
+    usecase "Filter by Time Window\n(within hours)" as FilterByTime
+    usecase "Filter by Tag\n(custom labels)" as FilterByTag
+    usecase "Paginate Results\n(limit/offset)" as Paginate
+}
+
+User --> GetTasks
+GetTasks --> FilterByType
+GetTasks --> FilterByStatus
+GetTasks --> FilterByTime
+GetTasks --> FilterByTag
+GetTasks --> Paginate
+
+@enduml

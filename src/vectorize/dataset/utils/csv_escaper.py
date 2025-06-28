@@ -49,6 +49,11 @@ def _escape_csv_formulas(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+# -----------------------------------------------------------------------------
+# Utility ---------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+
 def _strip_leading_ws_ctl(value: str) -> str:
     """Remove leading whitespace & ASCII control chars without regex.
 

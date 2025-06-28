@@ -16,12 +16,12 @@ with Path.open(_app_config_path, "rb") as f:
     _config = tomllib.load(f)
     _app_config = _config.get("app", {})
     _server_config = _app_config.get("server", {})
-    _dataset_config = _app_config.get("dataset", {})
-    _model_config = _app_config.get("model", {})
-    _inference_config = _app_config.get("inference", {})
-    _evaluation_config = _app_config.get("evaluation", {})
     _db_config = _app_config.get("db", {})
     _log_config = _app_config.get("logging", {})
+    _model_config = _app_config.get("model", {})
+    _dataset_config = _app_config.get("dataset", {})
+    _inference_config = _app_config.get("inference", {})
+    _evaluation_config = _app_config.get("evaluation", {})
 
 
 class Settings(BaseSettings):
@@ -50,9 +50,9 @@ class Settings(BaseSettings):
         description="Version of the application.",
     )
 
-    allow_origin: list[str] = Field(
-        default=_server_config.get("allow_origin", ["http://localhost:3000"]),
-        description="CORS allowed origins for cross-origin requests.",
+    allow_origin_in_dev: list[str] = Field(
+        default=_server_config.get("allow_origin_in_dev", ["http://localhost:3000"]),
+        description="List of CORS allowed origins for cross-origin requests.",
     )
 
     # Database configuration
@@ -102,6 +102,11 @@ class Settings(BaseSettings):
         description="Whether to check if a connection is alive before using it.",
     )
 
+    seed_db_on_start: bool = Field(
+        default=_db_config.get("seed_db_on_start", False),
+        description="Whether to seed the db with initial data on application start.",
+    )
+
     clear_db_on_restart: bool = Field(
         default=True,
         validation_alias="CLEAR_DB_ON_RESTART",
@@ -141,6 +146,32 @@ class Settings(BaseSettings):
         description="File extensions permitted for dataset uploads.",
     )
 
+    dataset_base_columns: list[str] = Field(
+        default=_dataset_config.get(
+            "base_columns", ["question", "positive", "negative"]
+        ),
+        description="Base columns required for dataset classification.",
+    )
+
+    dataset_question_columns: list[str] = Field(
+        default=_dataset_config.get(
+            "question_columns", ["anchor", "q", "query", "prompt"]
+        ),
+        description="Columns that can be used for the question field in datasets.",
+    )
+
+    dataset_positive_columns: list[str] = Field(
+        default=_dataset_config.get("positive_columns", ["answer", "chosen"]),
+        description="Columns that can be used for the positive field in datasets.",
+    )
+
+    dataset_negative_columns: list[str] = Field(
+        default=_dataset_config.get(
+            "negative_columns", ["random", "rejected", "no_context"]
+        ),
+        description="Columns that can be used for the negative field in datasets.",
+    )
+
     dataset_max_filename_length: int = Field(
         default=_dataset_config.get("max_filename_length"),
         description="Maximum allowed length for uploaded filenames.",
@@ -164,6 +195,11 @@ class Settings(BaseSettings):
     dataset_hf_allowed_schemas: list[list[str]] = Field(
         default=_dataset_config.get("hf_allowed_schemas"),
         description="List of allowed schema field combinations for dataset validation.",
+    )
+
+    dataset_hf_cache_time: int = Field(
+        default=_dataset_config.get("hf_cache_time", 3600),
+        description="Time in seconds to cache Hugging Face datasets.",
     )
 
     # Model configuration
@@ -214,7 +250,7 @@ class Settings(BaseSettings):
     @computed_field
     @property
     def model_inference_dir(self) -> Path:
-        """Directory for storing model files."""
+        """Directory for storing model files used during inference."""
         if self.app_env == "testing":
             return Path("test_data/inference")
         return Path(_model_config.get("model_upload_dir"))

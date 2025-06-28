@@ -17,14 +17,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel.ext.asyncio.session import AsyncSession
 from tqdm.auto import tqdm
 
-from vectorize.common.task_status import TaskStatus
 from vectorize.config.config import settings
+from vectorize.task.task_status import TaskStatus
 
 from ..classification import Classification
 from ..dataset_source import DatasetSource
 from ..models import Dataset
 from ..repository import update_upload_task_status, upload_dataset_db
-from .check_hf_schema import match_schema
+from .match_hf_schema import match_schema
 
 __all__ = ["process_dataset"]
 
@@ -70,6 +70,11 @@ async def process_dataset(
             error_msg=f"Dataset processing failed: {e!s}",
         )
         raise
+
+
+# -----------------------------------------------------------------------------
+# Utility ---------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 async def _process_single_dataset(
@@ -174,10 +179,6 @@ def _schema_mapping(feature_names: set[str]) -> dict[str, str]:
             }
 
     raise ValueError("No mapping found for feature set:", feature_names)
-
-
-_LINE_SEP = b"\xe2\x80\xa8"  # U+2028
-_PARA_SEP = b"\xe2\x80\xa9"  # U+2029
 
 
 def _write_jsonl(

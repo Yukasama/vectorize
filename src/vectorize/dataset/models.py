@@ -6,8 +6,6 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, func
 
-from vectorize.synthesis.models import SynthesisTask
-
 from .classification import Classification
 from .dataset_source import DatasetSource
 

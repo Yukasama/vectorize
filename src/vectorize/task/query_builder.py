@@ -6,7 +6,7 @@ from sqlalchemy import ColumnElement, String, cast, func, literal, or_, select
 from sqlmodel import true
 
 from vectorize.ai_model.models import AIModel
-from vectorize.common.task_status import TaskStatus
+from vectorize.task.task_status import TaskStatus
 
 __all__ = ["build_query"]
 

@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, Query
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
 from vectorize.task.schemas import TaskFilters
+from vectorize.task.task_status import TaskStatus
 from vectorize.task.task_type import TaskType
 
 from .service import get_tasks_svc
