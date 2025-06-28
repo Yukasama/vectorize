@@ -1,4 +1,4 @@
-# Dataset Management Use Cases
+# Dataset Use Cases
 
 This diagram illustrates the various use cases for dataset management in the Vectorize system.
 

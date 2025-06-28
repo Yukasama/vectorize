@@ -1,4 +1,4 @@
-# Common & Health Endpoints
+# Common & Health API
 
 The common module provides health check and root endpoints for the Vectorize API.
 

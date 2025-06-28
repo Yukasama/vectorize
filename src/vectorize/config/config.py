@@ -55,6 +55,17 @@ class Settings(BaseSettings):
         description="List of CORS allowed origins for cross-origin requests.",
     )
 
+    root_path: str = Field(
+        default=_server_config.get("root_path", "/v1/api"),
+        description="Root path for the application, useful for reverse proxies.",
+    )
+
+    dramatiq_redis_url: str = Field(
+        default="redis://localhost:56379/0",
+        description="Redis URL for Dramatiq task queue.",
+        validation_alias="REDIS_URL",
+    )
+
     # Database configuration
     db_url: str = Field(
         default="sqlite+aiosqlite:///app.db",

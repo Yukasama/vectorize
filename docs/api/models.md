@@ -1,4 +1,4 @@
-# AI Model Management API
+# AI Model API
 
 The AI model module provides model management, retrieval, and CRUD operations.
 
