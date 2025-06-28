@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 from sqlmodel import Column, DateTime, Field, SQLModel, func
 
-from vectorize.common.task_status import TaskStatus
+from vectorize.task.task_status import TaskStatus
 
 __all__ = ["UploadDatasetTask"]
 

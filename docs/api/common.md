@@ -13,7 +13,3 @@ The common module provides health check and root endpoints for the Vectorize API
 ## Exceptions
 
 ::: vectorize.common.exceptions
-
-## Task Status
-
-::: vectorize.common.task_status

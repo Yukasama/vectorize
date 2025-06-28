@@ -5,6 +5,7 @@ from typing import cast
 
 import pandas as pd
 
+from vectorize.config.config import settings
 from vectorize.config.errors import ErrorNames
 
 from ..classification import Classification
@@ -15,12 +16,10 @@ __all__ = ["_classify_dataset"]
 
 
 _ALIASES: Mapping[str, tuple[str, ...]] = {
-    "question": ("anchor", "q", "query", "prompt"),
-    "positive": ("answer", "chosen"),
-    "negative": ("random", "rejected", "no_context"),
+    settings.dataset_base_columns[0]: settings.dataset_question_columns,
+    settings.dataset_base_columns[1]: settings.dataset_positive_columns,
+    settings.dataset_base_columns[2]: settings.dataset_negative_columns,
 }
-
-_ROLES = ("question", "positive", "negative")
 
 
 def _classify_dataset(
@@ -61,6 +60,11 @@ def _classify_dataset(
     return cast(pd.DataFrame, cleaned), cls
 
 
+# -----------------------------------------------------------------------------
+# Utility ---------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+
+
 def _resolve_headers(
     df_cols_lc: dict[str, str], mapping: ColumnMapping | None = None
 ) -> dict[str, str]:
@@ -87,7 +91,7 @@ def _resolve_headers(
     if mapping:
         resolved.update(_apply_explicit_mapping(mapping, df_cols_lc))
 
-    for role in _ROLES:
+    for role in tuple(_ALIASES.keys()):
         if role in resolved:
             continue
         col_name = next(

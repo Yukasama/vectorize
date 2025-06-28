@@ -10,14 +10,18 @@ from vectorize.config.errors import ErrorCode
 from vectorize.utils.file_size_formatter import format_file_size
 
 __all__ = [
+    "DatasetAlreadyExistsError",
+    "DatasetIsAlreadyBeingUploadedError",
     "DatasetNotFoundError",
     "EmptyFileError",
     "FileTooLargeError",
+    "HuggingFaceDatasetNotFoundError",
     "InvalidCSVColumnError",
     "InvalidCSVFormatError",
     "MissingColumnError",
     "TooManyFilesError",
     "UnsupportedFormatError",
+    "UnsupportedHuggingFaceFormatError",
 ]
 
 

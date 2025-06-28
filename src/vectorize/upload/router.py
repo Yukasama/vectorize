@@ -22,8 +22,8 @@ from vectorize.ai_model.exceptions import ModelNotFoundError
 from vectorize.ai_model.model_source import RemoteModelSource
 from vectorize.ai_model.service import get_ai_model_svc
 from vectorize.common.exceptions import InternalServerError, InvalidFileError
-from vectorize.common.task_status import TaskStatus
 from vectorize.config.db import get_session
+from vectorize.task.task_status import TaskStatus
 
 from .exceptions import InvalidUrlError, ModelAlreadyExistsError
 from .exceptions import ModelNotFoundError as RepoModelNotFound

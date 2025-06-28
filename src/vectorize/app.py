@@ -33,9 +33,9 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
             await conn.run_sync(SQLModel.metadata.drop_all)
         await conn.run_sync(SQLModel.metadata.create_all)
 
-    # if settings.app_env != "production":
-    async with AsyncSession(engine) as session:
-        await seed_db(session)
+    if settings.app_env != "production" and settings.seed_db_on_start:
+        async with AsyncSession(engine) as session:
+            await seed_db(session)
 
     yield
     await engine.dispose()
@@ -63,7 +63,7 @@ add_prometheus_metrics(app)
 if settings.app_env != "production":
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],
+        allow_origins=settings.allow_origin_in_dev,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

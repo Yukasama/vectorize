@@ -3,6 +3,7 @@
 port = 8000
 version = "0.1.0"
 reload = true
+allow_origin_in_dev = ["http://localhost:3000"]
 
 [app.db]
 logging = false
@@ -13,6 +14,7 @@ pool_size = 5
 pool_pre_ping = true
 pool_recycle = 300
 pool_timeout = 30
+seed_db_on_start = true
 
 [app.logging]
 rotation = "10 MB"
@@ -22,6 +24,10 @@ log_file = "app.log"
 [app.dataset]
 upload_dir = "data/datasets"
 allowed_extensions = ["csv", "json", "jsonl", "xml", "xlsx", "xls"]
+base_columns = ["question", "positive", "negative"]
+question_columns = ["anchor", "q", "query", "prompt"]
+positive_columns = ["answer", "chosen"]
+negative_columns = ["random", "rejected", "no_context"]
 max_upload_size = 53687091200 # 50 GB
 max_filename_length = 255
 default_delimiter = ";"
@@ -70,6 +76,7 @@ hf_allowed_schemas = [
   ["human", "assistant"],
   ["human", "chosen", "rejected"],
 ]
+hf_cache_time = 3600
 
 [app.model]
 upload_dir = "data/models"

@@ -1,33 +1,53 @@
 # Model Upload Use Cases
 
-This diagram illustrates the various use cases for model upload and management in the Vectorize system.
+This diagram illustrates the various ways to upload and manage models in the Vectorize system.
 
 ![file](out/use-cases-uploads.svg)
 
-## Use Case Categories
+## Model Upload Sources
 
-### Model Upload
+### Hugging Face Integration
 
-- **Load Hugging Face Model by Tag**: Import pre-trained models directly from Hugging Face Hub
-- **Upload Local Files**: Upload sentence transformer models from local filesystem
-- **Load GitHub Repository by URL**: Import models from GitHub repositories
+- **Tag-Based Loading**: Load models directly using Hugging Face model tags
+- **Automatic Download**: Seamless downloading and caching of model files
+- **Metadata Extraction**: Automatic extraction of model information and capabilities
+- **Version Management**: Support for specific model versions and releases
 
-### Model Management
+### GitHub Repository Upload
 
-- **Rename Model**: Change display names and identifiers of uploaded models
-- **Delete Model**: Remove models and associated data from the system
+- **URL-Based Loading**: Load models from GitHub repositories using URLs
+- **Branch Support**: Access models from specific branches or commits
+- **Private Repository**: Support for private repositories with authentication
+- **Automatic Parsing**: Parse repository structure and identify model files
 
-## Supported Sources
+### Local File Upload
 
-- **Hugging Face Hub**: Direct import using model tags and identifiers
-- **Local Files**: Support for ZIP, TAR.GZ archives and individual model files
-- **GitHub Repositories**: Public and private repository support with authentication
-- **Multiple Formats**: Compatible with various sentence transformer model formats
+- **Direct Upload**: Upload model files directly from local storage
+- **ZIP Archive Support**: Handle compressed model archives
+- **Batch Upload**: Upload multiple models simultaneously
+- **Format Validation**: Verify model format compatibility
 
-## Workflow Integration
+## Model Management
 
-Model upload integrates seamlessly with:
+### Core Management Operations
 
-- Training pipelines for base model selection
-- Evaluation processes for model assessment
-- Generation workflows for text embedding and similarity tasks
+- **Rename Models**: Update model names and tags
+- **Delete Models**: Remove models and associated files
+- **Version Control**: Track model versions and changes
+- **Metadata Management**: Update model descriptions and parameters
+
+### Management Features
+
+- **Storage Optimization**: Efficient storage and deduplication
+- **Access Control**: Manage model permissions and sharing
+- **Usage Tracking**: Monitor model usage and performance
+- **Backup and Recovery**: Automatic backup of critical models
+
+## Integration Points
+
+Model upload integrates with:
+
+- **Training Pipeline**: Use uploaded models as base for fine-tuning
+- **Evaluation System**: Evaluate uploaded models against datasets
+- **Inference Service**: Deploy models for embedding generation
+- **Model Registry**: Centralized model catalog and discovery

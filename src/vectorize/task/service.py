@@ -2,9 +2,9 @@
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from .models import TaskModel
 from .repository import get_tasks_db
 from .schemas import TaskFilters
-from .tasks_model import TaskModel
 
 __all__ = ["get_tasks_svc"]
 

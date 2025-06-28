@@ -1,78 +1,141 @@
 # Configuration
 
+The Vectorize application uses a multi-layered configuration system that combines default values, TOML configuration files, and environment variables to provide flexible deployment options across different environments.
+
+## Configuration Sources & Priority
+
+The configuration system loads settings from multiple sources in the following priority order (highest to lowest):
+
+1. **Environment Variables** (`.env` file or system environment)
+2. **TOML Configuration File** (`src/vectorize/config/resources/app.toml`)
+3. **Default Values** (hardcoded in the application)
+
+This means environment variables will always override TOML settings, which in turn override the built-in defaults.
+
 ## Environment Variables
 
-Copy the `.env.example` file and configure your environment:
+Environment variables are the primary method for configuring sensitive information and deployment-specific settings. Copy the example file to get started:
 
 ```sh
 cp .env.example .env
 ```
 
+**Important Security Note:** The `.env` file should contain all sensitive configuration values such as database URLs, API keys, and secrets. Never put sensitive information in the `app.toml` file, as it's part of the source code and may be committed to version control.
+
+### Common Environment Variables
+
+```sh
+# Application Environment
+ENV=development|testing|production
+
+# Database Configuration
+DATABASE_URL=sqlite+aiosqlite:///app.db
+CLEAR_DB_ON_RESTART=true
+
+# Logging Configuration
+LOG_LEVEL=DEBUG|INFO|WARNING|ERROR|CRITICAL
+
+# Directory Overrides (useful for containerized deployments)
+UPLOAD_DIR=/custom/path/datasets
+MODELS_DIR=/custom/path/models
+DB_DIR=/custom/path/db
+
+# Security & Performance
+MAX_UPLOAD_SIZE=53687091200  # 50GB in bytes
+POOL_SIZE=10
+```
+
 ## Configuration File
 
-The main configuration is stored in `src/vectorize/config/resources/app.toml`. Below are all available configuration options:
+The main non-sensitive configuration is stored in `src/vectorize/config/resources/app.toml`. This file contains application defaults and structure that are safe to include in version control.
+
+**Security Note:** Only put non-sensitive configuration values in `app.toml`. All secrets, credentials, and environment-specific paths should be configured via environment variables.
 
 ### Server Configuration (`[app.server]`)
 
-Controls the FastAPI server behavior:
+Controls the FastAPI server behavior and network settings:
 
 - **`host_binding`** (default: `"127.0.0.1"`): Host address the server binds to
-  - Set to `"0.0.0.0"` to accept connections from all interfaces
-  - Set to `"127.0.0.1"` for localhost only
+  - Set to `"0.0.0.0"` to accept connections from all network interfaces (required for Docker)
+  - Set to `"127.0.0.1"` for localhost-only access (development security)
+  - Override with `HOST_BINDING` environment variable
 - **`port`** (default: `8000`): Network port the server listens on
-- **`version`** (default: `"0.1.0"`): Application version string
-- **`reload`** (default: `true`): Enable auto-reload on code changes (development only)
+  - Override with `PORT` environment variable
+- **`version`** (default: `"0.1.0"`): Application version string for API documentation
+- **`reload`** (default: `true`): Enable auto-reload on code changes
+  - Automatically disabled in production environment
+  - Useful for development workflows
+- **`allow_origin_in_dev`**: CORS allowed origins for cross-origin requests during development
 
 ### Database Configuration (`[app.db]`)
 
-SQLite database settings:
+SQLite database connection and performance settings:
 
 - **`logging`** (default: `false`): Enable SQL query logging for debugging
+  - Useful for development and troubleshooting
+  - Should be disabled in production for performance
 - **`timeout`** (default: `30`): Database operation timeout in seconds
-- **`future`** (default: `true`): Enable SQLAlchemy 2.0 future mode
-- **`max_overflow`** (default: `10`): Maximum connections beyond pool size
+- **`future`** (default: `true`): Enable SQLAlchemy 2.0 future mode for better compatibility
+- **`max_overflow`** (default: `10`): Maximum connections beyond base pool size
 - **`pool_size`** (default: `5`): Base connection pool size
-- **`pool_pre_ping`** (default: `true`): Validate connections before use
-- **`pool_recycle`** (default: `300`): Recycle connections after N seconds
-- **`pool_timeout`** (default: `30`): Timeout for acquiring connections
+  - Increase for high-concurrency applications
+  - Override with `POOL_SIZE` environment variable
+- **`pool_pre_ping`** (default: `true`): Validate connections before use to handle stale connections
+- **`pool_recycle`** (default: `300`): Recycle connections after N seconds to prevent timeout issues
+- **`pool_timeout`** (default: `30`): Timeout for acquiring connections from the pool
+- **`seed_db_on_start`** (default: `true`): Automatically populate the database with test data on application startup
+  - Useful for development and testing environments to provide sample datasets, models, and tasks
+  - Should be disabled in production to prevent test data from appearing in live systems
+
+**Database URL:** The database location is configured via the `DATABASE_URL` environment variable, not in `app.toml`, for security and deployment flexibility.
 
 ### Logging Configuration (`[app.logging]`)
 
-Application logging settings:
+Application logging behavior and file management:
 
 - **`rotation`** (default: `"10 MB"`): Log file rotation trigger
-  - Examples: `"10 MB"`, `"1 GB"`, `"daily"`, `"weekly"`
+  - Size-based: `"10 MB"`, `"1 GB"`
+  - Time-based: `"daily"`, `"weekly"`, `"monthly"`
+  - Prevents log files from growing indefinitely
 - **`log_dir`** (default: `"log"`): Directory for log files
-- **`log_file`** (default: `"app.log"`): Log filename
+  - Can be overridden with `LOG_DIR` environment variable
+- **`log_file`** (default: `"app.log"`): Log filename within the log directory
+
+**Log Level:** Configured via `LOG_LEVEL` environment variable. Production environments automatically upgrade DEBUG to INFO for security.
 
 ### Dataset Configuration (`[app.dataset]`)
 
-Dataset upload and processing settings:
+Dataset upload, processing, and validation settings:
 
-#### File Handling
+#### File Handling & Storage
 
 - **`upload_dir`** (default: `"data/datasets"`): Directory for uploaded datasets
-- **`max_upload_size`** (default: `53687091200`): Maximum file size (50 GB in bytes)
-- **`max_filename_length`** (default: `255`): Maximum filename length
-- **`max_zip_members`** (default: `10000`): Maximum files in ZIP archives
+  - Override with `UPLOAD_DIR` environment variable for containerized deployments
+- **`max_upload_size`** (default: `53687091200`): Maximum file size in bytes (50 GB default)
+  - Prevents disk space exhaustion from large uploads
+  - Can be overridden with `MAX_UPLOAD_SIZE` environment variable
+- **`max_filename_length`** (default: `255`): Maximum filename length to ensure filesystem compatibility
+- **`max_zip_members`** (default: `10000`): Maximum files in ZIP archives to prevent zip bombs
 
-#### File Formats
+#### Supported File Formats
 
-- **`allowed_extensions`**: Supported file types for upload
-  - `csv`: Comma-separated values
-  - `json`: JSON format
-  - `jsonl`: JSON Lines format
-  - `xml`: XML documents
-  - `xlsx`, `xls`: Excel spreadsheets
+- **`allowed_extensions`**: Supported file types for dataset upload
+  - `csv`: Comma-separated values with configurable delimiters
+  - `json`: Standard JSON format for structured data
+  - `jsonl`: JSON Lines format (one JSON object per line)
+  - `xml`: XML documents for structured data
+  - `xlsx`, `xls`: Microsoft Excel spreadsheets
 - **`default_delimiter`** (default: `";"`): Default CSV delimiter
+  - Can be customized per upload request
+  - Common alternatives: `","`, `"\t"` (tab), `"|"`
 
 #### Hugging Face Schema Validation
 
-- **`hf_allowed_schemas`**: Permitted column combinations for HuggingFace datasets
+- **`hf_allowed_schemas`**: Permitted column combinations for HuggingFace dataset compatibility
 
 **Supported Schema Categories:**
 
-1. **Standard Preference Formats**
+1. **Standard Preference Formats** (for preference learning and RLHF)
 
    ```toml
    ["prompt", "chosen", "rejected"]
@@ -80,7 +143,7 @@ Dataset upload and processing settings:
    ["prompt", "response_chosen", "response_rejected"]
    ```
 
-2. **Instruction-Based Formats**
+2. **Instruction-Based Formats** (for instruction tuning)
 
    ```toml
    ["instruction", "chosen", "rejected"]
@@ -88,7 +151,7 @@ Dataset upload and processing settings:
    ["instruction", "output"]
    ```
 
-3. **Query/Question Formats**
+3. **Query/Question Formats** (for Q&A and retrieval)
 
    ```toml
    ["query", "chosen", "rejected"]
@@ -96,7 +159,7 @@ Dataset upload and processing settings:
    ["question", "answer"]
    ```
 
-4. **Input/Output Formats**
+4. **Input/Output Formats** (for general supervised learning)
 
    ```toml
    ["input", "chosen", "rejected"]
@@ -104,7 +167,7 @@ Dataset upload and processing settings:
    ["input", "target"]
    ```
 
-5. **Conversation Formats**
+5. **Conversation Formats** (for dialogue systems)
    ```toml
    ["system", "user", "chosen", "rejected"]
    ["human", "assistant"]
@@ -113,62 +176,91 @@ Dataset upload and processing settings:
 
 ### Model Configuration (`[app.model]`)
 
-AI model storage settings:
+AI model storage and upload settings:
 
-- **`upload_dir`** (default: `"data/models"`): Directory for uploaded models
-- **`max_upload_size`** (default: `53687091200`): Maximum model size (50 GB in bytes)
+- **`upload_dir`** (default: `"data/models"`): Directory for uploaded model files
+  - Override with `MODELS_DIR` environment variable
+  - Should have sufficient storage for large transformer models
+- **`max_upload_size`** (default: `53687091200`): Maximum model size in bytes (50 GB default)
+  - Large language models can be several gigabytes
+  - Adjust based on available storage and model requirements
 
 ### Inference Configuration (`[app.inference]`)
 
-Model inference settings:
+Model inference execution settings:
 
-- **`device`** (default: `"cpu"`): Compute device for inference
-  - `"cpu"`: Use CPU for inference
-  - `"cuda"`: Use GPU with CUDA (if available)
+- **`device`** (default: `"cpu"`): Compute device for inference operations
+  - `"cpu"`: Use CPU for inference (slower but more compatible)
+  - `"cuda"`: Use GPU with CUDA for faster inference (requires NVIDIA GPU)
+  - `"mps"`: Use Apple Metal Performance Shaders (for Apple Silicon Macs)
+  - Override with `INFERENCE_DEVICE` environment variable
 
 ### Evaluation Configuration (`[app.evaluation]`)
 
-Model evaluation settings:
+Model evaluation and testing settings:
 
-- **`default_max_samples`** (default: `1000`): Default sample size for evaluation
-- **`default_random_seed`** (default: `42`): Random seed for reproducible evaluation
+- **`default_max_samples`** (default: `1000`): Default sample size for evaluation runs
+  - Limits evaluation time and computational requirements
+  - Can be overridden per evaluation request
+- **`default_random_seed`** (default: `42`): Random seed for reproducible evaluation results
+  - Ensures consistent results across evaluation runs
+  - Important for scientific reproducibility
 
-## Environment Variable Overrides
+## Configuration Loading Process
 
-Several settings can be overridden with environment variables:
+The application uses Pydantic Settings to automatically load and validate configuration:
+
+1. **Defaults**: Built-in default values provide a working baseline
+2. **TOML Loading**: `app.toml` values override defaults
+3. **Environment Loading**: Environment variables override TOML values
+4. **Validation**: All settings are validated for type and constraints
+5. **Computed Fields**: Some settings are dynamically computed based on environment
+
+## Environment-Specific Behavior
+
+The configuration system automatically adjusts based on the `ENV` environment variable:
+
+- **`development`**: Enables debugging features, auto-reload, and relaxed security
+- **`testing`**: Uses isolated test directories and databases
+- **`production`**: Enforces security settings, disables debugging, and optimizes performance
+
+## Deployment Examples
+
+### Development Setup
 
 ```sh
-# Application environment
-ENV=development|testing|production
+ENV=development
+LOG_LEVEL=DEBUG
+DATABASE_URL=sqlite+aiosqlite:///dev.db
+```
 
-# Database
-DATABASE_URL=sqlite+aiosqlite:///app.db
+### Production Container
+
+```sh
+ENV=production
+LOG_LEVEL=INFO
+DATABASE_URL=sqlite+aiosqlite:///app/db/app.db
+UPLOAD_DIR=/app/data/datasets
+MODELS_DIR=/app/data/models
+MAX_UPLOAD_SIZE=10737418240
+```
+
+### Testing Environment
+
+```sh
+ENV=testing
+LOG_LEVEL=WARNING
+DATABASE_URL=sqlite+aiosqlite:///test.db
 CLEAR_DB_ON_RESTART=true
-
-# Logging
-LOG_LEVEL=DEBUG|INFO|WARNING|ERROR|CRITICAL
 ```
 
-## Example Configuration
+## Validation & Error Handling
 
-```toml
-[app.server]
-host_binding = "0.0.0.0"  # Accept external connections
-port = 8080
-reload = false  # Disable in production
+The configuration system performs comprehensive validation on startup:
 
-[app.db]
-logging = true  # Enable for debugging
-pool_size = 10  # Increase for high load
+- **Type Validation**: Ensures all values match expected types
+- **Constraint Validation**: Checks ranges, lengths, and format requirements
+- **Path Validation**: Verifies directory paths are accessible
+- **Environment Validation**: Applies environment-specific rules (e.g., production security)
 
-[app.dataset]
-max_upload_size = 10737418240  # 10 GB limit
-default_delimiter = ","  # Use comma for CSV
-
-[app.inference]
-device = "cuda"  # Use GPU if available
-```
-
-## Validation
-
-The configuration is validated on startup. Invalid values will cause the application to fail with descriptive error messages.
+Invalid configurations will cause the application to fail immediately with descriptive error messages, preventing runtime issues.

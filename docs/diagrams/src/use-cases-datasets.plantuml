@@ -1,21 +1,37 @@
 @startuml use-cases-datasets
 left to right direction
-actor Nutzer
+actor User
 
-package "Datensätze hochladen" {
-    usecase "Datensatz im .json, .csv oder .xml-Format hochladen" as EinzelDateiHochladen
-    usecase "Mehrere Datensätze gleichzeitig hochladen" as MehrereDateienHochladen
+package "Dataset Upload" {
+    usecase "Upload Local Files\n(.json, .csv, .xml, .xlsx)" as LocalUpload
+    usecase "Upload ZIP Archive\nwith Multiple Files" as ZipUpload
+    usecase "Download from\nHugging Face Hub" as HuggingFaceUpload
 }
 
-package "Datensätze verwalten" {
-    usecase "Datensatz umbenennen" as DatensatzUmbenennen
-    usecase "Datensatz löschen" as DatensatzLöschen
-    usecase "Einzelnen Datensatz abrufen" as EinzelnenDatensatzAbrufen
+package "Dataset Management" {
+    usecase "List Datasets\nwith Pagination" as ListDatasets
+    usecase "Get Dataset Details" as GetDataset
+    usecase "Update Dataset Name" as UpdateDataset
+    usecase "Delete Dataset" as DeleteDataset
 }
 
-Nutzer --> EinzelDateiHochladen
-Nutzer --> MehrereDateienHochladen
-Nutzer --> DatensatzUmbenennen
-Nutzer --> DatensatzLöschen
-Nutzer --> EinzelnenDatensatzAbrufen
+package "Background Processing" {
+    usecase "Monitor Upload Status" as MonitorUpload
+    usecase "Track HF Download Progress" as TrackHFProgress
+}
+
+User --> LocalUpload
+User --> ZipUpload
+User --> HuggingFaceUpload
+User --> ListDatasets
+User --> GetDataset
+User --> UpdateDataset
+User --> DeleteDataset
+User --> MonitorUpload
+User --> TrackHFProgress
+
+LocalUpload ..> MonitorUpload : creates task
+ZipUpload ..> MonitorUpload : creates task
+HuggingFaceUpload ..> TrackHFProgress : creates task
+
 @enduml
