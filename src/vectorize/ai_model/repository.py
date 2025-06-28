@@ -155,9 +155,13 @@ async def delete_model_db(db: AsyncSession, model_id: UUID) -> None:
     await db.commit()
     logger.debug("Model deleted", model=model)
     if model.source == ModelSource.HUGGINGFACE:
-        from vectorize.upload import remove_huggingface_model_from_memory_svc
+        from vectorize.upload import (  # noqa: PLC0415
+            remove_huggingface_model_from_memory_svc,
+        )
         await remove_huggingface_model_from_memory_svc(model.model_tag)
 
     if model.source == ModelSource.GITHUB:
-        from vectorize.upload import remove_github_model_from_memory_svc
+        from vectorize.upload import (  # noqa: PLC0415
+            remove_github_model_from_memory_svc,
+        )
         await remove_github_model_from_memory_svc(model.model_tag)
