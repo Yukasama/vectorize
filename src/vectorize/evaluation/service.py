@@ -3,7 +3,6 @@
 import json
 from pathlib import Path
 from typing import Any
-from uuid import UUID
 
 import torch
 from loguru import logger
@@ -78,6 +77,7 @@ async def resolve_evaluation_dataset_svc(
     return await EvaluationDatasetResolver.resolve_evaluation_dataset(
         db, evaluation_request
     )
+
 
 SELECTED_MTEB_TASKS = ["STSBenchmark", "BIOSSES", "SICK-R"]
 CACHE_BASE_DIR = "/app/data/models"
