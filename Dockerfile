@@ -41,13 +41,9 @@ ENV UPLOAD_DIR=/app/data/datasets \
 
 # Install dependencies, create user, and prepare directories in one layer
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates git-core libcurl4 libpcre2-8-0 && \
+    apt-get install -y --no-install-recommends ca-certificates git-core && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
-    groupadd --system appuser && useradd --system \
-            --gid appuser \
-            --no-create-home \
-            --shell /usr/sbin/nologin \
-            appuser && \
+    groupadd --system appuser && useradd --system --gid appuser --no-create-home --shell /usr/sbin/nologin appuser && \
     install -d -o appuser -g appuser -m 755 ${MODELS_DIR} ${UPLOAD_DIR} ${DB_DIR} ${HF_HOME}
 
 # Copy non-writable source code into workdir
