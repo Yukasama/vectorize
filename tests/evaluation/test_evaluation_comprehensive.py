@@ -284,7 +284,7 @@ class TestEvaluationComprehensive:
         # Verify our test datasets have the correct schema
         dataset_files = [
             f"__rm_-rf__2F_{DATASET_ID_2}.jsonl",
-            f"__rm_-rf__2F_{DATASET_ID_1}.jsonl"
+            f"__rm_-rf__2F_{DATASET_ID_1}.jsonl",
         ]
 
         for dataset_file in dataset_files:

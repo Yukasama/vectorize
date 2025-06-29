@@ -19,8 +19,8 @@ from .exceptions import (
 )
 from .models import TrainingTask
 from .repository import (
-    get_train_task_by_id,
-    save_training_task,
+    get_train_task_by_id_db,
+    save_training_task_db,
 )
 from .schemas import TrainRequest, TrainingStatusResponse
 from .service import TrainingOrchestrator
@@ -71,8 +71,7 @@ async def train_model(
     task = TrainingTask(id=uuid4())
     clean_model_name = model.model_tag.replace("models--", "").replace("--", "-")
     output_dir = (
-        f"data/models/{clean_model_name}-finetuned-"
-        f"{tag_time}-{str(task.id)[:8]}"
+        f"data/models/{clean_model_name}-finetuned-{tag_time}-{str(task.id)[:8]}"
     )
     logger.debug(
         "SBERT-Triplet-Training requested."
@@ -81,7 +80,7 @@ async def train_model(
         len(dataset_paths),
         model_path,
     )
-    await save_training_task(db, task)
+    await save_training_task_db(db, task)
 
     run_training_bg.send_with_options(
         args=(
@@ -113,7 +112,7 @@ async def get_training_status(
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> TrainingStatusResponse:
     """Returns the status and metadata of a training job."""
-    task = await get_train_task_by_id(db, task_id)
+    task = await get_train_task_by_id_db(db, task_id)
     if not task:
         raise TrainingTaskNotFoundError(str(task_id))
     return TrainingStatusResponse.from_task(task)

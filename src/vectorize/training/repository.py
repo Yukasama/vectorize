@@ -11,15 +11,15 @@ from vectorize.task.task_status import TaskStatus
 from .models import TrainingTask
 
 __all__ = [
-    "get_train_task_by_id",
-    "save_training_task",
-    "update_training_task_metrics",
-    "update_training_task_status",
-    "update_training_task_validation_dataset",
+    "get_train_task_by_id_db",
+    "save_training_task_db",
+    "update_training_task_metrics_db",
+    "update_training_task_status_db",
+    "update_training_task_validation_dataset_db",
 ]
 
 
-async def save_training_task(db: AsyncSession, task: TrainingTask) -> None:
+async def save_training_task_db(db: AsyncSession, task: TrainingTask) -> None:
     """Persist a new TrainingTask to the database.
 
     Args:
@@ -31,7 +31,7 @@ async def save_training_task(db: AsyncSession, task: TrainingTask) -> None:
     await db.refresh(task)
 
 
-async def update_training_task_status(
+async def update_training_task_status_db(
     db: AsyncSession, task_id: UUID, status: TaskStatus, error_msg: str | None = None
 ) -> None:
     """Update the status and error message of a TrainingTask.
@@ -54,7 +54,7 @@ async def update_training_task_status(
         await db.refresh(task)
 
 
-async def update_training_task_metrics(
+async def update_training_task_metrics_db(
     db: AsyncSession,
     task_id: UUID,
     metrics: dict[str, float | None],
@@ -83,7 +83,7 @@ async def update_training_task_metrics(
         await db.refresh(task)
 
 
-async def update_training_task_validation_dataset(
+async def update_training_task_validation_dataset_db(
     db: AsyncSession, task_id: UUID, validation_dataset_path: str
 ) -> None:
     """Update the validation dataset path of a TrainingTask.
@@ -102,7 +102,8 @@ async def update_training_task_validation_dataset(
         await db.refresh(task)
 
 
-async def get_train_task_by_id(db: AsyncSession, task_id: UUID) -> TrainingTask | None:
+async def get_train_task_by_id_db(
+        db: AsyncSession, task_id: UUID) -> TrainingTask | None:
     """Fetch a TrainingTask by its ID.
 
     Args:

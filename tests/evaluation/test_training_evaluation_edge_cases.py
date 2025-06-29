@@ -145,9 +145,10 @@ class TestTrainingEdgeCases:
 
         for test_case in boundary_tests:
             response = client.post("/training/train", json=test_case["payload"])
-            assert response.status_code == test_case["expected_status"], \
-                f"Expected {test_case['expected_status']} for {test_case['name']}, " \
+            assert response.status_code == test_case["expected_status"], (
+                f"Expected {test_case['expected_status']} for {test_case['name']}, "
                 f"got {response.status_code}"
+            )
 
     @staticmethod
     def test_training_malformed_requests(client: TestClient) -> None:
@@ -207,8 +208,9 @@ class TestTrainingEdgeCases:
 
         for test_case in malformed_requests:
             response = client.post("/training/train", json=test_case["payload"])
-            assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY, \
+            assert response.status_code == HTTP_422_UNPROCESSABLE_ENTITY, (
                 f"Expected 422 for {test_case['name']}, got {response.status_code}"
+            )
 
     @staticmethod
     def test_training_duplicate_dataset_ids(client: TestClient) -> None:
@@ -286,9 +288,7 @@ class TestTrainingEdgeCases:
                 HTTP_404_NOT_FOUND,
                 HTTP_400_BAD_REQUEST,
                 HTTP_422_UNPROCESSABLE_ENTITY,
-            }, (
-                f"Unexpected status for tag '{tag}': {response.status_code}"
-            )
+            }, f"Unexpected status for tag '{tag}': {response.status_code}"
 
 
 @pytest.mark.edge_cases
@@ -377,9 +377,7 @@ class TestEvaluationEdgeCases:
                 HTTP_202_ACCEPTED,
                 HTTP_400_BAD_REQUEST,
                 HTTP_422_UNPROCESSABLE_ENTITY,
-            }, (
-                f"Unexpected status for tag '{tag}': {response.status_code}"
-            )
+            }, f"Unexpected status for tag '{tag}': {response.status_code}"
 
     @staticmethod
     def test_evaluation_very_long_identifiers(client: TestClient) -> None:
@@ -490,6 +488,62 @@ class TestDatasetSchemaEdgeCases:
     """Edge case tests related to dataset schema handling."""
 
     @staticmethod
+    def _load_dataset_examples(file_path: Path) -> list[dict]:
+        """Load and parse examples from a dataset file."""
+        examples = []
+        with file_path.open("r", encoding="utf-8") as f:
+            for line_num, line in enumerate(f, 1):
+                if line.strip():
+                    try:
+                        example = json.loads(line)
+                        examples.append(example)
+                    except json.JSONDecodeError:
+                        pytest.fail(
+                            f"Invalid JSON in {file_path.name} line {line_num}: {line}"
+                        )
+        return examples
+
+    @staticmethod
+    def _validate_example_schema(
+        example: dict, filename: str, example_index: int
+    ) -> None:
+        """Validate the schema of a single dataset example."""
+        required_fields = ["question", "positive", "negative"]
+
+        for field in required_fields:
+            assert field in example, (
+                f"Missing '{field}' in {filename} example {example_index}"
+            )
+            assert isinstance(example[field], str), (
+                f"Field '{field}' should be string in {filename} "
+                f"example {example_index}"
+            )
+            assert example[field].strip(), (
+                f"Field '{field}' should not be empty in {filename} "
+                f"example {example_index}"
+            )
+
+        # Check for unexpected fields
+        unexpected_fields = set(example.keys()) - set(required_fields)
+        if unexpected_fields:
+            # Use pytest.warns or logging if needed, but no print
+            pass
+
+    @staticmethod
+    def _validate_dataset_file(filename: str) -> None:
+        """Validate a single dataset file."""
+        file_path = TEST_DATA_DIR / filename
+        if not file_path.exists():
+            pytest.skip(f"Test dataset not found: {filename}")
+
+        examples = TestDatasetSchemaEdgeCases._load_dataset_examples(file_path)
+        assert len(examples) > 0, f"No examples found in {filename}"
+
+        # Validate schema for each example
+        for i, example in enumerate(examples):
+            TestDatasetSchemaEdgeCases._validate_example_schema(example, filename, i)
+
+    @staticmethod
     def test_dataset_content_validation() -> None:
         """Test that datasets with our test schema are properly validated."""
         # Load and validate test dataset content
@@ -499,42 +553,7 @@ class TestDatasetSchemaEdgeCases:
         ]
 
         for filename in test_files:
-            file_path = TEST_DATA_DIR / filename
-            if not file_path.exists():
-                pytest.skip(f"Test dataset not found: {filename}")
-
-            examples = []
-            with file_path.open("r", encoding="utf-8") as f:
-                for line_num, line in enumerate(f, 1):
-                    if line.strip():
-                        try:
-                            example = json.loads(line)
-                            examples.append(example)
-                        except json.JSONDecodeError:
-                            pytest.fail(
-                                f"Invalid JSON in {filename} line {line_num}: {line}"
-                            )
-
-            assert len(examples) > 0, f"No examples found in {filename}"
-
-            # Validate schema for each example
-            for i, example in enumerate(examples):
-                required_fields = ["question", "positive", "negative"]
-                for field in required_fields:
-                    assert field in example, (
-                        f"Missing '{field}' in {filename} example {i}"
-                    )
-                    assert isinstance(
-                        example[field], str
-                    ), f"Field '{field}' should be string in {filename} example {i}"
-                    assert example[field].strip(), (
-                        f"Field '{field}' should not be empty in {filename} example {i}"
-                    )
-                # Check for unexpected fields
-                unexpected_fields = set(example.keys()) - set(required_fields)
-                if unexpected_fields:
-                    # Use pytest.warns or logging if needed, but no print
-                    pass
+            TestDatasetSchemaEdgeCases._validate_dataset_file(filename)
 
     @staticmethod
     def test_empty_dataset_handling(client: TestClient) -> None:
@@ -610,9 +629,8 @@ class TestConcurrencyAndStress:
                 response = client.post("/evaluation/evaluate", json=payload)
                 endpoint = "evaluation"
 
-            if (
-                response.status_code == HTTP_202_ACCEPTED
-                and response.headers.get("Location")
+            if response.status_code == HTTP_202_ACCEPTED and response.headers.get(
+                "Location"
             ):
                 match = re.search(
                     rf"/{endpoint}/([a-f0-9\-]+)/status",

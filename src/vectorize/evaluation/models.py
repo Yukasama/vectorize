@@ -48,6 +48,21 @@ class EvaluationTask(SQLModel, table=True):
 
     model: Optional["AIModel"] = Relationship(back_populates="evaluation_tasks")
 
+    model_tag: str | None = Field(
+        default=None,
+        description="Tag of the evaluated model.",
+    )
+
+    dataset_info: str | None = Field(
+        default=None,
+        description="Information about the dataset used for evaluation.",
+    )
+
+    baseline_model_tag: str | None = Field(
+        default=None,
+        description="Tag of the baseline model used for comparison (if any).",
+    )
+
     created_at: datetime = Field(
         sa_column=Column(DateTime(timezone=True), insert_default=func.now()),
         description="Timestamp when the evaluation task was created.",
