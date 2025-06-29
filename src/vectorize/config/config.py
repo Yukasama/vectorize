@@ -55,6 +55,11 @@ class Settings(BaseSettings):
         description="List of CORS allowed origins for cross-origin requests.",
     )
 
+    root_path: str = Field(
+        default=_server_config.get("root_path", "/v1/api"),
+        description="Root path for the application, useful for reverse proxies.",
+    )
+
     # Database configuration
     db_url: str = Field(
         default="sqlite+aiosqlite:///app.db",

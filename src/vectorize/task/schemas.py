@@ -2,8 +2,8 @@
 
 from pydantic import BaseModel, Field
 
-from vectorize.task.task_status import TaskStatus
-from vectorize.task.task_type import TaskType
+from .task_status import TaskStatus
+from .task_type import TaskType
 
 __all__ = ["TaskFilters"]
 

@@ -4,6 +4,9 @@ from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
+__all__ = ["Page"]
+
+
 T = TypeVar("T")
 
 

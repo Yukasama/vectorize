@@ -1,20 +1,19 @@
 """Common test fixtures for the application."""
 
 import os
-import shutil
-from pathlib import Path
-
-import redis
 
 os.environ.setdefault("ENV", "testing")
 
+import shutil
 import signal
 import subprocess  # noqa: S404
 import sys
 import time
 from collections.abc import AsyncGenerator, Generator
+from pathlib import Path
 
 import pytest
+import redis
 from fastapi.testclient import TestClient
 from loguru import logger
 from redis import Redis
@@ -33,7 +32,7 @@ REDIS_TEST_PORT = 56379
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_test_db() -> Generator[None]:
     """Clean up test database before and after each test."""
-    db_path = Path("app.db")
+    db_path = Path("test.db")
     if db_path.exists():
         db_path.unlink()
     yield
@@ -101,7 +100,7 @@ async def session() -> AsyncGenerator[AsyncSession]:
         AsyncSession: SQLModel async session for database operations.
     """
     test_engine = create_async_engine(
-        "sqlite+aiosqlite:///app.db",
+        "sqlite+aiosqlite:///test.db",
         poolclass=StaticPool,
         connect_args={
             "check_same_thread": False,

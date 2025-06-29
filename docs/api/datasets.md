@@ -1,4 +1,4 @@
-# Dataset Management API
+# Dataset API
 
 The dataset module provides comprehensive dataset management capabilities including upload, retrieval, and Hugging Face integration.
 
@@ -17,6 +17,10 @@ The dataset module provides comprehensive dataset management capabilities includ
 ## Data Models
 
 ::: vectorize.dataset.models
+
+## Exceptions
+
+::: vectorize.dataset.exceptions
 
 ## Schemas
 
@@ -41,7 +45,3 @@ The dataset module provides comprehensive dataset management capabilities includ
 ## Pagination
 
 ::: vectorize.dataset.pagination
-
-## Exceptions
-
-::: vectorize.dataset.exceptions

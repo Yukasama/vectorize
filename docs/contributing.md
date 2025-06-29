@@ -12,7 +12,7 @@ git clone https://github.com/your-username/vectorize.git
 cd vectorize
 
 # Install with dev dependencies
-uv sync --all-extras --dev
+uv sync
 
 # Set up development environment
 cp .env.example .env
@@ -51,6 +51,7 @@ module/
 ├── router.py       # FastAPI endpoints
 ├── tasks.py        # Background tasks
 └── exceptions.py   # Module-specific exceptions
+└── utils           # Utils for the module
 ```
 
 ### Testing
@@ -59,16 +60,6 @@ module/
 - Write integration tests for API endpoints
 - Use descriptive test names: `test_upload_dataset_with_valid_csv`
 - Group related tests in classes
-
-Test structure:
-
-```
-tests/
-├── unit/           # Unit tests
-├── integration/    # Integration tests
-├── load/           # Load tests with Locust
-└── fixtures/       # Test data and fixtures
-```
 
 ### Database Changes
 
@@ -144,7 +135,7 @@ uv run app
 uv run uvicorn vectorize.app:app --reload
 
 # With Docker
-docker compose up vectorize dramatiq_worker redis
+docker compose up vectorize dramatiq_worker redis caddy
 ```
 
 ### Load Testing
