@@ -31,7 +31,7 @@ class EvaluationRequest(BaseModel):
     )
     training_task_id: str | None = Field(
         default=None,
-        description="Optional training task ID to use its validation dataset"
+        description="Optional training task ID to use its validation dataset",
     )
 
 
@@ -58,6 +58,9 @@ class EvaluationStatusResponse(BaseModel):
     evaluation_metrics: dict | None = None
     baseline_metrics: dict | None = None
     evaluation_summary: str | None = None
+    model_tag: str | None = None
+    dataset_info: str | None = None
+    baseline_model_tag: str | None = None
 
     @classmethod
     def from_task(cls, task: EvaluationTask) -> "EvaluationStatusResponse":
@@ -94,4 +97,7 @@ class EvaluationStatusResponse(BaseModel):
             evaluation_metrics=evaluation_metrics,
             baseline_metrics=baseline_metrics,
             evaluation_summary=task.evaluation_summary,
+            model_tag=task.model_tag,
+            dataset_info=task.dataset_info,
+            baseline_model_tag=task.baseline_model_tag,
         )

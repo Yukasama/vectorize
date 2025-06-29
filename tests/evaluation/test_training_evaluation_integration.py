@@ -54,9 +54,8 @@ def extract_task_id(response: Response, endpoint_type: str = "training") -> str:
             task_id = match.group(1)
 
     # Fallback to JSON body
-    elif (
-        response.content
-        and response.headers.get("content-type", "").startswith("application/json")
+    elif response.content and response.headers.get("content-type", "").startswith(
+        "application/json"
     ):
         data = response.json()
         task_id = data.get("task_id")
@@ -165,9 +164,9 @@ class TestTrainingEvaluationIntegration:
                 required_fields = ["question", "positive", "negative"]
                 for field in required_fields:
                     assert field in example, f"Missing field: {field}"
-                    assert isinstance(
-                        example[field], str
-                    ), f"Field {field} should be string"
+                    assert isinstance(example[field], str), (
+                        f"Field {field} should be string"
+                    )
                     assert example[field].strip(), f"Field {field} should not be empty"
 
         ensure_minilm_model_available()

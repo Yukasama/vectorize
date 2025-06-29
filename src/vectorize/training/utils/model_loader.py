@@ -63,6 +63,5 @@ def _prepare_tokenizer(tokenizer: PreTrainedTokenizer) -> None:
             tokenizer.add_special_tokens({"pad_token": "[PAD]"})
             logger.debug("Added [PAD] token as pad_token")
     else:
-        # Escape the pad_token to avoid Loguru color parsing issues
         pad_token_str = str(tokenizer.pad_token).replace("<", "\\<").replace(">", "\\>")
         logger.debug("Tokenizer already has pad_token", pad_token=pad_token_str)

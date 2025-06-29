@@ -8,87 +8,71 @@ import dramatiq
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.ai_model.exceptions import ModelNotFoundError
-from vectorize.ai_model.repository import get_ai_model_db
 from vectorize.config.db import engine
-from vectorize.dataset.repository import get_dataset_db
 from vectorize.task.task_status import TaskStatus
-from vectorize.training.exceptions import (
-    InvalidDatasetIdError,
-    TrainingDatasetNotFoundError,
-)
-from vectorize.training.repository import get_train_task_by_id
 
-from .evaluation import TrainingEvaluator
-from .repository import update_evaluation_task_results, update_evaluation_task_status
 from .schemas import EvaluationRequest
-from .utils import resolve_model_path
+from .utils import (
+    EvaluationDatabaseManager,
+    EvaluationDatasetResolver,
+)
+from .utils.evaluation_engine import EvaluationEngine
 
 __all__ = ["run_evaluation_bg"]
 
 
-async def resolve_evaluation_dataset(
-    db: AsyncSession, evaluation_request: EvaluationRequest
-) -> Path:
-    """Resolve the dataset path for evaluation based on request parameters."""
-    # Validation logic
-    if evaluation_request.dataset_id and evaluation_request.training_task_id:
-        raise ValueError(
-            "Cannot specify both dataset_id and training_task_id. "
-            "Use dataset_id for explicit dataset or training_task_id "
-            "to use the validation dataset from that training."
-        )
+async def _run_baseline_evaluation(
+    engine: EvaluationEngine,
+    db_manager: EvaluationDatabaseManager,
+    evaluation_request: EvaluationRequest,
+    dataset_path: Path,
+) -> None:
+    """Run evaluation with baseline comparison."""
+    if not evaluation_request.baseline_model_tag:
+        raise ValueError("Baseline model tag is required for comparison evaluation")
 
-    if not evaluation_request.dataset_id and not evaluation_request.training_task_id:
-        raise ValueError("Must specify either dataset_id or training_task_id.")
+    baseline_model_path = await db_manager.validate_baseline_model(
+        evaluation_request.baseline_model_tag
+    )
 
-    if evaluation_request.dataset_id:
-        try:
-            dataset_uuid = UUID(evaluation_request.dataset_id)
-        except ValueError as exc:
-            raise InvalidDatasetIdError(evaluation_request.dataset_id) from exc
+    await db_manager.update_task_status(TaskStatus.RUNNING, progress=0.5)
 
-        dataset = await get_dataset_db(db, dataset_uuid)
-        if not dataset:
-            raise TrainingDatasetNotFoundError(
-                f"Dataset not found: {evaluation_request.dataset_id}"
-            )
+    trained_metrics_dict, baseline_metrics_dict = engine.get_comparison_metrics_dict(
+        dataset_path=dataset_path,
+        baseline_model_path=baseline_model_path,
+        max_samples=evaluation_request.max_samples,
+    )
 
-        dataset_path = Path("data/datasets") / dataset.file_name
-        if not dataset_path.exists():
-            raise TrainingDatasetNotFoundError(
-                f"Dataset file not found: {dataset_path}"
-            )
+    summary = engine.calculate_improvement_summary(
+        trained_metrics_dict, baseline_metrics_dict
+    )
 
-        return dataset_path
+    await db_manager.save_comparison_evaluation_results(
+        evaluation_metrics=json.dumps(trained_metrics_dict),
+        baseline_metrics=json.dumps(baseline_metrics_dict),
+        evaluation_summary=summary,
+    )
 
-    if evaluation_request.training_task_id:
-        try:
-            task_uuid = UUID(evaluation_request.training_task_id)
-        except ValueError as exc:
-            raise InvalidDatasetIdError(evaluation_request.training_task_id) from exc
 
-        training_task = await get_train_task_by_id(db, task_uuid)
-        if not training_task:
-            raise TrainingDatasetNotFoundError(
-                f"Training task not found: {evaluation_request.training_task_id}"
-            )
+async def _run_simple_evaluation(
+    engine: EvaluationEngine,
+    db_manager: EvaluationDatabaseManager,
+    evaluation_request: EvaluationRequest,
+    dataset_path: Path,
+) -> None:
+    """Run simple evaluation without baseline."""
+    await db_manager.update_task_status(TaskStatus.RUNNING, progress=0.5)
 
-        if not training_task.validation_dataset_path:
-            raise TrainingDatasetNotFoundError(
-                f"Training task {evaluation_request.training_task_id} "
-                "has no validation dataset path"
-            )
+    metrics_dict = engine.get_simple_metrics_dict(
+        dataset_path, evaluation_request.max_samples
+    )
 
-        dataset_path = Path(training_task.validation_dataset_path)
-        if not dataset_path.exists():
-            raise TrainingDatasetNotFoundError(
-                f"Validation dataset file not found: {dataset_path}"
-            )
+    summary = engine.calculate_simple_summary(metrics_dict)
 
-        return dataset_path
-
-    raise ValueError("Either dataset_id or training_task_id must be provided")
+    await db_manager.save_simple_evaluation_results(
+        evaluation_metrics=json.dumps(metrics_dict),
+        evaluation_summary=summary,
+    )
 
 
 @dramatiq.actor(max_retries=3)
@@ -103,6 +87,7 @@ async def run_evaluation_bg(
         task_id: Evaluation task ID as string
     """
     async with AsyncSession(engine, expire_on_commit=False) as db:
+        db_manager = None
         try:
             evaluation_request = EvaluationRequest.model_validate(
                 evaluation_request_dict
@@ -119,100 +104,36 @@ async def run_evaluation_bg(
                 max_samples=evaluation_request.max_samples,
             )
 
-            await update_evaluation_task_status(
-                db, task_uuid, TaskStatus.RUNNING, progress=0.1
+            db_manager = EvaluationDatabaseManager(db, task_uuid)
+
+            model_path = await db_manager.setup_evaluation_task(evaluation_request)
+
+            dataset_path = await EvaluationDatasetResolver.resolve_evaluation_dataset(
+                db, evaluation_request
             )
 
-            model = await get_ai_model_db(db, evaluation_request.model_tag)
-            if not model:
-                raise ModelNotFoundError(evaluation_request.model_tag)
-
-            model_path = resolve_model_path(model.model_tag)
-
-            await update_evaluation_task_status(
-                db, task_uuid, TaskStatus.RUNNING, progress=0.2
+            dataset_info = await EvaluationDatasetResolver.get_dataset_info(
+                db, evaluation_request
             )
 
-            # Resolve dataset using either dataset_id or training_task_id
-            dataset_path = await resolve_evaluation_dataset(db, evaluation_request)
-
-            await update_evaluation_task_status(
-                db, task_uuid, TaskStatus.RUNNING, progress=0.3
+            await db_manager.update_task_metadata(
+                model_tag=evaluation_request.model_tag,
+                dataset_info=dataset_info,
+                baseline_model_tag=evaluation_request.baseline_model_tag,
             )
 
-            evaluator = TrainingEvaluator(model_path)
+            engine_eval = EvaluationEngine(model_path)
 
             if evaluation_request.baseline_model_tag:
-                baseline_model = await get_ai_model_db(
-                    db, evaluation_request.baseline_model_tag
-                )
-                if not baseline_model:
-                    raise ModelNotFoundError(evaluation_request.baseline_model_tag)
-
-                baseline_model_path = resolve_model_path(baseline_model.model_tag)
-
-                await update_evaluation_task_status(
-                    db, task_uuid, TaskStatus.RUNNING, progress=0.5
-                )
-
-                comparison_results = evaluator.compare_models(
-                    baseline_model_path=baseline_model_path,
-                    dataset_path=dataset_path,
-                    max_samples=evaluation_request.max_samples,
-                )
-                trained_metrics = comparison_results["trained"]
-                baseline_metrics = comparison_results["baseline"]
-
-                improvement = trained_metrics.get_improvement_over_baseline(
-                    baseline_metrics
-                )
-                summary = (
-                    f"Similarity ratio improved by "
-                    f"{improvement['ratio_improvement']:.3f} "
-                    f"({baseline_metrics.similarity_ratio:.3f} → "
-                    f"{trained_metrics.similarity_ratio:.3f})"
-                )
-
-                await update_evaluation_task_status(
-                    db, task_uuid, TaskStatus.RUNNING, progress=0.9
-                )
-
-                await update_evaluation_task_results(
-                    db,
-                    task_uuid,
-                    evaluation_metrics=json.dumps(trained_metrics.to_dict()),
-                    baseline_metrics=json.dumps(baseline_metrics.to_baseline_dict()),
-                    evaluation_summary=summary,
+                await _run_baseline_evaluation(
+                    engine_eval, db_manager, evaluation_request, dataset_path
                 )
             else:
-                await update_evaluation_task_status(
-                    db, task_uuid, TaskStatus.RUNNING, progress=0.5
+                await _run_simple_evaluation(
+                    engine_eval, db_manager, evaluation_request, dataset_path
                 )
 
-                metrics = evaluator.evaluate_dataset(
-                    dataset_path, evaluation_request.max_samples
-                )
-
-                summary = (
-                    f"Positive similarity: {metrics.avg_positive_similarity:.3f}, "
-                    f"Negative similarity: {metrics.avg_negative_similarity:.3f}, "
-                    f"Ratio: {metrics.similarity_ratio:.3f}"
-                )
-
-                await update_evaluation_task_status(
-                    db, task_uuid, TaskStatus.RUNNING, progress=0.9
-                )
-
-                await update_evaluation_task_results(
-                    db,
-                    task_uuid,
-                    evaluation_metrics=json.dumps(metrics.to_dict()),
-                    evaluation_summary=summary,
-                )
-
-            await update_evaluation_task_status(
-                db, task_uuid, TaskStatus.DONE, progress=1.0
-            )
+            await db_manager.mark_evaluation_complete()
 
             logger.info(
                 "Evaluation task completed successfully",
@@ -228,11 +149,13 @@ async def run_evaluation_bg(
                 error=str(e),
                 exc_info=True,
             )
-            # Update task status to failed
+
             try:
-                await update_evaluation_task_status(
-                    db, UUID(task_id), TaskStatus.FAILED, progress=0.0
-                )
+                if db_manager is not None:
+                    await db_manager.handle_evaluation_error(e)
+                else:
+                    db_manager = EvaluationDatabaseManager(db, UUID(task_id))
+                    await db_manager.handle_evaluation_error(e)
             except Exception:
                 logger.error("Failed to update task status to FAILED", task_id=task_id)
             raise

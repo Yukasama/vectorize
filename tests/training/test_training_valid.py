@@ -77,9 +77,8 @@ def extract_task_id_from_response(response: Response) -> str:
             task_id = match.group(1)
 
     # Fallback to JSON body if available
-    elif (
-        response.content
-        and response.headers.get("content-type", "").startswith("application/json")
+    elif response.content and response.headers.get("content-type", "").startswith(
+        "application/json"
     ):
         data = response.json()
         task_id = data.get("task_id")
@@ -169,9 +168,7 @@ class TestTrainingValid:
                             assert field in example, (
                                 f"Missing '{field}' in {test_file.name} line {line_num}"
                             )
-                            assert isinstance(
-                                example[field], str
-                            ), (
+                            assert isinstance(example[field], str), (
                                 f"Field '{field}' should be string in {test_file.name} "
                                 f"line {line_num}"
                             )
