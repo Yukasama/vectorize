@@ -14,11 +14,11 @@ from fastapi import (
 from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from vectorize.ai_model.repository import get_models_paged_db
-from vectorize.ai_model.schemas import PagedResponse
 from vectorize.config.db import get_session
 
 from .models import AIModelPublic, AIModelUpdate
+from .repository import get_models_paged_db
+from .schemas import PagedResponse
 from .service import delete_model_svc, get_ai_model_svc, update_ai_model_svc
 
 __all__ = ["router"]

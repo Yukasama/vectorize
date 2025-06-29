@@ -11,12 +11,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from vectorize.dataset.task_model import UploadDatasetTask
 from vectorize.evaluation.models import EvaluationTask
 from vectorize.synthesis.models import SynthesisTask
-from vectorize.task.task_type import TaskType
 from vectorize.training.models import TrainingTask
 from vectorize.upload.models import UploadTask
 
 from .query_builder import build_query
 from .schemas import TaskFilters
+from .task_type import TaskType
 
 __all__ = ["get_tasks_db"]
 

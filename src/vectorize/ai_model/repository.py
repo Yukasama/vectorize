@@ -12,7 +12,13 @@ from vectorize.common.exceptions import VersionMismatchError
 from .exceptions import ModelNotFoundError, NoModelFoundError
 from .models import AIModel, AIModelUpdate
 
-__all__ = ["get_ai_model_db", "save_ai_model_db", "update_ai_model_db"]
+__all__ = [
+    "delete_model_db",
+    "get_ai_model_db",
+    "get_models_paged_db",
+    "save_ai_model_db",
+    "update_ai_model_db",
+]
 
 
 async def get_models_paged_db(

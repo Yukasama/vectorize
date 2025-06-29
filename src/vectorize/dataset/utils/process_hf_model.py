@@ -23,7 +23,7 @@ from vectorize.task.task_status import TaskStatus
 from ..classification import Classification
 from ..dataset_source import DatasetSource
 from ..models import Dataset
-from ..repository import update_upload_task_status, upload_dataset_db
+from ..repository import update_upload_task_status_db, upload_dataset_db
 from .match_hf_schema import match_schema
 
 __all__ = ["process_dataset"]
@@ -61,9 +61,9 @@ async def process_dataset(
             for split in info.splits:
                 await _process_single_dataset(db, dataset_tag, task_id, split, subset)
 
-        await update_upload_task_status(db, task_id, TaskStatus.DONE)
+        await update_upload_task_status_db(db, task_id, TaskStatus.DONE)
     except Exception as e:
-        await update_upload_task_status(
+        await update_upload_task_status_db(
             db,
             task_id,
             TaskStatus.FAILED,
@@ -132,7 +132,7 @@ async def _process_single_dataset(
         )
 
         dataset_id = await upload_dataset_db(db, dataset)
-        await update_upload_task_status(db, task_id, TaskStatus.DONE)
+        await update_upload_task_status_db(db, task_id, TaskStatus.DONE)
         logger.debug("HF Dataset saved", dataset_tag=dataset_tag, dataset_id=dataset_id)
 
     except SQLAlchemyError:

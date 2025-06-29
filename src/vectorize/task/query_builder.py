@@ -5,7 +5,8 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import ColumnElement, String, cast, func, literal, or_, select
 
 from vectorize.ai_model.models import AIModel
-from vectorize.task.task_status import TaskStatus
+
+from .task_status import TaskStatus
 
 __all__ = ["build_query"]
 

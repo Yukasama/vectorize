@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-__all__ = ["ModelSource"]
+__all__ = ["ModelSource", "RemoteModelSource"]
 
 
 class ModelSource(StrEnum):

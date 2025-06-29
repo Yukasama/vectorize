@@ -7,12 +7,12 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config.db import get_session
-from vectorize.task.schemas import TaskFilters
-from vectorize.task.task_status import TaskStatus
-from vectorize.task.task_type import TaskType
 
 from .models import TaskModel
+from .schemas import TaskFilters
 from .service import get_tasks_svc
+from .task_status import TaskStatus
+from .task_type import TaskType
 
 __all__ = ["router"]
 

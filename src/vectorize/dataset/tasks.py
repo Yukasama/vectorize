@@ -8,7 +8,8 @@ from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from vectorize.config.db import engine
-from vectorize.dataset.utils.process_hf_model import process_dataset
+
+from .utils.process_hf_model import process_dataset
 
 __all__ = ["upload_hf_dataset_bg"]
 
