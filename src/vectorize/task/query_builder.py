@@ -42,14 +42,15 @@ def build_query(  # noqa: ANN201
             ai_table, model_table.c.trained_model_id == ai_table.c.id
         )
         tag_col = ai_table.c.model_tag
-    elif hasattr(model, "evaluation_metrics"):
-        join_expr = model_table.outerjoin(
-            ai_table, model_table.c.model_id == ai_table.c.id
-        )
-        tag_col = ai_table.c.model_tag
+    elif hasattr(model, "model_tag"):
+        join_expr = model_table
+        tag_col = model_table.c.model_tag
+    elif hasattr(model, "tag"):
+        join_expr = model_table
+        tag_col = model_table.c.tag
     else:
         join_expr = model_table
-        tag_col = model.tag if hasattr(model, "tag") else literal(None)
+        tag_col = literal(None)
 
     query = (
         select(
