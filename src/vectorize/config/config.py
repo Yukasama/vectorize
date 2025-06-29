@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     )
 
     dramatiq_redis_url: str = Field(
-        default="redis://localhost:56379/0",
+        default="redis://localhost:56379",
         description="Redis URL for Dramatiq task queue.",
         validation_alias="REDIS_URL",
     )

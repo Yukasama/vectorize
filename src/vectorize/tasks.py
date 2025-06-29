@@ -6,7 +6,8 @@ from dramatiq.middleware.asyncio import AsyncIO
 
 from vectorize.config.config import settings
 
-broker = RedisBroker(url=settings.dramatiq_redis_url)
+url = settings.dramatiq_redis_url
+broker = RedisBroker(url=url)
 broker.add_middleware(AsyncIO())
 dramatiq.set_broker(broker)
 
