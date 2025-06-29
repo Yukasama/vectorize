@@ -9,6 +9,12 @@ ARG PYTHON_VERSION=${PYTHON_LATEST_VERSION}.5
 FROM ghcr.io/astral-sh/uv:python${PYTHON_LATEST_VERSION}-bookworm-slim AS builder
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    python3-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=0
@@ -45,10 +51,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates git-core libcurl4 libpcre2-8-0 && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     groupadd --system appuser && useradd --system \
-            --gid appuser \
-            --no-create-home \
-            --shell /usr/sbin/nologin \
-            appuser && \
+    --gid appuser \
+    --no-create-home \
+    --shell /usr/sbin/nologin \
+    appuser && \
     install -d -o appuser -g appuser -m 755 ${MODELS_DIR} ${UPLOAD_DIR} ${DB_DIR} ${HF_HOME} ${GH_HOME}
 
 # Copy non-writable source code into workdir
