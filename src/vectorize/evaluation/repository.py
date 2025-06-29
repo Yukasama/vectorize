@@ -10,15 +10,15 @@ from vectorize.task.task_status import TaskStatus
 from .models import EvaluationTask
 
 __all__ = [
-    "get_evaluation_task_by_id",
-    "save_evaluation_task",
-    "update_evaluation_task_metadata",
-    "update_evaluation_task_results",
-    "update_evaluation_task_status",
+    "get_evaluation_task_by_id_db",
+    "save_evaluation_task_db",
+    "update_evaluation_task_metadata_db",
+    "update_evaluation_task_results_db",
+    "update_evaluation_task_status_db",
 ]
 
 
-async def save_evaluation_task(
+async def save_evaluation_task_db(
     db: AsyncSession, evaluation_task: EvaluationTask
 ) -> EvaluationTask:
     """Save evaluation task to database.
@@ -36,7 +36,7 @@ async def save_evaluation_task(
     return evaluation_task
 
 
-async def get_evaluation_task_by_id(
+async def get_evaluation_task_by_id_db(
     db: AsyncSession, task_id: UUID
 ) -> EvaluationTask | None:
     """Get evaluation task by ID.
@@ -53,7 +53,7 @@ async def get_evaluation_task_by_id(
     return result.first()
 
 
-async def update_evaluation_task_status(
+async def update_evaluation_task_status_db(
     db: AsyncSession,
     task_id: UUID,
     status: TaskStatus,
@@ -69,7 +69,7 @@ async def update_evaluation_task_status(
         error_msg: Optional error message
         progress: Optional progress value (0.0-1.0)
     """
-    task = await get_evaluation_task_by_id(db, task_id)
+    task = await get_evaluation_task_by_id_db(db, task_id)
     if task:
         task.task_status = status
         if error_msg is not None:
@@ -80,7 +80,7 @@ async def update_evaluation_task_status(
         await db.commit()
 
 
-async def update_evaluation_task_results(
+async def update_evaluation_task_results_db(
     db: AsyncSession,
     task_id: UUID,
     evaluation_metrics: str | None = None,
@@ -96,7 +96,7 @@ async def update_evaluation_task_results(
         baseline_metrics: JSON string of baseline metrics
         evaluation_summary: Human-readable evaluation summary
     """
-    await _update_evaluation_task_fields(
+    await _update_evaluation_task_fields_db(
         db,
         task_id,
         evaluation_metrics=evaluation_metrics,
@@ -105,7 +105,7 @@ async def update_evaluation_task_results(
     )
 
 
-async def update_evaluation_task_metadata(
+async def update_evaluation_task_metadata_db(
     db: AsyncSession,
     task_id: UUID,
     model_tag: str | None = None,
@@ -121,7 +121,7 @@ async def update_evaluation_task_metadata(
         dataset_info: Information about the dataset used
         baseline_model_tag: Tag of the baseline model (if comparison performed)
     """
-    await _update_evaluation_task_fields(
+    await _update_evaluation_task_fields_db(
         db,
         task_id,
         model_tag=model_tag,
@@ -130,7 +130,7 @@ async def update_evaluation_task_metadata(
     )
 
 
-async def _update_evaluation_task_fields(
+async def _update_evaluation_task_fields_db(
     db: AsyncSession,
     task_id: UUID,
     **field_updates: str | None,
@@ -142,7 +142,7 @@ async def _update_evaluation_task_fields(
         task_id: UUID of the evaluation task
         **field_updates: Field values to update
     """
-    task = await get_evaluation_task_by_id(db, task_id)
+    task = await get_evaluation_task_by_id_db(db, task_id)
     if task:
         for field, value in field_updates.items():
             if value is not None and hasattr(task, field):

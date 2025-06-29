@@ -12,7 +12,7 @@ from vectorize.training.exceptions import InvalidDatasetIdError
 
 from .exceptions import EvaluationTaskNotFoundError
 from .models import EvaluationTask
-from .repository import get_evaluation_task_by_id, save_evaluation_task
+from .repository import get_evaluation_task_by_id_db, save_evaluation_task_db
 from .schemas import EvaluationRequest, EvaluationStatusResponse
 from .tasks import run_evaluation_bg
 
@@ -47,7 +47,7 @@ async def evaluate_model(
             raise InvalidDatasetIdError(evaluation_request.dataset_id) from exc
 
     task = EvaluationTask(id=uuid4())
-    await save_evaluation_task(db, task)
+    await save_evaluation_task_db(db, task)
 
     run_evaluation_bg.send(
         evaluation_request.model_dump(),
@@ -74,7 +74,7 @@ async def get_evaluation_status(
     db: Annotated[AsyncSession, Depends(get_session)],
 ) -> EvaluationStatusResponse:
     """Get the status and results of an evaluation task."""
-    task = await get_evaluation_task_by_id(db, task_id)
+    task = await get_evaluation_task_by_id_db(db, task_id)
     if not task:
         raise EvaluationTaskNotFoundError(str(task_id))
     return EvaluationStatusResponse.from_task(task)

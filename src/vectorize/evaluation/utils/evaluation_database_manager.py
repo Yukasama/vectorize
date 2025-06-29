@@ -10,9 +10,9 @@ from vectorize.ai_model.repository import get_ai_model_db
 from vectorize.task.task_status import TaskStatus
 
 from ..repository import (
-    update_evaluation_task_metadata,
-    update_evaluation_task_results,
-    update_evaluation_task_status,
+    update_evaluation_task_metadata_db,
+    update_evaluation_task_results_db,
+    update_evaluation_task_status_db,
 )
 from ..schemas import EvaluationRequest
 from .model_resolver import resolve_model_path
@@ -68,7 +68,7 @@ class EvaluationDatabaseManager:
             dataset_info: Dataset information string
             baseline_model_tag: Optional baseline model tag
         """
-        await update_evaluation_task_metadata(
+        await update_evaluation_task_metadata_db(
             self.db,
             self.task_id,
             model_tag=model_tag,
@@ -88,7 +88,7 @@ class EvaluationDatabaseManager:
             progress: Task progress (0.0 to 1.0)
             error_msg: Optional error message
         """
-        await update_evaluation_task_status(
+        await update_evaluation_task_status_db(
             self.db, self.task_id, status, error_msg=error_msg, progress=progress
         )
 
@@ -105,7 +105,7 @@ class EvaluationDatabaseManager:
         """
         await self.update_task_status(TaskStatus.RUNNING, progress=0.9)
 
-        await update_evaluation_task_results(
+        await update_evaluation_task_results_db(
             self.db,
             self.task_id,
             evaluation_metrics=evaluation_metrics,
@@ -127,7 +127,7 @@ class EvaluationDatabaseManager:
         """
         await self.update_task_status(TaskStatus.RUNNING, progress=0.9)
 
-        await update_evaluation_task_results(
+        await update_evaluation_task_results_db(
             self.db,
             self.task_id,
             evaluation_metrics=evaluation_metrics,

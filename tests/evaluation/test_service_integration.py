@@ -24,7 +24,7 @@ from vectorize.dataset.dataset_source import DatasetSource
 from vectorize.dataset.models import Dataset
 from vectorize.dataset.repository import upload_dataset_db
 from vectorize.evaluation.schemas import EvaluationRequest
-from vectorize.evaluation.service import resolve_evaluation_dataset
+from vectorize.evaluation.service import resolve_evaluation_dataset_svc
 from vectorize.training.models import TrainingTask
 from vectorize.training.repository import (
     save_training_task,
@@ -217,7 +217,7 @@ class TestEvaluationIntegration:
                 model_tag="test-model", training_task_id=str(task.id), max_samples=100
             )
 
-            result_path = await resolve_evaluation_dataset(session, request)
+            result_path = await resolve_evaluation_dataset_svc(session, request)
             assert result_path == validation_path
 
         finally:
@@ -238,7 +238,7 @@ class TestEvaluationIntegration:
         )
 
         with pytest.raises(ValueError, match="Cannot specify both"):
-            await resolve_evaluation_dataset(session, request)
+            await resolve_evaluation_dataset_svc(session, request)
 
     @pytest.mark.asyncio
     async def test_resolve_dataset_with_no_ids_fails(
@@ -248,7 +248,7 @@ class TestEvaluationIntegration:
         request = EvaluationRequest(model_tag="test-model", max_samples=100)
 
         with pytest.raises(ValueError, match="Must specify either"):
-            await resolve_evaluation_dataset(session, request)
+            await resolve_evaluation_dataset_svc(session, request)
 
     @pytest.mark.integration
     @pytest.mark.asyncio

@@ -11,10 +11,10 @@ from .schemas import EvaluationRequest, EvaluationResponse
 from .utils import EvaluationDatasetResolver, resolve_model_path
 from .utils.evaluation_engine import EvaluationEngine
 
-__all__ = ["evaluate_model_task", "resolve_evaluation_dataset"]
+__all__ = ["evaluate_model_task_svc", "resolve_evaluation_dataset_svc"]
 
 
-async def evaluate_model_task(
+async def evaluate_model_task_svc(
     db: AsyncSession,
     evaluation_request: EvaluationRequest,
 ) -> EvaluationResponse:
@@ -61,7 +61,7 @@ async def evaluate_model_task(
     return engine.run_simple_evaluation(evaluation_request, dataset_path)
 
 
-async def resolve_evaluation_dataset(
+async def resolve_evaluation_dataset_svc(
     db: AsyncSession, evaluation_request: EvaluationRequest
 ) -> Path:
     """Resolve the dataset path for evaluation - wrapper for backward compatibility."""
