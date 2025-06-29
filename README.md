@@ -1,6 +1,6 @@
 # Vectorize - Text Embedding Service
 
-Welcome to **Vectorize**, an enterprise-grade AWP Text Embedding Service developed for Robert Bosch GmbH. This comprehensive platform enables organizations to manage the complete lifecycle of text embedding workflows with production-ready reliability and scalability.
+Welcome to **Vectorize**, a Text Embedding Service developed for Robert Bosch GmbH in the AWP Module at Hochschule Karlsruhe. This comprehensive platform enables organizations to manage the complete lifecycle of text embedding workflows with production-ready reliability and scalability.
 
 ## 🚀 What is Vectorize?
 

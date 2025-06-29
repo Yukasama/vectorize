@@ -26,7 +26,7 @@ __all__ = [
     "is_dataset_being_uploaded_db",
     "save_upload_dataset_task_db",
     "update_dataset_db",
-    "update_upload_task_status",
+    "update_upload_task_status_db",
     "upload_dataset_db",
 ]
 
@@ -175,7 +175,7 @@ async def get_upload_dataset_task_db(
     return task
 
 
-async def update_upload_task_status(
+async def update_upload_task_status_db(
     db: AsyncSession,
     task_id: UUID,
     status: TaskStatus,

@@ -4,6 +4,7 @@ port = 8000
 version = "0.1.0"
 reload = true
 allow_origin_in_dev = ["http://localhost:3000"]
+root_path = "/v1/api"
 
 [app.db]
 logging = false

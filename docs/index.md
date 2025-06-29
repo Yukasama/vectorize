@@ -1,6 +1,6 @@
 # Vectorize - Text Embedding Service
 
-Welcome to **Vectorize**, an enterprise-grade AWP Text Embedding Service developed for Robert Bosch GmbH. This comprehensive platform enables organizations to manage the complete lifecycle of text embedding workflows with production-ready reliability and scalability.
+Welcome to **Vectorize**, a Text Embedding Service developed for Robert Bosch GmbH in the AWP Module at Hochschule Karlsruhe. This comprehensive platform enables organizations to manage the complete lifecycle of text embedding workflows with production-ready reliability and scalability.
 
 ## 🚀 What is Vectorize?
 
@@ -8,11 +8,12 @@ Welcome to **Vectorize**, an enterprise-grade AWP Text Embedding Service develop
 
 ### Core Capabilities
 
-- **📊 Dataset Management**: Upload, validate, and process training datasets from multiple sources
+- **📊 Dataset and Model Management**: Upload, validate, and process models or training datasets from multiple sources
 - **🤖 Model Training**: Train custom embedding models tailored to your specific domain
 - **📈 Evaluation Framework**: Comprehensive model evaluation with industry-standard metrics
 - **🔄 Synthetic Data Generation**: Generate high-quality synthetic datasets for model improvement
 - **⚡ Background Processing**: Async task execution with real-time monitoring and status tracking
+- **📊 Grafana Monitoring**: Built-in metrics and dashboards for observability and performance insights
 - **🔌 RESTful API**: Complete API for seamless integration with existing workflows
 - **🐳 Production Ready**: Docker containerization with enterprise deployment support
 

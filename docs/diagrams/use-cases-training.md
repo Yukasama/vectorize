@@ -1,4 +1,4 @@
-# Training Management Use Cases
+# Training Use Cases
 
 This diagram illustrates the various use cases for SBERT model training in the Vectorize system.
 

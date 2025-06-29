@@ -2,15 +2,13 @@
 
 The Vectorize application uses a multi-layered configuration system that combines default values, TOML configuration files, and environment variables to provide flexible deployment options across different environments.
 
-## Configuration Sources & Priority
+## Configuration Sources
 
-The configuration system loads settings from multiple sources in the following priority order (highest to lowest):
+The configuration system loads settings from multiple sources:
 
 1. **Environment Variables** (`.env` file or system environment)
 2. **TOML Configuration File** (`src/vectorize/config/resources/app.toml`)
 3. **Default Values** (hardcoded in the application)
-
-This means environment variables will always override TOML settings, which in turn override the built-in defaults.
 
 ## Environment Variables
 
@@ -26,11 +24,11 @@ cp .env.example .env
 
 ```sh
 # Application Environment
+TZ=Europe/Berlin
 ENV=development|testing|production
 
 # Database Configuration
 DATABASE_URL=sqlite+aiosqlite:///app.db
-CLEAR_DB_ON_RESTART=true
 
 # Logging Configuration
 LOG_LEVEL=DEBUG|INFO|WARNING|ERROR|CRITICAL
@@ -40,9 +38,8 @@ UPLOAD_DIR=/custom/path/datasets
 MODELS_DIR=/custom/path/models
 DB_DIR=/custom/path/db
 
-# Security & Performance
-MAX_UPLOAD_SIZE=53687091200  # 50GB in bytes
-POOL_SIZE=10
+# Dramatiq Queue
+REDIS_URL=redis://localhost:56379
 ```
 
 ## Configuration File
@@ -66,6 +63,7 @@ Controls the FastAPI server behavior and network settings:
   - Automatically disabled in production environment
   - Useful for development workflows
 - **`allow_origin_in_dev`**: CORS allowed origins for cross-origin requests during development
+- **`root_path`** (default: `"/v1/api"`): Root path prefix for all API endpoints (e.g., `"/v1/api"` for reverse proxy setups)
 
 ### Database Configuration (`[app.db]`)
 
@@ -232,9 +230,10 @@ The configuration system automatically adjusts based on the `ENV` environment va
 ENV=development
 LOG_LEVEL=DEBUG
 DATABASE_URL=sqlite+aiosqlite:///dev.db
+REDIS_URL=redis://localhost:56379
 ```
 
-### Production Container
+### Production
 
 ```sh
 ENV=production
@@ -242,16 +241,7 @@ LOG_LEVEL=INFO
 DATABASE_URL=sqlite+aiosqlite:///app/db/app.db
 UPLOAD_DIR=/app/data/datasets
 MODELS_DIR=/app/data/models
-MAX_UPLOAD_SIZE=10737418240
-```
-
-### Testing Environment
-
-```sh
-ENV=testing
-LOG_LEVEL=WARNING
-DATABASE_URL=sqlite+aiosqlite:///test.db
-CLEAR_DB_ON_RESTART=true
+REDIS_URL=redis://redis:6379
 ```
 
 ## Validation & Error Handling

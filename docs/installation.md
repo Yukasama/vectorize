@@ -6,7 +6,7 @@ This guide will help you set up Vectorize for development or production use. Cho
 
 ### Prerequisites
 
-- **Python 3.11+** (recommended: Python 3.12)
+- **Python 3.13+**
 - **Git** for version control
 - **Docker** (optional, for containerized setup)
 
@@ -36,7 +36,7 @@ pip install uv
 
 ```bash
 # Install all dependencies including dev tools
-uv sync --all-extras --dev
+uv sync
 
 # Or for production only
 uv sync --no-dev
@@ -53,7 +53,6 @@ cp .env.example .env
 cat > .env << EOF
 DATABASE_URL=sqlite+aiosqlite:///app.db
 LOG_LEVEL=DEBUG
-ENV=development
 CLEAR_DB_ON_RESTART=true
 EOF
 ```
@@ -92,23 +91,32 @@ cp .env.example .env
 2. **Configure Environment**
 
 ```bash
-# Edit .env for Docker setup
+# Edit .env for Docker environment
 cat > .env << EOF
-DATABASE_URL=sqlite+aiosqlite:///app/data/app.db
-LOG_LEVEL=INFO
-ENV=production
-CLEAR_DB_ON_RESTART=false
+ENV: production
+DATABASE_URL: sqlite+aiosqlite:///db/app.db
+REDIS_URL: redis://redis:6379
+UPLOAD_DIR: /app/data/datasets
+MODELS_DIR: /app/data/models
+DB_DIR: /app/db
+TZ: Europe/Berlin
+LOG_LEVEL: INFO
+HF_HOME: /app/data/hf_home
+GH_HOME: /app/data/gh_home
 EOF
 ```
 
 3. **Start with Docker Compose**
 
 ```bash
-# Start all services
+# Start all services (Note that the Frontend image has to be built before this step)
 docker compose up
 
 # Or run in background
 docker compose up -d
+
+# When you have to rebuild the image
+docker compose up --build
 
 # View logs
 docker compose logs -f vectorize
@@ -138,7 +146,6 @@ LOG_LEVEL=DEBUG|INFO|WARNING|ERROR|CRITICAL
 
 # Development Settings
 CLEAR_DB_ON_RESTART=true    # Reset DB on startup (dev only)
-SEED_DB_ON_START=true       # Add sample data (dev only)
 ```
 
 ### Optional Configuration
@@ -148,13 +155,6 @@ SEED_DB_ON_START=true       # Add sample data (dev only)
 UPLOAD_DIR=/custom/path/datasets
 MODELS_DIR=/custom/path/models
 LOG_DIR=/custom/path/logs
-
-# Performance Tuning
-MAX_UPLOAD_SIZE=53687091200  # 50GB in bytes
-POOL_SIZE=10                 # Database connection pool
-
-# Security (Production)
-ALLOWED_HOSTS=localhost,127.0.0.1,your-domain.com
 ```
 
 For complete configuration options, see the [Configuration Guide](configuration.md).
@@ -252,45 +252,6 @@ curl http://localhost:8000/datasets
 
 # Get background tasks
 curl http://localhost:8000/tasks
-```
-
-## 🐳 Docker Setup Details
-
-### Production Docker Build
-
-```bash
-# Build production image
-docker build -t vectorize:latest .
-
-# Run with custom configuration
-docker run -d \
-  --name vectorize \
-  -p 8000:8000 \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd)/.env:/app/.env \
-  vectorize:latest
-```
-
-### Docker Compose Services
-
-```yaml
-# docker-compose.yml overview
-services:
-  vectorize: # Main application
-  dramatiq_worker: # Background task processor
-  redis: # Task queue and cache
-  caddy: # Reverse proxy and HTTPS
-```
-
-### Persistent Data
-
-```bash
-# Create data directories
-mkdir -p data/{datasets,models,db,logs}
-
-# Set permissions
-chmod 755 data/
-chmod 644 data/db/
 ```
 
 ## 🔧 Development Tools Setup
@@ -403,7 +364,7 @@ After successful installation:
 
 1. **📖 [Read the Configuration Guide](configuration.md)** - Learn about all available settings
 2. **🔌 [Explore the API](api.md)** - Understand available endpoints
-4. **🤝 [Contributing Guide](contributing.md)** - Start contributing to the project
+3. **🤝 [Contributing Guide](contributing.md)** - Start contributing to the project
 
 ---
 
