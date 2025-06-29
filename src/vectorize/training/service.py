@@ -57,7 +57,7 @@ class TrainingOrchestrator:
             db, train_dataset_ids, val_dataset_id
         )
 
-    async def run_training(
+    async def run_training_svc(
         self,
         model_path: str,
         train_request: TrainRequest,

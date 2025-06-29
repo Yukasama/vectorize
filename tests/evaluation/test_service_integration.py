@@ -27,8 +27,8 @@ from vectorize.evaluation.schemas import EvaluationRequest
 from vectorize.evaluation.service import resolve_evaluation_dataset_svc
 from vectorize.training.models import TrainingTask
 from vectorize.training.repository import (
-    save_training_task,
-    update_training_task_validation_dataset,
+    save_training_task_db,
+    update_training_task_validation_dataset_db,
 )
 
 # Test constants
@@ -197,7 +197,7 @@ class TestEvaluationIntegration:
         """Test resolving dataset using training_task_id."""
         # Create test training task
         task = TrainingTask(id=uuid4(), model_tag="test-model")
-        await save_training_task(session, task)
+        await save_training_task_db(session, task)
 
         # Create validation dataset file
         validation_path = settings.dataset_upload_dir / "validation_test.jsonl"
@@ -207,7 +207,7 @@ class TestEvaluationIntegration:
         )
 
         # Update task with validation dataset path
-        await update_training_task_validation_dataset(
+        await update_training_task_validation_dataset_db(
             session, task.id, str(validation_path)
         )
 

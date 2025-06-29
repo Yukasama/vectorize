@@ -44,7 +44,7 @@ async def run_training_bg(
             )
 
             orchestrator = TrainingOrchestrator(db, UUID(task_id))
-            await orchestrator.run_training(
+            await orchestrator.run_training_svc(
                 model_path=model_path,
                 train_request=train_request,
                 dataset_paths=dataset_paths,

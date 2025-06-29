@@ -12,10 +12,10 @@ from vectorize.ai_model.repository import get_ai_model_db, save_ai_model_db
 from vectorize.task.task_status import TaskStatus
 
 from ..repository import (
-    get_train_task_by_id,
-    update_training_task_metrics,
-    update_training_task_status,
-    update_training_task_validation_dataset,
+    get_train_task_by_id_db,
+    update_training_task_metrics_db,
+    update_training_task_status_db,
+    update_training_task_validation_dataset_db,
 )
 from ..schemas import TrainRequest
 
@@ -42,7 +42,7 @@ class TrainingDatabaseManager:
             validation_dataset_path: Path to the validation dataset used during training
         """
         if validation_dataset_path:
-            await update_training_task_validation_dataset(
+            await update_training_task_validation_dataset_db(
                 self.db, self.task_id, validation_dataset_path
             )
 
@@ -58,7 +58,7 @@ class TrainingDatabaseManager:
         Args:
             training_metrics: Dictionary containing training metrics
         """
-        await update_training_task_metrics(
+        await update_training_task_metrics_db(
             self.db,
             self.task_id,
             training_metrics,
@@ -92,7 +92,7 @@ class TrainingDatabaseManager:
 
         new_model_id = await save_ai_model_db(self.db, new_model)
 
-        task = await get_train_task_by_id(self.db, self.task_id)
+        task = await get_train_task_by_id_db(self.db, self.task_id)
         if task:
             task.trained_model_id = new_model_id
             await self.db.commit()
@@ -109,7 +109,7 @@ class TrainingDatabaseManager:
             task_id=str(self.task_id),
             exc=str(exc),
         )
-        await update_training_task_status(
+        await update_training_task_status_db(
             self.db,
             self.task_id,
             TaskStatus.FAILED,
@@ -118,7 +118,7 @@ class TrainingDatabaseManager:
 
     async def mark_training_complete(self) -> None:
         """Mark the training task as completed."""
-        await update_training_task_status(self.db, self.task_id, TaskStatus.DONE)
+        await update_training_task_status_db(self.db, self.task_id, TaskStatus.DONE)
         logger.debug(
             "Training task marked as complete",
             task_id=str(self.task_id),

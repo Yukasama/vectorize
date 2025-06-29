@@ -11,7 +11,7 @@ from vectorize.training.exceptions import (
     InvalidDatasetIdError,
     TrainingDatasetNotFoundError,
 )
-from vectorize.training.repository import get_train_task_by_id
+from vectorize.training.repository import get_train_task_by_id_db
 
 from ..schemas import EvaluationRequest
 
@@ -139,7 +139,7 @@ class EvaluationDatasetResolver:
         except ValueError as exc:
             raise InvalidDatasetIdError(training_task_id) from exc
 
-        training_task = await get_train_task_by_id(db, task_uuid)
+        training_task = await get_train_task_by_id_db(db, task_uuid)
         if not training_task:
             raise TrainingDatasetNotFoundError(
                 f"Training task not found: {training_task_id}"
