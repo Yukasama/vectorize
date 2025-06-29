@@ -230,7 +230,7 @@ The configuration system automatically adjusts based on the `ENV` environment va
 ENV=development
 LOG_LEVEL=DEBUG
 DATABASE_URL=sqlite+aiosqlite:///dev.db
-REDIS_URL=redis://localhost:56379/0
+REDIS_URL=redis://localhost:56379
 ```
 
 ### Production
@@ -241,7 +241,7 @@ LOG_LEVEL=INFO
 DATABASE_URL=sqlite+aiosqlite:///app/db/app.db
 UPLOAD_DIR=/app/data/datasets
 MODELS_DIR=/app/data/models
-REDIS_URL=redis://redis:56379/0
+REDIS_URL=redis://redis:6379
 ```
 
 ## Validation & Error Handling
