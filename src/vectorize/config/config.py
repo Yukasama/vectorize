@@ -60,12 +60,6 @@ class Settings(BaseSettings):
         description="Root path for the application, useful for reverse proxies.",
     )
 
-    dramatiq_redis_url: str = Field(
-        default="redis://localhost:56379",
-        description="Redis URL for Dramatiq task queue.",
-        validation_alias="REDIS_URL",
-    )
-
     # Database configuration
     db_url: str = Field(
         default="sqlite+aiosqlite:///app.db",

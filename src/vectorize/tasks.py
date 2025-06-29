@@ -1,12 +1,16 @@
 """Tasks for dramatiq."""
 
+import os
+
 import dramatiq
+from dotenv import load_dotenv
 from dramatiq.brokers.redis import RedisBroker
 from dramatiq.middleware.asyncio import AsyncIO
 
-from vectorize.config.config import settings
+load_dotenv()
 
-url = settings.dramatiq_redis_url
+
+url = os.environ["REDIS_URL"]
 broker = RedisBroker(url=url)
 broker.add_middleware(AsyncIO())
 dramatiq.set_broker(broker)
